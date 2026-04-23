@@ -44,6 +44,15 @@ API_BASE_PATTERN = re.compile(r"(http://127\.0\.0\.1:(\d+)/api/v1)")
 LOOPBACK_NO_PROXY_TOKENS = ("127.0.0.1", "localhost")
 
 
+def _safe_print(value: str) -> None:
+  try:
+    print(value)
+  except UnicodeEncodeError:
+    encoded = value.encode(sys.stdout.encoding or "utf-8", errors="replace")
+    sys.stdout.buffer.write(encoded + b"\n")
+    sys.stdout.buffer.flush()
+
+
 @dataclass
 class ControllerConfig:
   project_root: Path
@@ -61,6 +70,7 @@ class ControllerConfig:
   local_docs_path: str = "/f"
   npm_bin: str = "npm"
   extra_flutter_args: list[str] = field(default_factory=list)
+  app_args: list[str] = field(default_factory=list)
 
 
 class FlutterAppController:
@@ -253,13 +263,16 @@ class FlutterAppController:
         *extra_args,
         f"--dart-define=VERTREE_SHARE_PAGE_BASE_URL={self._docs_url}",
       ]
-    return [
+    command = [
       self.config.flutter_bin,
       "run",
       "-d",
       self.config.device,
       *extra_args,
     ]
+    for app_arg in self.config.app_args:
+      command.append(f"--dart-entrypoint-args={app_arg}")
+    return command
 
   def _reader_loop(self, process: subprocess.Popen[str]) -> None:
     assert process.stdout is not None
@@ -754,6 +767,8 @@ def _spawn_detached_controller(script_path: Path, args: argparse.Namespace) -> N
     command.extend(["--npm-bin", _resolve_command_bin(args.npm_bin)])
   for extra_arg in args.extra_flutter_arg:
     command.extend(["--extra-flutter-arg", extra_arg])
+  for app_arg in args.app_arg:
+    command.extend(["--app-arg", app_arg])
 
   popen_kwargs: dict[str, Any] = {
     "cwd": str(Path(args.project_root).resolve()),
@@ -789,7 +804,7 @@ def _bootstrap_controller(script_path: Path, args: argparse.Namespace) -> int:
       time.sleep(0.5)
 
   if status is None:
-    print(
+    _safe_print(
       json.dumps(
         {
           "ok": False,
@@ -849,7 +864,7 @@ def _bootstrap_controller(script_path: Path, args: argparse.Namespace) -> int:
       "status": status,
     }
 
-  print(json.dumps(payload, ensure_ascii=False, indent=2))
+  _safe_print(json.dumps(payload, ensure_ascii=False, indent=2))
   return 0 if payload.get("ready") is True else 1
 
 
@@ -881,6 +896,12 @@ def parse_args() -> argparse.Namespace:
   parser.add_argument("--local-docs-port", type=int, default=33030)
   parser.add_argument("--npm-bin", default="npm")
   parser.add_argument("--extra-flutter-arg", action="append", default=[])
+  parser.add_argument(
+    "--app-arg",
+    action="append",
+    default=[],
+    help="Argument forwarded to the Flutter desktop app after `--`.",
+  )
   return parser.parse_args()
 
 
@@ -903,12 +924,13 @@ def main() -> int:
     local_docs_port=args.local_docs_port,
     npm_bin=_resolve_command_bin(args.npm_bin),
     extra_flutter_args=list(args.extra_flutter_arg),
+    app_args=list(args.app_arg),
   )
   controller = FlutterAppController(config)
   ControllerRequestHandler.controller = controller
 
   server = ThreadingHTTPServer((config.controller_host, config.controller_port), ControllerRequestHandler)
-  print(
+  _safe_print(
     json.dumps(
       {
         "message": "Vertree dev control server started",

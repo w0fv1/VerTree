@@ -78,6 +78,12 @@ flutter run -d linux
 python dev_server.py --bootstrap --device windows
 ```
 
+如果你要给文档截图、录屏或自动化演示准备一个不会弹公告的实例：
+
+```bash
+python dev_server.py --bootstrap --device windows --app-arg --no-announcement
+```
+
 如果你正在联调局域网分享页，也可以顺手启动本地 docs，并让应用里生成的分享链接直接指向本地文档站：
 
 ```bash
@@ -102,6 +108,7 @@ python dev_server.py --bootstrap --device windows --local-docs
 - `POST /api/v1/app/quit`：退出当前桌面应用
 - `POST /api/v1/ui/navigation`：切换到 `brand`、`monitor`、`settings`、`version-tree`
 - `POST /api/v1/ui/window-state`：控制窗口还原、最大化与全屏
+- `POST /api/v1/ui/theme-mode`：切换主题为 `system`、`light`、`dark`
 - `POST /api/v1/ui/file-tree/viewport`：让版本树画布自动适配或按比例缩放
 - `POST /api/v1/ui/screenshot`：将当前应用 UI 导出为 PNG
 - `GET /api/v1/file-shares`：列出当前进程内仍然有效的局域网分享
@@ -213,6 +220,7 @@ python tools/update_doc_images.py
 ```
 
 这个脚本会通过开发控制器调用 `POST /ensure-ready`，然后使用应用本机 HTTP API 的 `ui/navigation` 和 `ui/screenshot` 自动更新 `docs/static/img/usage/` 下的图片。
+除专门说明暗色模式的图片外，脚本会先把应用切到浅色主题，再执行截图。
 
 ## 版本发布流程
 

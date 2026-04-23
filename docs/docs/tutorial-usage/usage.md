@@ -91,6 +91,8 @@ sidebar_position: 5
 
 ![settings-page](/img/usage/settings-page.png)
 
+文档里的常规界面截图默认使用浅色主题；只有在专门说明暗色模式时，才会切换到深色截图。
+
 ## 版本树页能做什么
 
 - 查看主线与分支结构
@@ -125,6 +127,7 @@ sidebar_position: 5
 - `POST /api/v1/app/quit`
 - `POST /api/v1/ui/navigation`
 - `POST /api/v1/ui/window-state`
+- `POST /api/v1/ui/theme-mode`
 - `POST /api/v1/ui/file-tree/viewport`
 - `POST /api/v1/ui/screenshot`
 - `GET/POST/PATCH/DELETE /api/v1/monitor-tasks`

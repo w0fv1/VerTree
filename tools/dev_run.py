@@ -126,6 +126,12 @@ def parse_args() -> argparse.Namespace:
   parser.add_argument("--local-docs-host", default="127.0.0.1")
   parser.add_argument("--local-docs-port", type=int, default=33030)
   parser.add_argument("--npm-bin", default="npm")
+  parser.add_argument(
+    "--app-arg",
+    action="append",
+    default=[],
+    help="Argument forwarded to the Flutter desktop app after `--`.",
+  )
   parser.add_argument("extra_flutter_args", nargs=argparse.REMAINDER)
   return parser.parse_args()
 
@@ -189,6 +195,8 @@ def main() -> int:
         f"--dart-define=VERTREE_SHARE_PAGE_BASE_URL={docs_url}"
       )
     flutter_command.extend(args.extra_flutter_args)
+    for app_arg in args.app_arg:
+      flutter_command.append(f"--dart-entrypoint-args={app_arg}")
 
     print("[dev_run] running:", " ".join(flutter_command))
     return subprocess.call(

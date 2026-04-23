@@ -56,6 +56,7 @@ final Completer<void> _appUiReadyCompleter = Completer<void>();
 String _currentUiPageId = 'brand';
 Map<String, dynamic> _currentUiPageState = const {'page': 'brand'};
 FileTreeViewportController? _currentFileTreeViewportController;
+bool suppressAnnouncementDialogs = false;
 
 final appVersionInfo = AppVersionInfo(
   currentVersion: "V0.13.1",
@@ -276,6 +277,36 @@ String _themeSettingToString(AppThemeSetting setting) {
   }
 }
 
+String _themeModeToString(ThemeMode themeMode) {
+  switch (themeMode) {
+    case ThemeMode.light:
+      return 'light';
+    case ThemeMode.dark:
+      return 'dark';
+    case ThemeMode.system:
+      return 'system';
+  }
+}
+
+String _brightnessToString(Brightness brightness) {
+  return brightness == Brightness.dark ? 'dark' : 'light';
+}
+
+Brightness _effectiveBrightnessFromThemeMode(
+  ThemeMode themeMode, {
+  ui.PlatformDispatcher? platformDispatcher,
+}) {
+  switch (themeMode) {
+    case ThemeMode.light:
+      return Brightness.light;
+    case ThemeMode.dark:
+      return Brightness.dark;
+    case ThemeMode.system:
+      final dispatcher = platformDispatcher ?? ui.PlatformDispatcher.instance;
+      return dispatcher.platformBrightness;
+  }
+}
+
 ThemeMode _themeModeFromSetting(AppThemeSetting setting) {
   switch (setting) {
     case AppThemeSetting.light:
@@ -304,6 +335,21 @@ void updateThemeSetting(AppThemeSetting setting) {
   configer.set<String>('themeMode', _themeSettingToString(setting));
   // system 由 Flutter 自行选择明暗，light/dark 强制指定。
   themeModeNotifier.value = _themeModeFromSetting(setting);
+}
+
+Future<Result<Map<String, dynamic>, String>> setThemeModeForApi(
+  String mode,
+) async {
+  final normalized = mode.trim().toLowerCase();
+  if (!{'system', 'light', 'dark'}.contains(normalized)) {
+    return Result.eMsg(
+      'Unsupported theme mode "$mode". Supported values: system, light, dark.',
+    );
+  }
+
+  updateThemeSetting(_parseThemeSetting(normalized));
+  await _waitForRenderedFrames(waitMilliseconds: 180);
+  return Result.ok(_currentUiState());
 }
 
 /// 在「浅色」与「深色」之间切换（当配置为跟随系统时，此方法不生效）。
@@ -455,6 +501,7 @@ Future<void> runVertreeApp(
       navigateUiHandler: navigateToPageForApi,
       captureUiScreenshotHandler: captureCurrentAppScreenshot,
       setWindowStateHandler: setWindowStateForApi,
+      setThemeModeHandler: setThemeModeForApi,
       setFileTreeViewportHandler: setFileTreeViewportForApi,
       quitAppHandler: quitApplication,
     ),
@@ -463,6 +510,7 @@ Future<void> runVertreeApp(
 
   try {
     final bool isStartupLaunch = containsStartupLaunchArg(args);
+    suppressAnnouncementDialogs = containsNoAnnouncementLaunchArg(args);
     final bool launch2Tray = configer.get("launch2Tray", defaultLaunchToTray);
     final bool isSetupDone = configer.get<bool>('isSetupDone', false);
     final bool isGnomeWithoutTray =
@@ -624,6 +672,10 @@ void _updateCurrentUiPage(Widget page) {
 }
 
 Map<String, dynamic> _currentUiState() {
+  final configuredThemeMode = _themeModeFromSetting(currentThemeSetting);
+  final effectiveBrightness = _effectiveBrightnessFromThemeMode(
+    configuredThemeMode,
+  );
   return {
     'ready': _appUiReadyCompleter.isCompleted,
     'currentPage': _currentUiPageId,
@@ -632,6 +684,15 @@ Map<String, dynamic> _currentUiState() {
     'fileTreeViewportReady':
         _currentFileTreeViewportController?.isAttached ?? false,
     'fileTreeScale': _currentFileTreeViewportController?.currentScale,
+    'theme': {
+      'setting': _themeSettingToString(currentThemeSetting),
+      'themeMode': _themeModeToString(configuredThemeMode),
+      'effectiveBrightness': _brightnessToString(effectiveBrightness),
+      'platformBrightness': _brightnessToString(
+        ui.PlatformDispatcher.instance.platformBrightness,
+      ),
+    },
+    'startup': {'announcementSuppressed': suppressAnnouncementDialogs},
   };
 }
 

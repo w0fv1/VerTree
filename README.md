@@ -2,6 +2,10 @@
 
 Vertree 是一个面向单文件的可视化版本管理工具，适合设计稿、文档、脚本、配置文件这类不适合直接放进 Git 工作流的内容。它用树状结构组织版本，用监控机制做自动备份，并通过系统原生入口尽量不改变你原本的使用习惯。
 
+[English README](README.en.md)
+
+![Version tree overview](docs/static/img/version-tree-overview.png)
+
 ## 0.14.0 正式版现状
 
 - 支持 Windows 桌面使用，提供安装包、托盘、右键菜单、Windows 11 新菜单适配、监控页、版本树、设置页。
@@ -98,6 +102,7 @@ vertree express-backup /path/to/file
 - `POST /api/v1/app/quit`：退出当前 Vertree 应用
 - `POST /api/v1/ui/navigation`：切换到指定页面
 - `POST /api/v1/ui/window-state`：切换窗口为还原 / 最大化 / 全屏
+- `POST /api/v1/ui/theme-mode`：切换主题为 `system` / `light` / `dark`
 - `POST /api/v1/ui/file-tree/viewport`：让文件树适配视口或设置缩放比例
 - `POST /api/v1/ui/screenshot`：导出当前应用窗口 PNG 截图
 - `GET/POST/PATCH/DELETE /api/v1/monitor-tasks`：监控任务管理
@@ -116,7 +121,7 @@ vertree express-backup /path/to/file
 python tools/update_doc_images.py
 ```
 
-它会通过 `POST /ensure-ready` 拉起或复用开发中的应用实例，再调用 `ui/navigation` 和 `ui/screenshot` 自动更新 `docs/static/img/usage/` 下的截图资源。
+它会通过 `POST /ensure-ready` 拉起或复用开发中的应用实例，再调用 `ui/theme-mode`、`ui/navigation` 和 `ui/screenshot` 自动更新截图资源。除专门说明暗色模式的图片外，文档截图默认使用浅色主题。
 
 ## 开发运行
 
@@ -172,6 +177,12 @@ linux/build_linux_rpm.sh
 
 ```bash
 python dev_server.py --bootstrap --device windows
+```
+
+如需给文档截图或自动化演示使用一个不会弹公告的实例：
+
+```bash
+python dev_server.py --bootstrap --device windows --app-arg --no-announcement
 ```
 
 如果你要在开发态顺手启动本地 docs，并让局域网分享页直接指向本地 Docusaurus：

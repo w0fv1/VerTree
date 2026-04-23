@@ -349,6 +349,27 @@ class LocalHttpApiServer {
       ),
       LocalHttpApiRoute(
         method: 'POST',
+        pathTemplate: '/ui/theme-mode',
+        summary: 'Set the current app theme mode',
+        description:
+            'Updates the desktop app theme mode to system, light, or dark and returns the current UI state.',
+        tags: const ['ui', 'automation'],
+        requestBody: const LocalHttpApiRequestBody(
+          description: 'Theme mode settings.',
+          fields: [
+            LocalHttpApiField(
+              name: 'mode',
+              type: 'string',
+              description: 'Supported values: system, light, dark.',
+              required: true,
+              example: 'light',
+            ),
+          ],
+        ),
+        handler: _handleUiThemeMode,
+      ),
+      LocalHttpApiRoute(
+        method: 'POST',
         pathTemplate: '/ui/file-tree/viewport',
         summary: 'Adjust the version-tree canvas viewport',
         description:
@@ -881,6 +902,31 @@ class LocalHttpApiServer {
       scale: _optionalDoubleField(body, 'scale'),
       fitToViewport: _optionalBoolField(body, 'fitToViewport') ?? false,
     );
+    await _writeResult(request, result, startedAt);
+  }
+
+  Future<void> _handleUiThemeMode(
+    HttpRequest request,
+    Map<String, String> pathParameters,
+    DateTime startedAt,
+  ) async {
+    final body = await _readJsonBody(request);
+    final mode = _requiredStringField(body, 'mode');
+    if (mode == null) {
+      await _writeJson(
+        request,
+        statusCode: HttpStatus.badRequest,
+        body: _errorBody(
+          request,
+          'BAD_REQUEST',
+          'Field "mode" is required.',
+          startedAt,
+        ),
+      );
+      return;
+    }
+
+    final result = await apiService.setThemeMode(mode);
     await _writeResult(request, result, startedAt);
   }
 

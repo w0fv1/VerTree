@@ -38,6 +38,8 @@ typedef UiWindowStateHandler =
       double? height,
       bool focus,
     });
+typedef UiThemeModeHandler =
+    Future<Result<Map<String, dynamic>, String>> Function(String mode);
 typedef FileTreeViewportHandler =
     Future<Result<Map<String, dynamic>, String>> Function({
       double? scale,
@@ -57,6 +59,7 @@ class LocalHttpApiService {
     required this.navigateUiHandler,
     required this.captureUiScreenshotHandler,
     required this.setWindowStateHandler,
+    required this.setThemeModeHandler,
     required this.setFileTreeViewportHandler,
     required this.quitAppHandler,
   });
@@ -71,6 +74,7 @@ class LocalHttpApiService {
   final UiNavigateHandler navigateUiHandler;
   final UiScreenshotHandler captureUiScreenshotHandler;
   final UiWindowStateHandler setWindowStateHandler;
+  final UiThemeModeHandler setThemeModeHandler;
   final FileTreeViewportHandler setFileTreeViewportHandler;
   final AppQuitHandler quitAppHandler;
 
@@ -152,6 +156,10 @@ class LocalHttpApiService {
       height: height,
       focus: focus,
     );
+  }
+
+  Future<Result<Map<String, dynamic>, String>> setThemeMode(String mode) async {
+    return setThemeModeHandler(mode);
   }
 
   Future<Result<Map<String, dynamic>, String>> setFileTreeViewport({

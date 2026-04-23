@@ -36,6 +36,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
     return {
         "brand-home-page": {
             "output_path": image_root / "brand-home-page.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "brand",
                 "waitMilliseconds": 650,
@@ -51,6 +52,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
         },
         "initial-setup-dialog": {
             "output_path": image_root / "tutorial" / "initial-setup-dialog.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "brand",
                 "showInitialSetupDialog": True,
@@ -67,6 +69,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
         },
         "monitor-tasks-page": {
             "output_path": image_root / "usage" / "monitor-tasks-page.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "monitor",
                 "waitMilliseconds": 700,
@@ -83,6 +86,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
         },
         "settings-page": {
             "output_path": image_root / "usage" / "settings-page.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "settings",
                 "waitMilliseconds": 550,
@@ -98,6 +102,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
         },
         "version-tree-page": {
             "output_path": image_root / "usage" / "version-tree-page.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "version-tree",
                 "path": str(DEFAULT_VERSION_TREE_SAMPLE_PATH),
@@ -117,6 +122,7 @@ def _build_capture_manifest(image_root: Path) -> dict[str, dict[str, Any]]:
         },
         "version-tree-overview": {
             "output_path": image_root / "version-tree-overview.png",
+            "theme_mode": "light",
             "navigation": {
                 "page": "version-tree",
                 "path": str(DEFAULT_VERSION_TREE_SAMPLE_PATH),
@@ -164,6 +170,10 @@ def _request_json(
     try:
         with opener.open(request, timeout=float(timeout_seconds)) as response:
             raw = response.read().decode("utf-8")
+    except TimeoutError as exc:
+        raise RuntimeError(
+            f"{method} {url} timed out after {timeout_seconds} seconds"
+        ) from exc
     except urllib.error.HTTPError as exc:
         raw = exc.read().decode("utf-8", errors="replace")
         try:
@@ -173,6 +183,10 @@ def _request_json(
         raise RuntimeError(
             f"{method} {url} failed: HTTP {exc.code} {json.dumps(payload_obj, ensure_ascii=False)}"
         ) from exc
+    except urllib.error.URLError as exc:
+        raise RuntimeError(f"{method} {url} failed: {exc.reason}") from exc
+    except OSError as exc:
+        raise RuntimeError(f"{method} {url} failed: {exc}") from exc
 
     decoded = json.loads(raw)
     if not isinstance(decoded, dict):
@@ -181,12 +195,31 @@ def _request_json(
 
 
 def _ensure_ready(controller_url: str, timeout_seconds: int) -> str:
-    payload = _request_json(
-        "POST",
-        f"{controller_url.rstrip('/')}/ensure-ready",
-        payload={"timeoutSeconds": timeout_seconds, "startIfNeeded": True},
-        timeout_seconds=timeout_seconds + 10,
-    )
+    request_url = f"{controller_url.rstrip('/')}/ensure-ready"
+    try:
+        payload = _request_json(
+            "POST",
+            request_url,
+            payload={"timeoutSeconds": timeout_seconds, "startIfNeeded": True},
+            timeout_seconds=timeout_seconds + 10,
+        )
+    except RuntimeError as exc:
+        raise RuntimeError(
+            "Failed to obtain a ready app instance from the dev controller.\n"
+            f"Controller URL: {controller_url}\n"
+            f"Reason: {exc}\n"
+            "Guidance:\n"
+            "1. This script is intended for an active local development session, not ordinary end-user usage.\n"
+            "2. Start the controller first: python dev_server.py --bootstrap --device windows\n"
+            "   For screenshots, add: --app-arg --no-announcement\n"
+            "3. If the controller output crashes in a non-UTF-8 terminal, set PYTHONUTF8=1 and retry.\n"
+            "4. If the app is already running, bypass the controller with:\n"
+            "   python tools/update_doc_images.py --api-base http://127.0.0.1:31414/api/v1 --capture settings-page\n"
+            "5. Inspect controller health/logs:\n"
+            "   GET http://127.0.0.1:32500/status\n"
+            "   GET http://127.0.0.1:32500/logs\n"
+            "6. Ensure Flutter Windows development works before using this script."
+        ) from exc
     if payload.get("ready") is not True:
         raise RuntimeError(
             f"Controller did not reach ready state: {json.dumps(payload, ensure_ascii=False)}"
@@ -225,8 +258,11 @@ def _run_capture(
     screenshot = dict(definition["screenshot"])
     window_state = dict(definition.get("window_state", {}))
     file_tree_viewport = dict(definition.get("file_tree_viewport", {}))
+    theme_mode = definition.get("theme_mode")
     output_path = Path(definition["output_path"]).resolve()
 
+    if isinstance(theme_mode, str) and theme_mode:
+        _post_api(base_url, "/ui/theme-mode", {"mode": theme_mode})
     _post_api(base_url, "/ui/navigation", navigation)
     if window_state:
         _post_api(base_url, "/ui/window-state", window_state)
@@ -242,6 +278,32 @@ def _run_capture(
     if success is not True:
         raise RuntimeError(f"Screenshot capture failed for {name}: {response}")
     return output_path
+
+
+def _validate_runtime_inputs(selected_captures: list[str], monitor_sample_path: Path) -> None:
+    missing_paths: list[str] = []
+    if "monitor-tasks-page" in selected_captures and not monitor_sample_path.exists():
+        missing_paths.append(
+            f"monitor sample path does not exist: {monitor_sample_path}"
+        )
+    if any(
+        capture_name in {"version-tree-page", "version-tree-overview"}
+        for capture_name in selected_captures
+    ) and not DEFAULT_VERSION_TREE_SAMPLE_PATH.exists():
+        missing_paths.append(
+            f"version-tree sample path does not exist: {DEFAULT_VERSION_TREE_SAMPLE_PATH}"
+        )
+
+    if missing_paths:
+        joined = "\n".join(f"- {item}" for item in missing_paths)
+        raise RuntimeError(
+            "Required sample data is missing for the requested documentation captures.\n"
+            f"{joined}\n"
+            "Guidance:\n"
+            "1. Restore the repository sample data under .sample/file_version_tree.\n"
+            "2. Or point the script at valid files with --monitor-sample-path.\n"
+            "3. For version-tree captures, keep the storyboard sample files available unless you also update the capture manifest."
+        )
 
 
 def main() -> int:
@@ -307,24 +369,34 @@ def main() -> int:
         print(f"Unknown capture names: {', '.join(unknown_captures)}", file=sys.stderr)
         return 2
 
-    base_url = (
-        args.api_base.rstrip("/")
-        if args.api_base
-        else _ensure_ready(args.controller_url, args.timeout_seconds)
-    )
-    monitor_sample_path = Path(args.monitor_sample_path).resolve()
-
-    generated: list[Path] = []
-    for capture_name in selected_captures:
-        output_path = _run_capture(
-            capture_name,
-            manifest[capture_name],
-            base_url=base_url,
-            pixel_ratio=args.pixel_ratio,
-            monitor_sample_path=monitor_sample_path,
+    try:
+        base_url = (
+            args.api_base.rstrip("/")
+            if args.api_base
+            else _ensure_ready(args.controller_url, args.timeout_seconds)
         )
-        generated.append(output_path)
-        print(f"[updated] {capture_name}: {output_path}")
+        monitor_sample_path = Path(args.monitor_sample_path).resolve()
+        _validate_runtime_inputs(selected_captures, monitor_sample_path)
+
+        generated: list[Path] = []
+        for capture_name in selected_captures:
+            output_path = _run_capture(
+                capture_name,
+                manifest[capture_name],
+                base_url=base_url,
+                pixel_ratio=args.pixel_ratio,
+                monitor_sample_path=monitor_sample_path,
+            )
+            generated.append(output_path)
+            print(f"[updated] {capture_name}: {output_path}")
+    except RuntimeError as exc:
+        print(str(exc), file=sys.stderr)
+        if not args.api_base:
+            print(
+                "Hint: if the app is already running, retry with --api-base to skip controller bootstrap.",
+                file=sys.stderr,
+            )
+        return 1
 
     print(f"[done] generated {len(generated)} screenshot(s) via {base_url}")
     return 0

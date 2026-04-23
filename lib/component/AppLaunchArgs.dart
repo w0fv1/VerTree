@@ -1,12 +1,12 @@
 const String startupLaunchArg = '--startup';
+const String noAnnouncementLaunchArg = '--no-announcement';
 
 bool containsStartupLaunchArg(Iterable<String> rawArgs) {
-  for (final rawArg in rawArgs) {
-    if (rawArg.trim().toLowerCase() == startupLaunchArg) {
-      return true;
-    }
-  }
-  return false;
+  return _containsLaunchArg(rawArgs, startupLaunchArg);
+}
+
+bool containsNoAnnouncementLaunchArg(Iterable<String> rawArgs) {
+  return _containsLaunchArg(rawArgs, noAnnouncementLaunchArg);
 }
 
 List<String> stripRuntimeLaunchArgs(Iterable<String> rawArgs) {
@@ -16,12 +16,22 @@ List<String> stripRuntimeLaunchArgs(Iterable<String> rawArgs) {
     if (normalized.isEmpty) {
       continue;
     }
-    if (normalized.toLowerCase() == startupLaunchArg) {
+    final lowered = normalized.toLowerCase();
+    if (lowered == startupLaunchArg || lowered == noAnnouncementLaunchArg) {
       continue;
     }
     args.add(normalized);
   }
   return args;
+}
+
+bool _containsLaunchArg(Iterable<String> rawArgs, String targetArg) {
+  for (final rawArg in rawArgs) {
+    if (rawArg.trim().toLowerCase() == targetArg) {
+      return true;
+    }
+  }
+  return false;
 }
 
 String buildWindowsLaunchCommand(

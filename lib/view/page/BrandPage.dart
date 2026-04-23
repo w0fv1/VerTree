@@ -53,7 +53,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   }
 
   Future<void> _loadAnnouncementIfNeeded() async {
-    if (_announcementLoaded) {
+    if (_announcementLoaded || suppressAnnouncementDialogs) {
       return;
     }
     _announcementLoaded = true;
@@ -64,6 +64,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   Future<void> _tryShowAnnouncement() async {
     final announcement = _pendingAnnouncement;
     if (!mounted ||
+        suppressAnnouncementDialogs ||
         announcement == null ||
         _announcementDialogOpen ||
         appAnnouncementService.hasShownInSession(announcement.uuid)) {
