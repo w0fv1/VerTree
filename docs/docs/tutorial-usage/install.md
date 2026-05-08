@@ -84,5 +84,5 @@ flutter run -d linux
 - `pubspec.yaml` 中的 `version` 决定发布版本
 - `.github/release-<version>.md` 决定 GitHub Release 说明
 - GitHub Release workflow 要求 tag 与 `pubspec.yaml` 版本完全一致
-- 发布正式版 `0.11.2` 时，应使用 tag `V0.11.2`
+- 发布正式版 `1.0.0` 时，应使用 tag `V1.0.0`
 - 如果版本号包含 `-alpha`、`-beta`、`-rc` 等后缀，GitHub Release 会自动标记为 `prerelease`

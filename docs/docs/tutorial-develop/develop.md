@@ -236,4 +236,4 @@ python tools/update_doc_images.py
    - `npm run build`（在 `docs/` 下）
 8. 提交代码并创建 tag：`V<version>`
 
-如果版本号包含 `-alpha`、`-beta`、`-rc` 等后缀，GitHub Actions 会创建 `prerelease`；像 `0.11.2` 这样的正式版本则会创建正式 Release。
+如果版本号包含 `-alpha`、`-beta`、`-rc` 等后缀，GitHub Actions 会创建 `prerelease`；像 `1.0.0` 这样的正式版本则会创建正式 Release。

@@ -4,6 +4,10 @@ Vertree is a desktop version manager for single files. It is meant for evolving 
 
 ![Version tree overview](docs/static/img/version-tree-overview.png)
 
+## 1.0.0 Status
+
+Vertree 1.0.0 is the first stable release line. Windows, macOS, and Linux release artifacts are built by GitHub Actions, the loopback HTTP API is documented through OpenAPI, and LAN file sharing is available from version-tree nodes.
+
 ## What It Does
 
 - Visual version tree for a single file and its branches

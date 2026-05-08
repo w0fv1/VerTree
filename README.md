@@ -6,16 +6,16 @@ Vertree 是一个面向单文件的可视化版本管理工具，适合设计稿
 
 ![Version tree overview](docs/static/img/version-tree-overview.png)
 
-## 0.14.0 正式版现状
+## 1.0.0 正式版现状
 
 - 支持 Windows 桌面使用，提供安装包、托盘、右键菜单、Windows 11 新菜单适配、监控页、版本树、设置页。
 - 支持 macOS 桌面使用，GitHub Release 会生成带架构标识的 `zip` / `dmg` 和符号包，并提供菜单栏/托盘、Finder Services、应用菜单和开机自启。
 - 支持 Linux 桌面使用，GitHub Release 会生成便携 `tar.gz`、`.deb` 和 RPM，并提供托盘、GNOME Files 右键菜单、开机自启和设置页集成开关。
 - GitHub Actions 会自动构建 Windows、macOS、Linux 三个平台的发布产物。
-- 新增本机 HTTP API 和 OpenAPI 文档，可用于本地自动化测试、监控任务检查、版本树与备份验证。
-- 新增局域网文件分享能力，可为某个版本文件生成局域网短分享链接、二维码和自动选路分享页。
-- 修复 Windows 11 新设备上一级右键菜单注册链路，并限制分享页失败探测时的候选地址膨胀。
-- 提供本地开发控制脚本 `dev_server.py`，可托管 `flutter run` 进程并发送 hot reload / hot restart / restart 命令。
+- 本机 HTTP API 和 OpenAPI 文档已纳入稳定能力，可用于本地自动化测试、监控任务检查、版本树与备份验证。
+- 局域网文件分享能力已纳入稳定能力，可为某个版本文件生成局域网短分享链接、二维码和自动选路分享页。
+- Windows 11 新设备上的一级右键菜单注册链路已修复，分享页失败探测时的候选地址膨胀已限制。
+- 本地开发控制脚本 `dev_server.py` 可托管 `flutter run` 进程并发送 hot reload / hot restart / restart 命令。
 
 ## 核心能力
 

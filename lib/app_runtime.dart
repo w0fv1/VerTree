@@ -59,7 +59,7 @@ FileTreeViewportController? _currentFileTreeViewportController;
 bool suppressAnnouncementDialogs = false;
 
 final appVersionInfo = AppVersionInfo(
-  currentVersion: "V0.13.1",
+  currentVersion: "V1.0.0",
   releaseApiUrl: "https://api.github.com/repos/w0fv1/vertree/releases",
   readConfigString: (key, defaultValue) =>
       configer.get<String>(key, defaultValue),
