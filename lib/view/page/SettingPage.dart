@@ -19,7 +19,6 @@ import 'package:vertree/view/component/AppBar.dart';
 import 'package:vertree/view/component/AppPageBackground.dart';
 import 'package:vertree/view/component/AppVersionButton.dart';
 import 'package:vertree/view/component/Loading.dart';
-import 'package:window_manager/window_manager.dart';
 
 class SettingPage extends StatefulWidget {
   const SettingPage({super.key});
@@ -123,12 +122,6 @@ class _SettingPageState extends State<SettingPage> {
     await _showLinuxMenuToggleResult(success);
   }
 
-  Future<void> _restoreIfMaximized() async {
-    if (await windowManager.isMaximized()) {
-      await windowManager.restore();
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -139,7 +132,6 @@ class _SettingPageState extends State<SettingPage> {
       text: configer.get("monitorMaxSize", 50).toString(),
     );
     _settingsScrollController = ScrollController();
-    _restoreIfMaximized();
     _loadPlatformState();
   }
 
@@ -939,7 +931,6 @@ class _SettingPageState extends State<SettingPage> {
               Text(appLocale.getText(LocaleKey.setting_titleBar)),
             ],
           ),
-          showMaximize: false,
         ),
         body: AppPageBackground(
           child: Center(

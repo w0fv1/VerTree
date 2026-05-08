@@ -10,7 +10,6 @@ import 'package:vertree/main.dart';
 import 'package:vertree/view/component/AppBar.dart';
 import 'package:vertree/view/component/AppPageBackground.dart';
 import 'package:vertree/view/module/MonitTaskCard.dart';
-import 'package:window_manager/window_manager.dart';
 
 class MonitPage extends StatefulWidget {
   const MonitPage({super.key});
@@ -20,12 +19,6 @@ class MonitPage extends StatefulWidget {
 }
 
 class _MonitPageState extends State<MonitPage> {
-  Future<void> _restoreIfMaximized() async {
-    if (await windowManager.isMaximized()) {
-      await windowManager.restore();
-    }
-  }
-
   // Original list of all tasks
   List<FileMonitTask> _allMonitTasks = [];
 
@@ -44,7 +37,6 @@ class _MonitPageState extends State<MonitPage> {
     sortTasks();
 
     super.initState();
-    _restoreIfMaximized();
 
     // Listen to search input changes
     _searchController.addListener(_onSearchChanged);
@@ -190,7 +182,9 @@ class _MonitPageState extends State<MonitPage> {
         }
       } catch (e) {
         // Handle potential errors during deletion (e.g., permissions)
-        print("Error deleting backup directory ${task.backupDirPath}: $e");
+        logger.error(
+          "Error deleting backup directory ${task.backupDirPath}: $e",
+        );
         // Optionally show a message to the user
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -273,7 +267,9 @@ class _MonitPageState extends State<MonitPage> {
           }
         } catch (e) {
           // Handle potential errors during deletion (e.g., permissions)
-          print("Error deleting backup directory ${task.backupDirPath}: $e");
+          logger.error(
+            "Error deleting backup directory ${task.backupDirPath}: $e",
+          );
           // Optionally show a message to the user
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -310,7 +306,6 @@ class _MonitPageState extends State<MonitPage> {
             Text(appLocale.getText(LocaleKey.monit_title)),
           ],
         ),
-        showMaximize: false,
       ),
       body: AppPageBackground(
         child: Column(

@@ -40,12 +40,6 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   bool _announcementLoaded = false;
   bool _announcementDialogOpen = false;
 
-  Future<void> _restoreIfMaximized() async {
-    if (await windowManager.isMaximized()) {
-      await windowManager.restore();
-    }
-  }
-
   Future<void> _runStartupFlow() async {
     await setup();
     await _loadAnnouncementIfNeeded();
@@ -203,7 +197,6 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
             Text(appLocale.getText(LocaleKey.brand_title)),
           ],
         ),
-        showMaximize: false,
         goHome: false,
       ),
       body: AppPageBackground(
@@ -396,7 +389,6 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   @override
   void initState() {
     super.initState();
-    _restoreIfMaximized();
     windowManager.addListener(this);
     _setupTimer = Timer(widget.initialSetupDialogDelay, () {
       unawaited(_runStartupFlow());

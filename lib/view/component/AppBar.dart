@@ -40,49 +40,76 @@ class VAppBar extends StatefulWidget implements PreferredSizeWidget {
   Size get preferredSize => Size(double.infinity, height);
 }
 
-class _VAppBarState extends State<VAppBar> {
-  bool isMaximized = false;
+class _VAppBarState extends State<VAppBar> with WindowListener {
+  bool isExpanded = false;
 
   @override
   void initState() {
     super.initState();
-    windowManager.isMaximized().then((onValue) {
-      setState(() {
-        isMaximized = onValue;
-      });
+    windowManager.addListener(this);
+    _syncWindowState();
+  }
+
+  Future<void> _syncWindowState() async {
+    final expanded =
+        await windowManager.isFullScreen() || await windowManager.isMaximized();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      isExpanded = expanded;
     });
   }
+
+  Future<void> _toggleWindowMode() async {
+    if (await windowManager.isFullScreen()) {
+      await windowManager.setFullScreen(false);
+      if (widget.onRestore != null) {
+        widget.onRestore!();
+      }
+    } else {
+      if (await windowManager.isMaximized()) {
+        await windowManager.restore();
+      }
+      await windowManager.setFullScreen(true);
+      if (widget.onMaximize != null) {
+        widget.onMaximize!();
+      }
+    }
+    await _syncWindowState();
+  }
+
+  @override
+  void dispose() {
+    windowManager.removeListener(this);
+    super.dispose();
+  }
+
+  @override
+  void onWindowMaximize() => _syncWindowState();
+
+  @override
+  void onWindowUnmaximize() => _syncWindowState();
+
+  @override
+  void onWindowEnterFullScreen() => _syncWindowState();
+
+  @override
+  void onWindowLeaveFullScreen() => _syncWindowState();
+
+  @override
+  void onWindowRestore() => _syncWindowState();
 
   @override
   Widget build(BuildContext context) {
     final bool isMacOS = Platform.isMacOS;
     return MouseRegion(
       cursor: SystemMouseCursors.basic,
-      child: GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onPanUpdate: (_) async => await windowManager.startDragging(),
-        onDoubleTap: () async {
-          if (isMaximized) {
-            await windowManager.restore();
-            isMaximized = false;
-            if (widget.onRestore != null) {
-              widget.onRestore!();
-            }
-          } else {
-            await windowManager.maximize();
-            isMaximized = true;
-            if (widget.onMaximize != null) {
-              widget.onMaximize!();
-            }
-          }
-          setState(() {});
-        },
-        child: Container(
-          height: 40,
-          padding: const EdgeInsets.all(4),
-          color: Colors.transparent,
-          child: isMacOS ? _buildMacLayout() : _buildDefaultLayout(),
-        ),
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.all(4),
+        color: Colors.transparent,
+        child: isMacOS ? _buildMacLayout() : _buildDefaultLayout(),
       ),
     );
   }
@@ -98,24 +125,28 @@ class _VAppBarState extends State<VAppBar> {
     return Row(
       children: [
         const SizedBox(width: trafficLightInset),
-        const Spacer(),
         if (widget.goHome) ...[
           _buildAppBarButton(Icons.home_rounded, () async {
             go(BrandPage());
           }),
           const SizedBox(width: 4),
         ],
+        Expanded(
+          child: _buildDragArea(
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: widget.title,
+              ),
+            ),
+          ),
+        ),
         if (showThemeToggle)
           _buildAppBarButton(themeIcon, () {
             toggleLightDarkTheme();
           }),
         const SizedBox(width: 8),
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: Align(alignment: Alignment.centerRight, child: widget.title),
-          ),
-        ),
       ],
     );
   }
@@ -141,28 +172,15 @@ class _VAppBarState extends State<VAppBar> {
         if (widget.showMinimize) const SizedBox(width: 6),
         if (widget.showMaximize)
           _buildAppBarButton(
-            isMaximized ? Icons.filter_none : Icons.crop_square,
-            () async {
-              if (isMaximized) {
-                await windowManager.restore();
-                isMaximized = false;
-                if (widget.onRestore != null) {
-                  widget.onRestore!();
-                }
-              } else {
-                await windowManager.maximize();
-                isMaximized = true;
-                if (widget.onMaximize != null) {
-                  widget.onMaximize!();
-                }
-              }
-              setState(() {});
-            },
+            isExpanded
+                ? Icons.fullscreen_exit_rounded
+                : Icons.fullscreen_rounded,
+            _toggleWindowMode,
           ),
         if (widget.showMaximize) const SizedBox(width: 6),
         if (widget.showClose)
           _buildAppBarButton(Icons.close, () async {
-            await hideMainWindowToTray();
+            await windowManager.close();
             if (widget.onClose != null) {
               widget.onClose!();
             }
@@ -178,13 +196,17 @@ class _VAppBarState extends State<VAppBar> {
           }),
           const SizedBox(width: 6),
         ],
-        Flexible(
-          child: Padding(
-            padding: const EdgeInsets.only(left: 8, right: 12),
-            child: Align(alignment: Alignment.centerLeft, child: widget.title),
+        Expanded(
+          child: _buildDragArea(
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 12),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: widget.title,
+              ),
+            ),
           ),
         ),
-        const Spacer(),
         if (showThemeToggle)
           _buildAppBarButton(themeIcon, () {
             toggleLightDarkTheme();
@@ -192,6 +214,14 @@ class _VAppBarState extends State<VAppBar> {
         if (showThemeToggle) const SizedBox(width: 8),
         windowButtons,
       ],
+    );
+  }
+
+  Widget _buildDragArea(Widget child) {
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onDoubleTap: _toggleWindowMode,
+      child: DragToMoveArea(child: child),
     );
   }
 
@@ -209,6 +239,7 @@ class _VAppBarState extends State<VAppBar> {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: IconButton(
+        constraints: BoxConstraints.tightFor(width: size, height: size),
         padding: EdgeInsets.all(padding),
         onPressed: onPressed,
         icon: Icon(

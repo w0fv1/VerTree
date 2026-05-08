@@ -281,16 +281,19 @@ class _FileTreePageState extends State<FileTreePage> {
   }
 
   Future<void> _syncWindowState() async {
-    var fileTreeWindowsStatus = configer.get(
+    final fileTreeWindowsStatus = configer.get(
       "fileTreeWindowsStatus",
-      "maximize",
+      "fullscreen",
     );
-    bool isMaximized = await windowManager.isMaximized();
+    final shouldUseFullScreen =
+        fileTreeWindowsStatus == "maximize" ||
+        fileTreeWindowsStatus == "fullscreen";
+    final isFullScreen = await windowManager.isFullScreen();
 
-    if (fileTreeWindowsStatus == "maximize" && !isMaximized) {
-      await windowManager.maximize();
-    } else if (fileTreeWindowsStatus != "maximize" && isMaximized) {
-      await windowManager.restore();
+    if (shouldUseFullScreen && !isFullScreen) {
+      await windowManager.setFullScreen(true);
+    } else if (!shouldUseFullScreen && isFullScreen) {
+      await windowManager.setFullScreen(false);
     }
   }
 
@@ -336,16 +339,16 @@ class _FileTreePageState extends State<FileTreePage> {
           ],
         ),
         onMinimize: () {
-          print('Window minimized');
+          logger.info('Window minimized');
         },
         onMaximize: () {
-          configer.set("fileTreeWindowsStatus", "maximize");
+          configer.set("fileTreeWindowsStatus", "fullscreen");
         },
         onRestore: () {
-          configer.set("fileTreeWindowsStatus", "restore");
+          configer.set("fileTreeWindowsStatus", "windowed");
         },
         onClose: () {
-          print('Window closed');
+          logger.info('Window closed');
         },
       ),
       body: AppPageBackground(
