@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import secrets
 import shutil
 import socket
 import subprocess
@@ -74,7 +75,7 @@ def _wait_for_url(url: str, timeout_seconds: int = 60) -> None:
       with opener.open(url, timeout=3) as response:
         if 200 <= response.status < 500:
           return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
       last_error = str(exc)
     time.sleep(1)
 
@@ -86,7 +87,7 @@ def _can_open_url(url: str, timeout_seconds: int = 2) -> bool:
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
     with opener.open(url, timeout=timeout_seconds) as response:
       return 200 <= response.status < 500
-  except Exception:  # noqa: BLE001
+  except Exception:
     return False
 
 
@@ -141,6 +142,14 @@ def main() -> int:
   project_root = Path(args.project_root).resolve()
   docs_dir = project_root / "docs"
   env = _augment_loopback_no_proxy_env(os.environ.copy())
+  api_token = secrets.token_urlsafe(32)
+  env["VERTREE_LOCAL_API_ENABLED"] = "1"
+  env["VERTREE_LOCAL_API_TOKEN"] = api_token
+  api_token_path = project_root / ".dart_tool" / "vertree_local_api_token"
+  api_token_path.parent.mkdir(parents=True, exist_ok=True)
+  api_token_path.write_text(api_token, encoding="utf-8")
+  if os.name != "nt":
+    api_token_path.chmod(0o600)
   flutter_bin = _resolve_command_bin(args.flutter_bin)
   npm_bin = _resolve_command_bin(args.npm_bin)
 
@@ -205,6 +214,7 @@ def main() -> int:
       env=env,
     )
   finally:
+    api_token_path.unlink(missing_ok=True)
     if docs_process is not None and docs_process.poll() is None:
       docs_process.terminate()
       try:

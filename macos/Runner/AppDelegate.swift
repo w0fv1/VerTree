@@ -56,9 +56,9 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   private func ensureRegularActivationPolicy() {
-    // When the app runs as an "accessory" (no Dock icon) to support tray-only mode,
-    // we must switch back to ".regular" before showing the main window, otherwise
-    // the Dock icon can stay missing after restoring from the menu bar.
+
+
+
     if NSApp.activationPolicy() != .regular {
       _ = NSApp.setActivationPolicy(.regular)
       scheduleDockIconRefresh()
@@ -66,7 +66,7 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   private func refreshDockIcon() {
-    // Use a named image set so we can reliably refresh after activation-policy changes.
+
     if let image = NSImage(named: NSImage.Name("DockIcon")) {
       NSApplication.shared.applicationIconImage = image
       NSApp.dockTile.display()
@@ -90,7 +90,7 @@ class AppDelegate: FlutterAppDelegate {
     guard !pendingServiceActions.isEmpty else { return }
     guard flutterViewController() != nil else { return }
 
-    // Avoid re-entrancy if invoking an action triggers further events.
+
     let actions = pendingServiceActions
     pendingServiceActions.removeAll()
     for entry in actions {
@@ -293,7 +293,7 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   override func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
-    // Keep app alive for tray/Services even if no window is visible.
+
     return false
   }
 
@@ -302,8 +302,8 @@ class AppDelegate: FlutterAppDelegate {
     setupDockChannelIfNeeded()
     scheduleDockIconRefresh()
 
-    // If the app was launched by Finder (Services/Open With), the service callback can fire
-    // before the Flutter view is fully wired. Retry shortly after launch.
+
+
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
       self?.flushPendingServiceActions()
       self?.setupDockChannelIfNeeded()
@@ -339,7 +339,7 @@ class AppDelegate: FlutterAppDelegate {
   }
 
   override func application(_ sender: NSApplication, openFiles filenames: [String]) {
-    // Opening files with Vertree should jump directly into the version tree view.
+
     for path in filenames {
       invokeServiceAction("viewtree", path: path)
     }

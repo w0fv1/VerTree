@@ -13,7 +13,7 @@ param(
     [string]$Target = "lib/main.dart"
 )
 
-# 设置 Inno Setup 编译器路径（请确认你的 Inno Setup 安装位置）
+
 $innoSetupCompiler = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
 $flutterDefault = "C:\flutter\bin\flutter.bat"
 
@@ -53,7 +53,7 @@ function Get-VersionInfoVersion([string]$pubspecVersion) {
     if ($parts.Length -eq 4) {
         return $base
     }
-    # Fallback for unexpected schemas
+
     return "0.0.0.0"
 }
 
@@ -289,11 +289,11 @@ function New-SparseIdentityPackage(
     return $packagePath
 }
 
-# 当前脚本目录
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $currentDir = Get-Location
 
-# 回到项目根目录执行 flutter build windows
+
 $projectRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 Set-Location $projectRoot
 
@@ -332,14 +332,14 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# 返回脚本目录
+
 Set-Location $scriptDir
 
-# ISS脚本路径（默认当前目录）
+
 $issFile = Join-Path $scriptDir "setup.iss"
 $runnerOutputDir = (Resolve-Path (Join-Path $scriptDir "..\\build\\windows\\x64\\runner\\$BuildMode")).Path
 
-# Copy context menu DLL into runner output (if built).
+
 $contextMenuDll = Join-Path $scriptDir "..\\build\\windows\\x64\\context_menu\\$BuildMode\\vertree_context_menu.dll"
 $runnerDll = Join-Path $runnerOutputDir "vertree_context_menu.dll"
 if (Test-Path $contextMenuDll) {
@@ -373,8 +373,8 @@ if (Test-Path $contextMenuDll) {
     }
 }
 
-# Copy Win11 sparse package resources into runner output so installed builds
-# can self-register the packaged Explorer menu on end-user machines.
+
+
 $packagingSourceDir = Join-Path $scriptDir "packaging"
 $packagingTargetDir = Join-Path $scriptDir "..\\build\\windows\\x64\\runner\\$BuildMode\\win11_packaging"
 if (Test-Path $packagingSourceDir) {
@@ -499,7 +499,7 @@ if (-not (Test-Path $innoSetupCompiler)) {
 
 if ([string]::IsNullOrWhiteSpace($innoSetupCompiler)) {
 } else {
-# 编译安装程序
+
 Write-Host "正在使用Inno Setup进行打包..."
 & $innoSetupCompiler /DBuildMode=$BuildMode /DAppVersion=$pubspecVersion /DAppVersionInfoVersion=$versionInfoVersion /DOutputBaseFilename=$setupBaseName $issFile
 

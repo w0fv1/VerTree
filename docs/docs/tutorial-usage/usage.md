@@ -121,9 +121,10 @@ sidebar_position: 5
 
 ## 本机 HTTP API 能做什么
 
-如果你要做自动化验证或本地集成，可以通过设置页打开 API 文档，也可以直接访问：
+如果你要做自动化验证或本地集成，可以在设置页启用 API、复制本次启动生成的 API Token，并打开 API 文档。除文档和最小探活接口外，请求必须携带 `Authorization: Bearer <token>`：
 
 - `GET /api/v1/health`
+- `GET /api/v1/ping`
 - `POST /api/v1/app/quit`
 - `POST /api/v1/ui/navigation`
 - `POST /api/v1/ui/window-state`
@@ -142,7 +143,7 @@ sidebar_position: 5
 - `GET /api/v1/file-shares/{token}`
 - `DELETE /api/v1/file-shares/{token}`
 
-默认只监听 `127.0.0.1`，不会暴露到局域网。
+API 默认关闭，启用后只监听 `127.0.0.1`，不会暴露到局域网。服务还会校验 `Host`、`Origin` 和浏览器 Fetch Metadata，拒绝跨站网页及 DNS rebinding 请求。`/api/v1/ping`、API 索引和文档不需要 Token，但不会返回本地运行状态；`/health` 和所有业务接口均需要 Token。
 
 如果你要刷新文档图片，可以在开发机上直接运行：
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.parse
@@ -16,6 +17,7 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONTROLLER_URL = "http://127.0.0.1:32500"
 DEFAULT_IMAGE_ROOT = REPO_ROOT / "docs" / "static" / "img"
+DEFAULT_API_TOKEN_PATH = REPO_ROOT / ".dart_tool" / "vertree_local_api_token"
 DEFAULT_MONITOR_SAMPLE_PATH = (
     REPO_ROOT
     / ".sample"
@@ -146,10 +148,13 @@ def _request_json(
     url: str,
     *,
     payload: dict[str, Any] | None = None,
+    access_token: str | None = None,
     timeout_seconds: int | float = 30,
 ) -> dict[str, Any]:
     data = None
     headers = {}
+    if access_token:
+        headers["Authorization"] = f"Bearer {access_token}"
     if payload is not None:
         data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         headers["Content-Type"] = "application/json; charset=utf-8"
@@ -230,13 +235,28 @@ def _ensure_ready(controller_url: str, timeout_seconds: int) -> str:
     return app_api_base.rstrip("/")
 
 
-def _post_api(base_url: str, path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    return _request_json("POST", f"{base_url}{path}", payload=payload)
+def _post_api(
+    base_url: str,
+    path: str,
+    payload: dict[str, Any],
+    access_token: str,
+) -> dict[str, Any]:
+    return _request_json(
+        "POST",
+        f"{base_url}{path}",
+        payload=payload,
+        access_token=access_token,
+    )
 
 
-def _ensure_monitor_task(base_url: str, sample_path: Path) -> None:
+def _ensure_monitor_task(base_url: str, sample_path: Path, access_token: str) -> None:
     try:
-        _post_api(base_url, "/monitor-tasks", {"path": str(sample_path)})
+        _post_api(
+            base_url,
+            "/monitor-tasks",
+            {"path": str(sample_path)},
+            access_token,
+        )
     except RuntimeError as exc:
         if "Task already exists for:" not in str(exc):
             raise
@@ -249,10 +269,11 @@ def _run_capture(
     base_url: str,
     pixel_ratio: float,
     monitor_sample_path: Path,
+    access_token: str,
 ) -> Path:
     prepare_step = definition.get("prepare")
     if prepare_step == "ensure_monitor_task":
-        _ensure_monitor_task(base_url, monitor_sample_path)
+        _ensure_monitor_task(base_url, monitor_sample_path, access_token)
 
     navigation = dict(definition["navigation"])
     screenshot = dict(definition["screenshot"])
@@ -262,18 +283,28 @@ def _run_capture(
     output_path = Path(definition["output_path"]).resolve()
 
     if isinstance(theme_mode, str) and theme_mode:
-        _post_api(base_url, "/ui/theme-mode", {"mode": theme_mode})
-    _post_api(base_url, "/ui/navigation", navigation)
+        _post_api(base_url, "/ui/theme-mode", {"mode": theme_mode}, access_token)
+    _post_api(base_url, "/ui/navigation", navigation, access_token)
     if window_state:
-        _post_api(base_url, "/ui/window-state", window_state)
+        _post_api(base_url, "/ui/window-state", window_state, access_token)
     if file_tree_viewport:
-        _post_api(base_url, "/ui/file-tree/viewport", file_tree_viewport)
+        _post_api(
+            base_url,
+            "/ui/file-tree/viewport",
+            file_tree_viewport,
+            access_token,
+        )
     screenshot_payload = {
         "outputPath": str(output_path),
         "pixelRatio": pixel_ratio,
         **screenshot,
     }
-    response = _post_api(base_url, "/ui/screenshot", screenshot_payload)
+    response = _post_api(
+        base_url,
+        "/ui/screenshot",
+        screenshot_payload,
+        access_token,
+    )
     success = response.get("success")
     if success is not True:
         raise RuntimeError(f"Screenshot capture failed for {name}: {response}")
@@ -318,6 +349,10 @@ def main() -> int:
     parser.add_argument(
         "--api-base",
         help="Use an already running app API base URL instead of asking the controller.",
+    )
+    parser.add_argument(
+        "--api-token",
+        help="Bearer token for the local app API.",
     )
     parser.add_argument(
         "--capture",
@@ -375,6 +410,13 @@ def main() -> int:
             if args.api_base
             else _ensure_ready(args.controller_url, args.timeout_seconds)
         )
+        access_token = args.api_token or os.environ.get("VERTREE_LOCAL_API_TOKEN")
+        if not access_token and DEFAULT_API_TOKEN_PATH.exists():
+            access_token = DEFAULT_API_TOKEN_PATH.read_text(encoding="utf-8").strip()
+        if not access_token:
+            raise RuntimeError(
+                "Local API token is required. Pass --api-token or start the app through dev_server.py."
+            )
         monitor_sample_path = Path(args.monitor_sample_path).resolve()
         _validate_runtime_inputs(selected_captures, monitor_sample_path)
 
@@ -386,6 +428,7 @@ def main() -> int:
                 base_url=base_url,
                 pixel_ratio=args.pixel_ratio,
                 monitor_sample_path=monitor_sample_path,
+                access_token=access_token,
             )
             generated.append(output_path)
             print(f"[updated] {capture_name}: {output_path}")

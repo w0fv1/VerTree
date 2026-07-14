@@ -1,6 +1,6 @@
 platform :osx, '10.15'
 
-# CocoaPods analytics sends network stats synchronously affecting flutter build latency.
+
 ENV['COCOAPODS_DISABLE_STATS'] = 'true'
 
 project 'Runner', {
@@ -42,15 +42,15 @@ post_install do |installer|
 end
 
 post_integrate do |installer|
-  # When the project lives on a File Provider-backed volume (e.g. Desktop/iCloud),
-  # copied build artifacts may carry xattrs like FinderInfo/resource forks.
-  # codesign then fails with:
-  # "resource fork, Finder information, or similar detritus not allowed"
-  #
-  # Patch the "[CP] Embed Pods Frameworks" build phase after CocoaPods integration,
-  # and ensure a final "Strip Xattrs" build phase exists (pod install can rewrite pbxproj).
-  # codesign cares about resource forks / Finder info; `xattr -c` does not reliably
-  # remove those for File Provider volumes, but `xattr -r -d <attr>` does.
+
+
+
+
+
+
+
+
+
   xattr_shell_lines = [
     '/usr/bin/xattr -r -d com.apple.FinderInfo $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME || true',
     '/usr/bin/xattr -r -d com.apple.ResourceFork $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME || true',
@@ -64,8 +64,8 @@ post_integrate do |installer|
   contents = File.read(pbxproj_path)
   changed = false
 
-  # Patch via a small state-machine over lines: locate the build phase block and
-  # replace its shellScript line with a multi-line script that scrubs xattrs.
+
+
   lines = contents.lines
   in_embed_pods_frameworks = false
 
@@ -91,10 +91,10 @@ post_integrate do |installer|
     break
   end
 
-  # Add a final build phase that always runs (some builds may skip pod scripts
-  # under dependency analysis, but codesign will still run).
+
+
   strip_phase_name = '[vertree] Strip Xattrs'
-  # Also drop a marker file so we can tell the phase ran in build logs/artifacts.
+
   strip_phase_script = "echo $TARGET_BUILD_DIR/$FULL_PRODUCT_NAME > $TARGET_BUILD_DIR/vertree_strip_xattrs_path || true\\ntouch $TARGET_BUILD_DIR/vertree_strip_xattrs_ran || true\\n#{xattr_script_pbx}\\n"
   strip_phase_id = nil
   strip_phase_def_re = /^\t\t([A-F0-9]{24}) \/\* #{Regexp.escape(strip_phase_name)} \*\/ = \{\s*$/
@@ -174,7 +174,7 @@ post_integrate do |installer|
   end
 
   if build_phases_end_idx && !phase_referenced
-    # Insert just before the closing ');' of Runner's buildPhases list.
+
     lines.insert(build_phases_end_idx, "\t\t\t\t#{phase_ref},\n")
     changed = true
   end

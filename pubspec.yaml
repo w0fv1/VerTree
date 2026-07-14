@@ -1,6 +1,6 @@
 name: vertree
 description: "针对单文件的版本管理系统"
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none'
 
 version: 1.0.0
 
@@ -33,6 +33,7 @@ dependencies:
   path: ^1.9.1
   flutter_vector_icons: ^2.0.0
   qr_flutter: ^4.1.0
+  package_info_plus: ^9.0.1
 
 dev_dependencies:
   flutter_test:

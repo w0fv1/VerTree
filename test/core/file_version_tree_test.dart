@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-import 'package:vertree/core/FileVersionTree.dart';
+import 'package:vertree/core/file_version_tree.dart';
 
 void main() {
   group('FileVersion', () {

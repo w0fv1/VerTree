@@ -234,7 +234,7 @@ MenuLang GetMenuLang() {
   } else if (locale == "ZH_CN") {
     cached = MenuLang::ZH_CN;
   } else {
-    // "OTHER" or unknown: match app fallback (prefer zh, then system locale).
+
     cached = MenuLang::ZH_CN;
   }
   return cached;
@@ -283,7 +283,7 @@ std::wstring GetSystemIconSpec() {
   if (len == 0 || len >= _countof(sys_dir)) {
     return L"";
   }
-  // Use a stable built-in icon; avoids parsing edge cases while debugging.
+
   return std::wstring(sys_dir) + L"\\imageres.dll,-3";
 }
 
@@ -303,7 +303,7 @@ std::wstring BuildModuleIconSpec(int resource_id) {
   if (module.empty()) {
     return GetSystemIconSpec();
   }
-  // "path,-id" => negative means resource ID (not index).
+
   return module + L",-" + std::to_wstring(resource_id);
 }
 
@@ -610,7 +610,7 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
     LogLine(L"RootCommand GetToolTip");
     if (!tip) return E_POINTER;
     *tip = nullptr;
-    // Same rationale as GetIcon: return a valid pointer on success.
+
     const std::wstring value;
     const HRESULT hr = DupToCoTaskMem(value, tip);
     LogHr(L"RootCommand GetToolTip", hr);
@@ -641,7 +641,7 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
   }
 
   HRESULT STDMETHODCALLTYPE Invoke(IShellItemArray*, IBindCtx*) override {
-    // Root is a submenu; it should not be invoked.
+
     LogLine(L"RootCommand Invoke (ignored)");
     return E_NOTIMPL;
   }
@@ -661,7 +661,7 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
     std::vector<IExplorerCommand*> cmds;
     cmds.reserve(5);
 
-    // Each command starts with ref_count=1. The enumerator owns that reference.
+
     cmds.push_back(new LeafCommand(kCmdBackup, GetCommandTitle(kCmdBackup)));
     cmds.push_back(new LeafCommand(kCmdExpressBackup, GetCommandTitle(kCmdExpressBackup)));
     cmds.push_back(new LeafCommand(kCmdMonitor, GetCommandTitle(kCmdMonitor)));
@@ -708,7 +708,7 @@ class ClassFactory : public IClassFactory, public ComObjectBase {
   }
 };
 
-}  // namespace
+}
 
 BOOL APIENTRY DllMain(HMODULE module, DWORD reason, LPVOID) {
   if (reason == DLL_PROCESS_ATTACH) {

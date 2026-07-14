@@ -23,6 +23,7 @@ import json
 import os
 import queue
 import re
+import secrets
 import shutil
 import signal
 import socket
@@ -82,6 +83,8 @@ class FlutterAppController:
     self._logs: deque[str] = deque(maxlen=config.log_tail_size)
     self._api_base_url: str | None = None
     self._api_port: int | None = None
+    self._api_token = secrets.token_urlsafe(32)
+    self._api_token_path = config.project_root / ".dart_tool" / "vertree_local_api_token"
     self._last_command: str | None = None
     self._last_started_at: float | None = None
     self._last_exited_at: float | None = None
@@ -142,6 +145,12 @@ class FlutterAppController:
       self._ensure_local_docs_locked()
       command = self._build_flutter_command()
       env = _augment_loopback_no_proxy_env(os.environ.copy())
+      env["VERTREE_LOCAL_API_ENABLED"] = "1"
+      env["VERTREE_LOCAL_API_TOKEN"] = self._api_token
+      self._api_token_path.parent.mkdir(parents=True, exist_ok=True)
+      self._api_token_path.write_text(self._api_token, encoding="utf-8")
+      if os.name != "nt":
+        self._api_token_path.chmod(0o600)
       process = subprocess.Popen(
         command,
         cwd=str(self.config.project_root),
@@ -199,6 +208,7 @@ class FlutterAppController:
           process.kill()
           self._wait_for_exit(process, timeout_seconds=3)
     self._stop_local_docs()
+    self._api_token_path.unlink(missing_ok=True)
     return self.status()
 
   def restart_process(self) -> dict[str, Any]:
@@ -230,14 +240,14 @@ class FlutterAppController:
       if base_url is not None:
         health_url = f"{base_url}/health"
         try:
-          payload = _http_json("GET", health_url)
+          payload = _http_json("GET", health_url, access_token=self._api_token)
           return {
             "ready": True,
             "appApiBaseUrl": base_url,
             "health": payload,
             "status": self.status(),
           }
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
           last_error = str(exc)
       time.sleep(1)
 
@@ -347,7 +357,7 @@ class FlutterAppController:
       return candidate
 
     for port in range(self.config.api_port_start, self.config.api_port_end + 1):
-      url = f"http://127.0.0.1:{port}/api/v1/health"
+      url = f"http://127.0.0.1:{port}/api/v1/ping"
       try:
         payload = _http_json("GET", url, timeout_seconds=1)
         if payload.get("success") is True:
@@ -356,7 +366,7 @@ class FlutterAppController:
             self._api_base_url = base_url
             self._api_port = port
           return base_url
-      except Exception:  # noqa: BLE001
+      except Exception:
         continue
     return None
 
@@ -467,7 +477,7 @@ class FlutterAppController:
           if 200 <= response.status < 500:
             self._append_log(f"[docs] ready at {docs_url}")
             return
-      except Exception as exc:  # noqa: BLE001
+      except Exception as exc:
         last_error = str(exc)
       time.sleep(1)
 
@@ -493,7 +503,7 @@ class ControllerRequestHandler(BaseHTTPRequestHandler):
   controller: FlutterAppController | None = None
   request_queue: "queue.Queue[None]" = queue.Queue()
 
-  def do_GET(self) -> None:  # noqa: N802
+  def do_GET(self) -> None:
     try:
       if self.path == "/" or self.path == "":
         self._write_json(
@@ -532,10 +542,10 @@ class ControllerRequestHandler(BaseHTTPRequestHandler):
         return
 
       self._write_json(404, {"error": "not found", "path": self.path})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
       self._write_json(500, {"error": str(exc)})
 
-  def do_POST(self) -> None:  # noqa: N802
+  def do_POST(self) -> None:
     try:
       body = self._read_json_body()
       if self.path == "/start":
@@ -566,10 +576,10 @@ class ControllerRequestHandler(BaseHTTPRequestHandler):
         return
 
       self._write_json(404, {"error": "not found", "path": self.path})
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
       self._write_json(500, {"error": str(exc)})
 
-  def log_message(self, format: str, *args: Any) -> None:  # noqa: A003
+  def log_message(self, format: str, *args: Any) -> None:
     return
 
   def _controller(self) -> FlutterAppController:
@@ -599,8 +609,14 @@ class ControllerRequestHandler(BaseHTTPRequestHandler):
     self.wfile.write(encoded)
 
 
-def _http_json(method: str, url: str, timeout_seconds: int | float = 5) -> dict[str, Any]:
-  request = urllib.request.Request(url=url, method=method)
+def _http_json(
+  method: str,
+  url: str,
+  timeout_seconds: int | float = 5,
+  access_token: str | None = None,
+) -> dict[str, Any]:
+  headers = {"Authorization": f"Bearer {access_token}"} if access_token else {}
+  request = urllib.request.Request(url=url, method=method, headers=headers)
   parsed = urllib.parse.urlparse(url)
   if parsed.hostname in LOOPBACK_NO_PROXY_TOKENS:
     opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -620,10 +636,16 @@ def _http_json_or_none(
   method: str,
   url: str,
   timeout_seconds: int | float = 5,
+  access_token: str | None = None,
 ) -> dict[str, Any] | None:
   try:
-    return _http_json(method, url, timeout_seconds=timeout_seconds)
-  except Exception:  # noqa: BLE001
+    return _http_json(
+      method,
+      url,
+      timeout_seconds=timeout_seconds,
+      access_token=access_token,
+    )
+  except Exception:
     return None
 
 
@@ -638,7 +660,7 @@ def _can_open_url(url: str, timeout_seconds: int | float = 2) -> bool:
     )
     with opener.open(request, timeout=float(timeout_seconds)) as response:
       return 200 <= response.status < 500
-  except Exception:  # noqa: BLE001
+  except Exception:
     return False
 
 
@@ -792,6 +814,7 @@ def _bootstrap_controller(script_path: Path, args: argparse.Namespace) -> int:
   controller_url = _controller_base_url(args.host, args.port)
   status_url = f"{controller_url}/status"
   start_url = f"{controller_url}/start"
+  api_token_path = Path(args.project_root).resolve() / ".dart_tool" / "vertree_local_api_token"
 
   status = _http_json_or_none("GET", status_url, timeout_seconds=2)
   if status is None:
@@ -842,7 +865,17 @@ def _bootstrap_controller(script_path: Path, args: argparse.Namespace) -> int:
 
     base_url = status.get("appApiBaseUrl")
     if isinstance(base_url, str) and base_url:
-      health = _http_json_or_none("GET", f"{base_url}/health", timeout_seconds=2)
+      api_token = (
+        api_token_path.read_text(encoding="utf-8").strip()
+        if api_token_path.exists()
+        else None
+      )
+      health = _http_json_or_none(
+        "GET",
+        f"{base_url}/health",
+        timeout_seconds=2,
+        access_token=api_token,
+      )
       if health is not None and health.get("success") is True:
         payload = {
           "ready": True,
@@ -949,7 +982,7 @@ def main() -> int:
   finally:
     try:
       controller.stop()
-    except Exception:  # noqa: BLE001
+    except Exception:
       pass
     server.server_close()
   return 0

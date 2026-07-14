@@ -1,6 +1,6 @@
 import 'package:http/http.dart' as http;
 import 'package:test/test.dart';
-import 'package:vertree/service/AppAnnouncementService.dart';
+import 'package:vertree/service/app_announcement_service.dart';
 
 void main() {
   group('AppAnnouncementService', () {

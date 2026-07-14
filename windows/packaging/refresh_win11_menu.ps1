@@ -34,8 +34,8 @@ Write-Host "ExternalLocation=$ExternalLocation"
 & $installScript -ExternalLocation $ExternalLocation -Force
 
 if ($KillDllHost) {
-  # ExplorerCommand is hosted by DllHost (surrogate). Kill only the host(s) that loaded our DLL
-  # so the new DLL can be reloaded without killing every COM surrogate.
+
+
   try {
     Write-Host "Taskkill DllHost with module vertree_context_menu.dll..."
     & taskkill.exe /F /IM dllhost.exe /FI "MODULES eq vertree_context_menu.dll" | Out-Null

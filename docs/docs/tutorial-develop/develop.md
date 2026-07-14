@@ -103,7 +103,7 @@ python dev_server.py --bootstrap --device windows --local-docs
 - `POST /stop`
 - `POST /ensure-ready`
 
-应用自己的本机 HTTP API 默认起始端口为 `31414`，除了监控/备份/版本树接口外，现在还支持：
+应用自己的本机 HTTP API 默认关闭，启用后的起始端口为 `31414`。`dev_server.py` 会为开发进程生成临时 Bearer Token、通过环境变量注入应用，并写入 `.dart_tool/vertree_local_api_token` 供仓库工具复用。除静态文档和 `/api/v1/ping` 外，所有接口都必须携带该 Token。除了监控/备份/版本树接口外，现在还支持：
 
 - `POST /api/v1/app/quit`：退出当前桌面应用
 - `POST /api/v1/ui/navigation`：切换到 `brand`、`monitor`、`settings`、`version-tree`
@@ -144,10 +144,10 @@ vertree/
 - `lib/app_runtime.dart`：应用启动总控、页面切换、单实例、托盘、HTTP API、命令行分发
 - `lib/component/app_cli.dart`：CLI 参数解析
 - `lib/component/app_command_handler.dart`：把 CLI 请求分发到备份 / 监控 / 版本树动作
-- `lib/core/FileVersionTree.dart`：版本号、文件元信息、文件节点与备份/分支逻辑
-- `lib/core/MonitManager.dart`、`lib/core/Monitor.dart`：监控任务管理与自动备份
-- `lib/api/LocalHttpApiServer.dart`、`lib/service/LocalHttpApiService.dart`：本机自动化接口
-- `lib/service/LanFileShareServer.dart`：局域网临时分享服务与 token 下载映射
+- `lib/core/file_version_tree.dart`：版本号、文件元信息、文件节点与备份/分支逻辑
+- `lib/core/monit_manager.dart`、`lib/core/monitor.dart`：监控任务管理与自动备份
+- `lib/api/local_http_api_server.dart`、`lib/service/local_http_api_service.dart`：本机自动化接口
+- `lib/service/lan_file_share_server.dart`：局域网临时分享服务与 token 下载映射
 - `lib/platform/platform_integration.dart`：跨平台上下文菜单、开机自启、GNOME 检测、Win11 包身份等封装
 
 ## 构建发布工件

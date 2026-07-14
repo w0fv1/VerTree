@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-import 'package:vertree/core/TreeBuilder.dart';
+import 'package:vertree/core/tree_builder.dart';
 
 void main() {
   group('buildTree', () {

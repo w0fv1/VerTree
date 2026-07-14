@@ -1,6 +1,6 @@
 import 'dart:io';
 
-import 'package:vertree/component/AppLaunchArgs.dart';
+import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/app_cli.dart';
 
 typedef FileActionCallback = void Function(String path);

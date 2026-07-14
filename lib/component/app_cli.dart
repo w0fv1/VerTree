@@ -1,4 +1,4 @@
-import 'package:vertree/component/AppLaunchArgs.dart';
+import 'package:vertree/component/app_launch_args.dart';
 
 class AppCliRequest {
   const AppCliRequest({required this.action, required this.path});

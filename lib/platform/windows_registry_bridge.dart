@@ -1,9 +1,9 @@
 import 'dart:io';
 
-import 'package:vertree/component/ElevatedTask.dart' deferred as elevated_task;
-import 'package:vertree/component/VerTreeRegistryHelper.dart'
+import 'package:vertree/component/elevated_task.dart' deferred as elevated_task;
+import 'package:vertree/component/ver_tree_registry_helper.dart'
     deferred as registry;
-import 'package:vertree/utils/WindowsPackageIdentity.dart'
+import 'package:vertree/utils/windows_package_identity.dart'
     deferred as package_identity;
 
 class WindowsRegistryBridge {

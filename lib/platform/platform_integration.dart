@@ -293,11 +293,7 @@ class PlatformIntegration {
     if (!isMacOS) return;
     try {
       await _dockChannel.invokeMethod<bool>('refresh');
-    } on MissingPluginException {
-      // Ignore: channel may not be ready during early startup.
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }
 
   static Future<bool> applyInitialSetup() async {

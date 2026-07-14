@@ -15,10 +15,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
 
   }
 
-  // 初始化 COM，确保插件正常运行
+
   ::CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
 
-  // 处理控制台连接
+
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {
     CreateAndAttachConsole();
   }
@@ -41,7 +41,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   }
   window.SetQuitOnClose(false);
 
-  // 处理 Windows 消息循环
+
   ::MSG msg;
   while (::GetMessage(&msg, nullptr, 0, 0)) {
     ::TranslateMessage(&msg);
@@ -58,6 +58,6 @@ BOOL isAlreadyRunning() {
         CloseHandle(hMutex);
         return TRUE;
     }
-    (void)hMutex; // Suppress unused variable warning
+    (void)hMutex;
     return FALSE;
 }

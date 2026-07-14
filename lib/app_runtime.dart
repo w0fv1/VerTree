@@ -6,35 +6,36 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:path/path.dart' as p;
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'package:toastification/toastification.dart';
-import 'package:vertree/component/AppLaunchArgs.dart';
-import 'package:vertree/component/I18nLang.dart';
-import 'package:vertree/core/MonitManager.dart';
-import 'package:vertree/api/LocalHttpApiServer.dart';
-import 'package:vertree/component/AppLogger.dart';
-import 'package:vertree/component/Configer.dart';
-import 'package:vertree/component/LaunchCounter.dart';
-import 'package:vertree/component/Notifier.dart';
-import 'package:vertree/core/FileVersionTree.dart';
-import 'package:vertree/core/Result.dart';
+import 'package:vertree/component/app_launch_args.dart';
+import 'package:vertree/component/i18n_lang.dart';
+import 'package:vertree/core/monit_manager.dart';
+import 'package:vertree/api/local_http_api_server.dart';
+import 'package:vertree/component/app_logger.dart';
+import 'package:vertree/component/configer.dart';
+import 'package:vertree/component/launch_counter.dart';
+import 'package:vertree/component/notifier.dart';
+import 'package:vertree/core/file_version_tree.dart';
+import 'package:vertree/core/result.dart';
 import 'package:vertree/component/app_command_handler.dart';
 import 'package:vertree/component/app_window_controller.dart';
-import 'package:vertree/component/TrayManager.dart';
+import 'package:vertree/component/tray_manager.dart';
 import 'package:vertree/platform/bootstrap/platform_bootstrap.dart';
 import 'package:vertree/platform/platform_integration.dart';
-import 'package:vertree/service/LanFileShareServer.dart';
-import 'package:vertree/service/LocalHttpApiService.dart';
-import 'package:vertree/service/AppAnnouncementService.dart';
-import 'package:vertree/view/module/FileTree.dart';
-import 'package:vertree/view/module/LanShareDialog.dart';
-import 'package:vertree/view/page/BrandPage.dart';
-import 'package:vertree/view/page/MonitPage.dart';
-import 'package:vertree/view/page/SettingPage.dart';
-import 'package:vertree/view/page/VersionTreePage.dart';
+import 'package:vertree/service/lan_file_share_server.dart';
+import 'package:vertree/service/local_http_api_service.dart';
+import 'package:vertree/service/app_announcement_service.dart';
+import 'package:vertree/view/module/file_tree.dart';
+import 'package:vertree/view/module/lan_share_dialog.dart';
+import 'package:vertree/view/page/brand_page.dart';
+import 'package:vertree/view/page/monit_page.dart';
+import 'package:vertree/view/page/setting_page.dart';
+import 'package:vertree/view/page/version_tree_page.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'component/AppVersionInfo.dart';
+import 'component/app_version_info.dart';
 
 final logger = AppLogger(LogLevel.debug);
 const String configuredLanSharePageBaseUrl = String.fromEnvironment(
@@ -58,15 +59,7 @@ Map<String, dynamic> _currentUiPageState = const {'page': 'brand'};
 FileTreeViewportController? _currentFileTreeViewportController;
 bool suppressAnnouncementDialogs = false;
 
-final appVersionInfo = AppVersionInfo(
-  currentVersion: "V1.0.0",
-  releaseApiUrl: "https://api.github.com/repos/w0fv1/vertree/releases",
-  readConfigString: (key, defaultValue) =>
-      configer.get<String>(key, defaultValue),
-  writeConfigString: (key, value) => configer.set<String>(key, value),
-  onLogInfo: logger.info,
-  onLogError: logger.error,
-);
+late final AppVersionInfo appVersionInfo;
 
 final appAnnouncementService = AppAnnouncementService(
   announcementUrl: 'https://vertree.w0fv1.dev/announcement.json',
@@ -228,7 +221,6 @@ ThemeData _buildTheme({
   );
 }
 
-/// 统一定义全局明暗主题，默认跟随系统。
 ThemeData _buildLightTheme() {
   return _buildTheme(
     brightness: Brightness.light,
@@ -245,13 +237,10 @@ ThemeData _buildDarkTheme() {
   );
 }
 
-/// 主题配置枚举：跟随系统 / 浅色 / 深色。
 enum AppThemeSetting { system, light, dark }
 
-/// 当前主题配置（不等同于实际 ThemeMode，因为 system 需要交给 Flutter 处理）。
 AppThemeSetting currentThemeSetting = AppThemeSetting.system;
 
-/// 全局主题监听器：用于在运行时切换主题并刷新整个应用。
 late ValueNotifier<ThemeMode> themeModeNotifier;
 
 AppThemeSetting _parseThemeSetting(String value) {
@@ -320,7 +309,6 @@ ThemeMode _themeModeFromSetting(AppThemeSetting setting) {
 
 bool get defaultLaunchToTray => !Platform.isLinux;
 
-/// 从配置初始化主题（在 main 中调用，runApp 之前）。
 void initThemeFromConfig() {
   final stored = configer.get<String>('themeMode', 'system');
   currentThemeSetting = _parseThemeSetting(stored);
@@ -329,11 +317,10 @@ void initThemeFromConfig() {
   );
 }
 
-/// 修改主题设置并持久化，同时刷新全局 ThemeMode。
 void updateThemeSetting(AppThemeSetting setting) {
   currentThemeSetting = setting;
   configer.set<String>('themeMode', _themeSettingToString(setting));
-  // system 由 Flutter 自行选择明暗，light/dark 强制指定。
+
   themeModeNotifier.value = _themeModeFromSetting(setting);
 }
 
@@ -352,7 +339,6 @@ Future<Result<Map<String, dynamic>, String>> setThemeModeForApi(
   return Result.ok(_currentUiState());
 }
 
-/// 在「浅色」与「深色」之间切换（当配置为跟随系统时，此方法不生效）。
 void toggleLightDarkTheme() {
   if (currentThemeSetting == AppThemeSetting.system) {
     return;
@@ -382,15 +368,11 @@ Future<void> quitApplication() async {
   unawaited(_forceExitAfterQuitTimeout());
   try {
     await windowManager.setPreventClose(false);
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
   try {
     await windowManager.destroy();
     return;
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
   exit(0);
 }
 
@@ -406,17 +388,13 @@ Future<void> _safeShutdownLanFileShareServer() async {
     await lanFileShareServer.dispose().timeout(
       const Duration(milliseconds: 700),
     );
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 Future<void> _safeStopLocalHttpApiServer() async {
   try {
     await localHttpApiServer.stop().timeout(const Duration(milliseconds: 700));
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 Future<void> _forceExitAfterQuitTimeout() async {
@@ -444,7 +422,6 @@ void _handleSecondInstance(List<String> args) {
     await _bringExistingWindowToFront();
 
     if (_isNonActionableSecondArgs(args)) {
-      // Double-clicking the app should always surface the UI.
       go(BrandPage());
       return;
     }
@@ -461,6 +438,17 @@ Future<void> runVertreeApp(
     return;
   }
 
+  WidgetsFlutterBinding.ensureInitialized();
+  final packageInfo = await PackageInfo.fromPlatform();
+  appVersionInfo = AppVersionInfo.fromPackageVersion(
+    packageVersion: packageInfo.version,
+    releaseApiUrl: "https://api.github.com/repos/w0fv1/vertree/releases",
+    readConfigString: (key, defaultValue) =>
+        configer.get<String>(key, defaultValue),
+    writeConfigString: (key, value) => configer.set<String>(key, value),
+    onLogInfo: logger.info,
+    onLogError: logger.error,
+  );
   await logger.init();
   await configer.init();
   initThemeFromConfig();
@@ -490,6 +478,8 @@ Future<void> runVertreeApp(
     onLogError: logger.error,
   );
   localHttpApiServer = LocalHttpApiServer(
+    accessToken: Platform.environment['VERTREE_LOCAL_API_TOKEN'],
+    forceEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
     apiService: LocalHttpApiService(
       configer: configer,
       monitManager: monitService,
@@ -521,7 +511,6 @@ Future<void> runVertreeApp(
     final bool shouldLaunchToTray =
         launch2Tray && isSetupDone && canLaunchToTray && isStartupLaunch;
 
-    WidgetsFlutterBinding.ensureInitialized();
     await bootstrap.setupPlatformChannels(
       ensureWindowVisible: _ensureWindowVisible,
       openSettings: () => go(SettingPage()),
@@ -531,14 +520,10 @@ Future<void> runVertreeApp(
     await windowManager.ensureInitialized();
     await windowManager.setPreventClose(true);
 
-    // On macOS, `setSkipTaskbar(true)` switches activationPolicy to `.accessory`.
-    // Doing it early avoids a brief Dock icon flash during long startup work.
     if (bootstrap.supportsDockTrayStartupOptimization && shouldLaunchToTray) {
       try {
         await windowManager.setSkipTaskbar(true);
-      } catch (_) {
-        // ignore
-      }
+      } catch (_) {}
     }
 
     await bootstrap.configureSingleInstance(
@@ -564,8 +549,8 @@ Future<void> runVertreeApp(
 
         if (shouldLaunchToTray) {
           await showWindowsNotificationWithTask(
-            appLocale.getText(LocaleKey.app_trayNotificationTitle),
-            appLocale.getText(LocaleKey.app_trayNotificationContent),
+            appLocale.getText(LocaleKey.appTrayNotificationTitle),
+            appLocale.getText(LocaleKey.appTrayNotificationContent),
             () {
               go(BrandPage());
             },
@@ -578,7 +563,7 @@ Future<void> runVertreeApp(
           await showMainWindow(animate: true);
           if (isGnomeWithoutTray && launch2Tray && isSetupDone) {
             showToast(
-              appLocale.getText(LocaleKey.setting_launchToTraySetupHint),
+              appLocale.getText(LocaleKey.settingLaunchToTraySetupHint),
             );
           }
         }
@@ -590,8 +575,8 @@ Future<void> runVertreeApp(
               return;
             }
             await showWindowsNotificationWithTask(
-              appLocale.getText(LocaleKey.app_monitStartedTitle),
-              appLocale.getText(LocaleKey.app_monitStartedContent),
+              appLocale.getText(LocaleKey.appMonitStartedTitle),
+              appLocale.getText(LocaleKey.appMonitStartedContent),
               () {
                 go(MonitPage());
               },
@@ -987,7 +972,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
         builder: (context, themeMode, _) {
           return MaterialApp(
             navigatorKey: navigatorKey,
-            title: appLocale.getText(LocaleKey.app_title),
+            title: appLocale.getText(LocaleKey.appTitle),
             themeMode: themeMode,
             theme: _buildLightTheme(),
             darkTheme: _buildDarkTheme(),
@@ -1048,15 +1033,15 @@ void expressBackup(String path) {
   fileNode.safeBackup().then((Result<FileNode, String> result) async {
     if (result.isErr) {
       showWindowsNotification(
-        appLocale.getText(LocaleKey.app_backupFailed),
+        appLocale.getText(LocaleKey.appBackupFailed),
         result.msg,
       );
       return;
     }
     FileNode backup = result.unwrap();
     showWindowsNotificationWithFile(
-      appLocale.getText(LocaleKey.app_backupSuccessTitle),
-      appLocale.getText(LocaleKey.app_backupSuccessContent),
+      appLocale.getText(LocaleKey.appBackupSuccessTitle),
+      appLocale.getText(LocaleKey.appBackupSuccessContent),
       backup.mate.fullPath,
     );
   });
@@ -1080,14 +1065,14 @@ void backup(String path) {
           String input = "";
           return AlertDialog(
             title: Text(
-              appLocale.getText(LocaleKey.app_enterLabelTitle).tr([
+              appLocale.getText(LocaleKey.appEnterLabelTitle).tr([
                 fileNode.mate.name,
               ]),
             ),
             content: TextField(
               autofocus: true,
               decoration: InputDecoration(
-                hintText: appLocale.getText(LocaleKey.app_enterLabelHint),
+                hintText: appLocale.getText(LocaleKey.appEnterLabelHint),
               ),
               onChanged: (value) {
                 input = value;
@@ -1099,7 +1084,7 @@ void backup(String path) {
                   Navigator.of(context).pop('\$CANCEL_BACKUP');
                 },
                 child: Text(
-                  appLocale.getText(LocaleKey.app_cancelBackup),
+                  appLocale.getText(LocaleKey.appCancelBackup),
                   style: TextStyle(color: Colors.red),
                 ),
               ),
@@ -1107,7 +1092,7 @@ void backup(String path) {
                 onPressed: () {
                   Navigator.of(context).pop(input);
                 },
-                child: Text(appLocale.getText(LocaleKey.app_confirm)),
+                child: Text(appLocale.getText(LocaleKey.appConfirm)),
               ),
             ],
           );
@@ -1115,8 +1100,8 @@ void backup(String path) {
       );
       if (label == '\$CANCEL_BACKUP') {
         showWindowsNotification(
-          appLocale.getText(LocaleKey.app_cancelNotificationTitle),
-          appLocale.getText(LocaleKey.app_cancelNotificationContent),
+          appLocale.getText(LocaleKey.appCancelNotificationTitle),
+          appLocale.getText(LocaleKey.appCancelNotificationContent),
         );
         logger.info("用户取消了文件 ${fileNode.mate.fullPath} 的备份");
         return;
@@ -1124,22 +1109,22 @@ void backup(String path) {
     } catch (e) {
       logger.error("创建询问label失败：$e");
       showToast(
-        appLocale.getText(LocaleKey.app_labelDialogError) + e.toString(),
+        appLocale.getText(LocaleKey.appLabelDialogError) + e.toString(),
       );
     }
 
     fileNode.safeBackup(label).then((Result<FileNode, String> result) async {
       if (result.isErr) {
         showWindowsNotification(
-          appLocale.getText(LocaleKey.app_backupFailed),
+          appLocale.getText(LocaleKey.appBackupFailed),
           result.msg,
         );
         return;
       }
       FileNode backup = result.unwrap();
       showWindowsNotificationWithFile(
-        appLocale.getText(LocaleKey.app_backupSuccessTitle),
-        appLocale.getText(LocaleKey.app_backupSuccessContent),
+        appLocale.getText(LocaleKey.appBackupSuccessTitle),
+        appLocale.getText(LocaleKey.appBackupSuccessContent),
         backup.mate.fullPath,
       );
 
@@ -1153,16 +1138,16 @@ void backup(String path) {
         context: monitorDialogContext,
         builder: (context) {
           return AlertDialog(
-            title: Text(appLocale.getText(LocaleKey.app_enableMonitTitle)),
-            content: Text(appLocale.getText(LocaleKey.app_enableMonitContent)),
+            title: Text(appLocale.getText(LocaleKey.appEnableMonitTitle)),
+            content: Text(appLocale.getText(LocaleKey.appEnableMonitContent)),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(appLocale.getText(LocaleKey.app_no)),
+                child: Text(appLocale.getText(LocaleKey.appNo)),
               ),
               TextButton(
                 onPressed: () => Navigator.of(context).pop(true),
-                child: Text(appLocale.getText(LocaleKey.app_yes)),
+                child: Text(appLocale.getText(LocaleKey.appYes)),
               ),
             ],
           );
@@ -1184,7 +1169,7 @@ void monit(String path) {
   ) {
     if (fileMonitTaskResult.isErr) {
       showWindowsNotification(
-        appLocale.getText(LocaleKey.app_monitFailedTitle),
+        appLocale.getText(LocaleKey.appMonitFailedTitle),
         fileMonitTaskResult.msg,
       );
       return;
@@ -1192,8 +1177,8 @@ void monit(String path) {
     FileMonitTask fileMonitTask = fileMonitTaskResult.unwrap();
     if (fileMonitTask.backupDirPath != null) {
       showWindowsNotificationWithFolder(
-        appLocale.getText(LocaleKey.app_monitSuccessTitle),
-        appLocale.getText(LocaleKey.app_monitSuccessContent),
+        appLocale.getText(LocaleKey.appMonitSuccessTitle),
+        appLocale.getText(LocaleKey.appMonitSuccessContent),
         fileMonitTask.backupDirPath!,
       );
     }
@@ -1207,17 +1192,17 @@ void share(String path) {
 Future<void> openLanShareDialogForPath(String path) async {
   logger.info('share $path');
   await showMainWindow(animate: false);
-  showToast(appLocale.getText(LocaleKey.fileleaf_sharePreparing));
+  showToast(appLocale.getText(LocaleKey.fileleafSharePreparing));
 
   final result = await lanFileShareServer.createShare(path);
   if (result.isErr) {
-    final message = appLocale.getText(LocaleKey.fileleaf_shareCreateFailed).tr([
+    final message = appLocale.getText(LocaleKey.fileleafShareCreateFailed).tr([
       result.msg,
     ]);
     showToast(message);
     unawaited(
       showWindowsNotification(
-        appLocale.getText(LocaleKey.fileleaf_menuShare),
+        appLocale.getText(LocaleKey.fileleafMenuShare),
         message,
       ),
     );
@@ -1256,7 +1241,7 @@ Future<void> _showShareReadyAttention(
   Map<String, dynamic> shareData,
 ) async {
   final fileName = (shareData['fileName'] as String?) ?? p.basename(path);
-  final message = appLocale.getText(LocaleKey.fileleaf_shareReady).tr([
+  final message = appLocale.getText(LocaleKey.fileleafShareReady).tr([
     fileName,
   ]);
 
@@ -1264,7 +1249,7 @@ Future<void> _showShareReadyAttention(
   showToast(message);
   unawaited(
     showWindowsNotificationWithTask(
-      appLocale.getText(LocaleKey.fileleaf_menuShare),
+      appLocale.getText(LocaleKey.fileleafMenuShare),
       message,
       _bringWindowToFrontForShareReady,
     ),
@@ -1275,9 +1260,7 @@ Future<void> _bringWindowToFrontForShareReady() async {
   await showMainWindow(animate: false);
   try {
     await windowManager.focus();
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
   if (!PlatformIntegration.isWindows) {
     return;
   }
@@ -1287,13 +1270,9 @@ Future<void> _bringWindowToFrontForShareReady() async {
       await Future<void>.delayed(const Duration(seconds: 2));
       try {
         await windowManager.setAlwaysOnTop(false);
-      } catch (_) {
-        // ignore
-      }
+      } catch (_) {}
     }());
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 Future<bool> _prepareWindowForShareDialog() async {
@@ -1322,9 +1301,7 @@ Future<void> _restoreWindowAfterShareDialog() async {
     if (await windowManager.isMaximized()) {
       await windowManager.restore();
     }
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 void viewtree(String path) {

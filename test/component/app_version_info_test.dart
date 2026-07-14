@@ -1,7 +1,16 @@
 import 'package:test/test.dart';
-import 'package:vertree/component/AppVersionInfo.dart';
+import 'package:vertree/component/app_version_info.dart';
 
 void main() {
+  test('creates the displayed version from the package version', () {
+    final info = AppVersionInfo.fromPackageVersion(
+      packageVersion: '1.2.3-beta',
+      releaseApiUrl: 'https://example.com/releases',
+    );
+
+    expect(info.currentVersion, 'V1.2.3-beta');
+  });
+
   group('AppVersionInfo.compareVersions', () {
     test('compares stable versions numerically', () {
       expect(

@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:vertree/service/LanFileShareServer.dart';
-import 'package:vertree/service/LanSharePayloadCodec.dart';
+import 'package:vertree/service/lan_file_share_server.dart';
+import 'package:vertree/service/lan_share_payload_codec.dart';
 
 void main() {
   group('LanFileShareServer', () {
@@ -50,10 +50,7 @@ void main() {
         expect(sharePageUrl, isNotNull);
         expect(shareCode, isNotNull);
         expect(shareKey, '1');
-        expect(
-          sharePageUrl,
-          'https://vertree.w0fv1.dev/f#$shareCode',
-        );
+        expect(sharePageUrl, 'https://vertree.w0fv1.dev/f#$shareCode');
 
         final decodedCompactRoute = LanSharePayloadCodec.decodeCompactRoute(
           shareCode!,
@@ -61,7 +58,10 @@ void main() {
         expect(decodedCompactRoute['shareKey'], shareKey);
         expect(decodedCompactRoute['lanIps'], ['192.168.10.8', '10.0.0.6']);
         expect(shareCode, '01hxRistOgxdL');
-        expect(sharePageUrl!.length, lessThanOrEqualTo((shareCode.length) + 30));
+        expect(
+          sharePageUrl!.length,
+          lessThanOrEqualTo((shareCode.length) + 30),
+        );
 
         expect(directDownloads, hasLength(2));
         expect(
@@ -104,16 +104,13 @@ void main() {
 
       final decoded = LanSharePayloadCodec.decodeCompactRoute(compactRoute);
       expect(decoded['shareKey'], 'z');
-      expect(
-        decoded['lanIps'],
-        [
-          '192.168.0.0',
-          '192.168.255.255',
-          '172.16.0.0',
-          '10.0.0.0',
-          '10.255.255.255',
-        ],
-      );
+      expect(decoded['lanIps'], [
+        '192.168.0.0',
+        '192.168.255.255',
+        '172.16.0.0',
+        '10.0.0.0',
+        '10.255.255.255',
+      ]);
     });
 
     test('shareKey sequence uses Base62', () async {

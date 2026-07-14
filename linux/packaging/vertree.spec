@@ -23,20 +23,20 @@ Vertree is a desktop application for single-file version management. It
 supports manual backups, quick backups, file monitoring, and visual version
 tree inspection for files that do not fit a Git-based workflow.
 
-# Runtime library dependencies are intentionally auto-generated from the
-# bundled executable and plugin shared libraries so the package follows the
-# target distribution's dependency names instead of hard-coding Fedora package
-# names here.
-#
-# Nautilus integration is optional. Keep it as a weak dependency so the main
-# desktop app remains installable on non-GNOME systems and across distro
-# package naming changes.
+
+
+
+
+
+
+
+
 
 %prep
 %autosetup -n %{name}-%{version}
 
 %build
-# Prebuilt Flutter release bundle; no compile step is required here.
+
 
 %install
 rm -rf %{buildroot}

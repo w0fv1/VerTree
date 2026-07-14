@@ -1,8 +1,8 @@
 import 'dart:io';
 
 import 'package:test/test.dart';
-import 'package:vertree/api/LocalHttpApiContract.dart';
-import 'package:vertree/api/LocalHttpApiDocumentation.dart';
+import 'package:vertree/api/local_http_api_contract.dart';
+import 'package:vertree/api/local_http_api_documentation.dart';
 
 void main() {
   group('LocalHttpApiDocumentation', () {
@@ -66,11 +66,19 @@ void main() {
       final createTask = paths['/monitor-tasks'] as Map<String, dynamic>;
       final post = createTask['post'] as Map<String, dynamic>;
       final requestBody = post['requestBody'] as Map<String, dynamic>;
-      final schema = (((requestBody['content'] as Map<String, dynamic>)['application/json']
-              as Map<String, dynamic>)['schema']
-          as Map<String, dynamic>);
+      final schema =
+          (((requestBody['content'] as Map<String, dynamic>)['application/json']
+                  as Map<String, dynamic>)['schema']
+              as Map<String, dynamic>);
 
       expect(document['openapi'], '3.1.1');
+      expect(document['components']['securitySchemes']['bearerAuth'], {
+        'type': 'http',
+        'scheme': 'bearer',
+      });
+      expect(post['security'], [
+        {'bearerAuth': <dynamic>[]},
+      ]);
       expect(paths.containsKey('/health'), isTrue);
       expect(post['summary'], 'Create task');
       expect(schema['required'], ['path']);
