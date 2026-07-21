@@ -1464,7 +1464,7 @@ class _SettingPageState extends State<SettingPage> {
                                         ),
                                       ),
                                       onPressed: () => _openUrl(
-                                        "https://firco.cn/w0fv1?focusProduct=product-8283788fa5724d25ae65958d1b61b288",
+                                        "https://next.firco.cn/w0fv1?focusProduct=product-8283788fa5724d25ae65958d1b61b288",
                                       ),
                                       icon: const Icon(
                                         Icons.volunteer_activism_rounded,

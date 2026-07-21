@@ -33,7 +33,7 @@ function HomepageHeader() {
                         </Link>
                         <Link
                             className="button button--primary button--lg"
-                            to="https://firco.cn/w0fv1?focusProduct=product-8283788fa5724d25ae65958d1b61b288"
+                            to="https://next.firco.cn/w0fv1?focusProduct=product-8283788fa5724d25ae65958d1b61b288"
                         >
                             捐助支持
                         </Link>
