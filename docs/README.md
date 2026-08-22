@@ -25,7 +25,7 @@ npm start
 npm run build
 ```
 
-## 这次需要重点维护的文档
+## 主要维护文件
 
 - `docs/docs/intro.md`
 - `docs/docs/tutorial-usage/install.md`
