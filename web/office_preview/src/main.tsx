@@ -2,19 +2,19 @@ import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Preview } from '../../../vendor/office-viewer/office-viewer-app/src/viewers/Preview'
 import { resolveViewer } from '../../../vendor/office-viewer/office-viewer-app/src/viewers/registry'
-import { extensionOf } from '../../../vendor/office-viewer/office-viewer-app/src/lib/format'
 import { objectUrlsFrom } from '../../../vendor/office-viewer/office-viewer-app/src/viewers/previewResources'
-import type { FilePayload } from '../../../vendor/office-viewer/office-viewer-app/src/types'
+import type { FileMetadata } from '../../../vendor/office-viewer/office-viewer-app/src/types'
 import type { LoadState } from '../../../vendor/office-viewer/office-viewer-app/src/viewers/previewTypes'
 import '../../../vendor/office-viewer/office-viewer-app/src/App.css'
 import './style.css'
+import { loadPreview } from './loadPreview'
 
 document.addEventListener('click', (event) => {
   if (event.target instanceof Element && event.target.closest('a')) event.preventDefault()
 })
 
 function App() {
-  const [payload, setPayload] = useState<FilePayload | null>(null)
+  const [payload, setPayload] = useState<FileMetadata | null>(null)
   const [state, setState] = useState<LoadState>({ status: 'loading' })
 
   useEffect(() => {
@@ -24,16 +24,12 @@ function App() {
     const release = () => objectUrlsFrom(rendered).forEach((url) => URL.revokeObjectURL(url))
     async function load() {
       try {
-        const responses = await Promise.all([
-          fetch('./metadata', { signal: abort.signal }),
-          fetch('./file', { signal: abort.signal }),
-        ])
-        if (responses.some((response) => !response.ok)) throw new Error('文件读取失败，请关闭预览后重试。')
-        const metadata = await responses[0].json() as Omit<FilePayload, 'bytes'>
-        const file = { ...metadata, extension: extensionOf(metadata.name), bytes: new Uint8Array(await responses[1].arrayBuffer()) }
+        const response = await fetch('./metadata', { signal: abort.signal })
+        if (!response.ok) throw new Error('文件读取失败，请关闭预览后重试。')
+        const metadata = await response.json() as FileMetadata
         if (disposed) return
-        setPayload(file)
-        rendered = await resolveViewer(file.name).load(file)
+        setPayload(metadata)
+        rendered = await loadPreview(metadata, new URL('./file', window.location.href).href, abort.signal)
         if (disposed) release()
         else setState(rendered)
       } catch (error) {

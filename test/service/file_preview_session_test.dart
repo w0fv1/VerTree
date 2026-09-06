@@ -72,7 +72,7 @@ void main() {
       );
       expect(
         response.headers.value('content-security-policy'),
-        contains('media-src blob:'),
+        contains("media-src 'self' blob:"),
       );
     },
   );
@@ -124,7 +124,7 @@ void main() {
     expect(await head.toList(), isEmpty);
   });
 
-  test('rejects missing and oversized files and closes its listener', () async {
+  test('rejects missing files and closes its listener', () async {
     final session = await open();
     await session.close();
     sessions.clear();
@@ -134,9 +134,104 @@ void main() {
     );
     await file.delete();
     await expectLater(open(), throwsA(isA<FileSystemException>()));
-    final handle = await file.open(mode: FileMode.write);
-    await handle.truncate(FilePreviewSession.maxFileBytes + 1);
-    await handle.close();
-    await expectLater(open(), throwsA(isA<FileSystemException>()));
   });
+
+  test(
+    'accepts a file larger than 64 MiB and reads only its requested tail',
+    () async {
+      const length = 80 * 1024 * 1024;
+      final handle = await file.open(mode: FileMode.write);
+      await handle.truncate(length);
+      await handle.setPosition(length - 4);
+      await handle.writeFrom([1, 2, 3, 4]);
+      await handle.close();
+      final session = await open();
+      final request = await client.getUrl(session.uri.resolve('file'));
+      request.headers.set('Range', 'bytes=-4');
+      final response = await request.close();
+      expect(response.statusCode, HttpStatus.partialContent);
+      expect(
+        response.headers.value('content-range'),
+        'bytes ${length - 4}-${length - 1}/$length',
+      );
+      expect(response.contentLength, 4);
+      expect(await response.expand((chunk) => chunk).toList(), [1, 2, 3, 4]);
+    },
+  );
+
+  test(
+    'supports seeking, clamped ranges and concurrent range requests',
+    () async {
+      await file.writeAsString('0123456789');
+      final session = await open();
+      await Future.wait([
+        for (final entry in {
+          'bytes=2-4': '234',
+          'bytes=7-': '789',
+          'bytes=8-99': '89',
+          'bytes=-3': '789',
+        }.entries)
+          () async {
+            final request = await client.getUrl(session.uri.resolve('file'));
+            request.headers.set('Range', entry.key);
+            final response = await request.close();
+            expect(response.statusCode, HttpStatus.partialContent);
+            expect(response.headers.value('accept-ranges'), 'bytes');
+            expect(await utf8.decoder.bind(response).join(), entry.value);
+          }(),
+      ]);
+      for (final range in ['bytes=10-', 'bytes=5-2', 'bytes=-0']) {
+        final request = await client.getUrl(session.uri.resolve('file'));
+        request.headers.set('Range', range);
+        final response = await request.close();
+        expect(response.statusCode, HttpStatus.requestedRangeNotSatisfiable);
+        expect(response.headers.value('content-range'), 'bytes */10');
+        await response.drain<void>();
+      }
+    },
+  );
+
+  test(
+    'HEAD and malformed ranges return the complete representation headers',
+    () async {
+      final session = await open();
+      for (final range in ['bytes=0-1,3-4', 'nonsense']) {
+        final request = await client.getUrl(session.uri.resolve('file'));
+        request.headers.set('Range', range);
+        final response = await request.close();
+        expect(response.statusCode, HttpStatus.ok);
+        expect(response.contentLength, await file.length());
+        await response.drain<void>();
+      }
+      final request = await client.openUrl('HEAD', session.uri.resolve('file'));
+      request.headers.set('Range', 'bytes=0-1');
+      final response = await request.close();
+      expect(response.statusCode, HttpStatus.ok);
+      expect(response.contentLength, await file.length());
+      expect(await response.toList(), isEmpty);
+    },
+  );
+
+  test(
+    'empty files and stale If-Range validators are handled correctly',
+    () async {
+      await file.writeAsString('');
+      final empty = await open();
+      final request = await client.getUrl(empty.uri.resolve('file'));
+      request.headers.set('Range', 'bytes=0-');
+      final response = await request.close();
+      expect(response.statusCode, HttpStatus.requestedRangeNotSatisfiable);
+      await response.drain<void>();
+      await file.writeAsString('full content');
+      final session = await open();
+      final stale = await client.getUrl(session.uri.resolve('file'));
+      stale.headers.set('Range', 'bytes=0-1');
+      stale.headers.set('If-Range', '"old-version"');
+      final full = await stale.close();
+      expect(full.statusCode, HttpStatus.ok);
+      expect(await utf8.decoder.bind(full).join(), 'full content');
+      await session.close();
+      await session.close();
+    },
+  );
 }

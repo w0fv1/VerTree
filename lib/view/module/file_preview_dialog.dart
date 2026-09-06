@@ -186,7 +186,11 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                                       (url.toString() ==
                                               session.uri.toString() ||
                                           (!action.isForMainFrame &&
-                                              url.scheme == 'blob'))
+                                              (url.scheme == 'blob' ||
+                                                  url.toString() ==
+                                                      session.uri
+                                                          .resolve('file')
+                                                          .toString())))
                                   ? NavigationActionPolicy.ALLOW
                                   : NavigationActionPolicy.CANCEL;
                             },
