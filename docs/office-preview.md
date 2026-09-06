@@ -37,7 +37,7 @@ macOS / Linux 替换最后一行的设备名称。前端改动后重新运行构
 
 以固定版本的上游 registry 为准。支持 DOCX / DOTX / ODT / RTF，XLSX / XLSM / XLS / ODS / CSV / TSV，PPTX / PPTM，PDF，Markdown、HTML、SVG、图片、结构化文本、代码和多种压缩文件。
 
-这是上游现有能力的嵌入，不保证 Office 原版版式：PPTX 展示文本及备注；旧 XLS 的支持有限；XMind / PSD 展示结构摘要；7Z 展示条目列表；未知格式先按内容检测 UTF-8 / 带 BOM 的 UTF-16 文本，识别成功直接显示正文，否则仅显示「不支持预览此文件」。旧 DOC / PPT 没有专用渲染器。损坏或加密文件可能解析失败，仍可通过系统程序打开。
+这是上游现有能力的嵌入，不保证 Office 原版版式：PPTX 显示幻灯片画面和备注；旧 XLS 的支持有限；XMind 显示主题层级导图，PSD 显示合成图及图层名称；7Z 展示条目列表；未知格式先按内容检测 UTF-8 / 带 BOM 的 UTF-16 文本，识别成功直接显示正文，否则仅显示「不支持预览此文件」。旧 DOC / PPT 没有专用渲染器。损坏或加密文件可能解析失败，仍可通过系统程序打开。
 
 外部图片、字体和链接不联网加载。WebView 自身的 PDF 显示能力因平台而异，PDF 文本提取由上游 pdf.js 提供。
 
@@ -69,7 +69,7 @@ ctest --test-dir build/context-menu-tests -C Release --output-on-failure
 - 新增 EML 邮件、FB2 电子书、CBZ 漫画、AVIF / APNG / SVGZ 图片；EPUB 从章节清单升级为按章节阅读正文与内嵌图片。
 - 邮件显示解码后的主题、收发件人、正文及附件名称；附件尚不能在邮件预览中打开。电子书和邮件不联网加载外部资源。
 
-仍不支持旧 DOC / PPT、MSG、MOBI / AZW、加密电子书和 HEIC 的专用预览。音视频能否播放取决于文件实际编码及 WebView 所在系统，不保证每一种编码组合。
+仍不支持旧 DOC / PPT、MSG、MOBI / AZW 和加密电子书的专用预览。音视频能否播放取决于文件实际编码及 WebView 所在系统，不保证每一种编码组合。
 
 本轮 Office Viewer 已通过 75 项测试、lint 和生产前端构建。嵌入页面在 Windows Chrome 中检查了未知中文文本、未知二进制、邮件正文、FB2 章节切换、WAV 时长和 MP4 画面与播放。新增格式尚未逐个在 macOS / Linux 原生 WebView 实机验收。
 
@@ -78,3 +78,13 @@ ctest --test-dir build/context-menu-tests -C Release --output-on-failure
 2026-09-07 移除 64 MiB 门槛，并改为磁盘快照、HTTP Range 和注册器 URL 加载能力。通过 68 项 Flutter 测试、81 项 Office Viewer 测试、19 项嵌入页面测试及静态检查；80 MiB 实体文件测试覆盖末尾分段读取，并验证并发、越界请求、HEAD、空文件和关闭操作。前端测试验证大视频不调用整文件 fetch。两个前端生产构建通过。
 
 本轮实际浏览器访问临时预览地址被 Chrome 以 `ERR_BLOCKED_BY_CLIENT` 阻止，因此没有把大视频播放或 PDF 实机显示记为通过。各平台原生 WebView 仍需验收。最新上游缺口详见 [上游能力核对](office-preview-upstream-audit.md)。
+
+## 上游格式与画面补齐
+
+2026-09-07 后续增加 HEIC / HEIF、Parquet、CRX2 / CRX3、CUR、PJP / PJPEG 和 Java `.class`，并将 PPTX 升级为幻灯片画面、PSD 升级为合成图、XMind 升级为可缩放的主题层级导图。所有解析、渲染、Worker 和格式注册均在 Office-Viewer 实现；Vertree 同步依赖并直接复用，不增加另一套解析器或 Java 原生桥接。
+
+Parquet 每页显示 100 行，通过现有 `loadUrl` 能力发起 HTTP Range 请求。Java 在本地 Worker 中反编译，不要求安装 Java，不执行 class；关闭预览或超过 30 秒时终止。PPTX 不执行宏或动画；OpenDocument 演示文稿仍显示文本。PSD 需要文件包含合成图。XMind 的原始样式、图片、附件和关系线尚未完整复现。
+
+Office-Viewer 100 项测试和嵌入页面 20 项测试通过。使用无扩展的 Chrome 经实际 `FilePreviewSession` 地址验证了 PPTX 文字、表格、图表和翻页，Parquet 205 行分页与 206 请求，HEIC 1280×854 照片、32×32 CUR、640×400 PSD、XMind 和 Java 方法源码；同时回归了 80 MiB 视频地址和 PDF 文本加载。此前 Chrome 扩展环境的地址阻断未在此测试环境复现。macOS / Linux 及原生 WebView 的完整 UI 验收仍未覆盖。
+
+最终通过 68 项 Flutter 测试与 `flutter analyze`，Office-Viewer 的 `tauri build --debug --no-bundle` 和 Vertree Windows Release 构建成功。安装包：`build/dist/vertree-windows-x64-1.0.0-visual-formats-20260907-setup.exe`。

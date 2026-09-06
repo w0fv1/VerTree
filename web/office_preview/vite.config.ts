@@ -6,6 +6,7 @@ const dependencies = JSON.parse(readFileSync(new URL('./package.json', import.me
 
 export default defineConfig({
   base: './',
+  publicDir: '../../vendor/office-viewer/office-viewer-app/public',
   plugins: [react()],
   resolve: { dedupe: Object.keys(dependencies) },
   test: { environment: 'jsdom', include: ['src/**/*.test.ts'] },
