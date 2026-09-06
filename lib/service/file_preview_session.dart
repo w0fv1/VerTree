@@ -68,7 +68,7 @@ class FilePreviewSession {
           "default-src 'none'; script-src 'self' 'wasm-unsafe-eval'; "
               "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
               "font-src 'self' data: blob:; connect-src 'self' blob:; "
-              "worker-src 'self' blob:; frame-src blob:; object-src 'none'; "
+              "worker-src 'self' blob:; frame-src blob:; media-src blob:; object-src 'none'; "
               "base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
         );
       try {

@@ -70,6 +70,10 @@ void main() {
         response.headers.value('content-security-policy'),
         contains("default-src 'none'"),
       );
+      expect(
+        response.headers.value('content-security-policy'),
+        contains('media-src blob:'),
+      );
     },
   );
 

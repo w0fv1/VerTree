@@ -47,7 +47,7 @@ function App() {
   const viewer = payload ? resolveViewer(payload.name) : undefined
   const tab = payload && viewer ? { path: payload.path, name: payload.name, viewerId: viewer.id } : undefined
   return <main data-status={state.status}>
-    <header className="preview-heading"><strong>{payload?.name ?? '文件预览'}</strong><span>{viewer?.label} · 只读 · Office Viewer</span></header>
+    <header className="preview-heading"><strong>{payload?.name ?? '文件预览'}</strong></header>
     <section className="preview-content">
       {state.status === 'error' ? <div className="error-view" role="alert">{state.message}</div>
         : state.status === 'loading' ? <div className="empty-view" role="status">正在加载预览…</div>

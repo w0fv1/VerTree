@@ -23,7 +23,7 @@ macOS / Linux 替换最后一行的设备名称。前端改动后重新运行构
 
 ## 结构
 
-- `vendor/office-viewer`：上游 `https://github.com/w0fv1/Office-Viewer` 的固定 Git submodule 提交，保持上游代码不变。无需初始化上游的 vscode-office 子模块，它是能力参考，不参与此预览构建。
+- `vendor/office-viewer`：上游 `https://github.com/w0fv1/Office-Viewer` 的固定 Git submodule 提交，预览能力在该仓库维护，Vertree 直接复用。无需初始化上游的 vscode-office 子模块，它是能力参考，不参与此预览构建。
 - `web/office_preview`：只读 React 入口，直接复用上游 `registry`、`Preview`、解析器和样式。依赖通过该目录的 package-lock.json 固定，升级上游时同步检查其 package.json 中的运行时依赖。
 - `assets/office_viewer`：Vite 生成的离线资源，作为 Flutter assets 打包，生成内容不入 Git。
 - `FilePreviewSession`：每次预览读取不超过 64 MiB 的文件快照，监听随机 loopback 端口，只服务当前随机 token 下的文件和内置资源。校验 Host / Origin，不提供目录遍历、写文件或跨域接口。CSP 禁止外部网络资源。
@@ -35,7 +35,7 @@ macOS / Linux 替换最后一行的设备名称。前端改动后重新运行构
 
 以固定版本的上游 registry 为准。支持 DOCX / DOTX / ODT / RTF，XLSX / XLSM / XLS / ODS / CSV / TSV，PPTX / PPTM，PDF，Markdown、HTML、SVG、图片、结构化文本、代码和多种压缩文件。
 
-这是上游现有能力的嵌入，不保证 Office 原版版式：PPTX 展示文本及备注；旧 XLS 的支持有限；EPUB / XMind / PSD 展示结构摘要；7Z 展示条目列表；未知格式回退为文本尝试和十六进制。旧 DOC / PPT 没有专用渲染器。损坏或加密文件可能解析失败，仍可通过系统程序打开。
+这是上游现有能力的嵌入，不保证 Office 原版版式：PPTX 展示文本及备注；旧 XLS 的支持有限；XMind / PSD 展示结构摘要；7Z 展示条目列表；未知格式先按内容检测 UTF-8 / 带 BOM 的 UTF-16 文本，识别成功直接显示正文，否则仅显示「不支持预览此文件」。旧 DOC / PPT 没有专用渲染器。损坏或加密文件可能解析失败，仍可通过系统程序打开。
 
 外部图片、字体和链接不联网加载。WebView 自身的 PDF 显示能力因平台而异，PDF 文本提取由上游 pdf.js 提供。
 
@@ -57,4 +57,16 @@ ctest --test-dir build/context-menu-tests -C Release --output-on-failure
 
 前端测试使用子模块自带真实样例，验证注册器到解析结果；Dart 测试验证快照、特殊字符文件名、大小限制、资源 MIME、访问边界及关闭回收。Windows / macOS 的原生 WebView 仍需在对应平台做 UI 验证。
 
-本次集成在 Windows 已通过主程序 Debug / Release 构建、64 项 Flutter 测试、12 项前端测试和静态分析；独立原生测试窗口中验证了 DOCX 正文与大纲、XLSX 多 Sheet 切换、PDF 页面与文本、Markdown、7Z 条目，以及关闭后再次打开。菜单重构另通过原生 COM 枚举、六项菜单及特殊字符路径传参验证；新安装包尚未覆盖安装后在 Explorer 中点击验收。macOS / Linux 尚未进行实机验证。
+本次集成在 Windows 已通过主程序 Debug / Release 构建、64 项 Flutter 测试、16 项嵌入前端测试和静态分析；独立原生测试窗口中验证了 DOCX 正文与大纲、XLSX 多 Sheet 切换、PDF 页面与文本、Markdown、7Z 条目，以及关闭后再次打开。菜单重构另通过原生 COM 枚举、六项菜单及特殊字符路径传参验证；新安装包尚未覆盖安装后在 Explorer 中点击验收。macOS / Linux 尚未进行实机验证。
+
+## 本轮预览改进
+
+- 删除十六进制、文本尝试说明和预览页中的 `Fallback · 只读 · Office Viewer` 标注。
+- 新增 DOCM / DOTM、XLTX / XLTM、PPSX / PPSM / POTX / POTM、OTT / OTS / ODP / OTP、FODT / FODS / FODP；模板复用已有解析器，OpenDocument 共用命名空间感知的 XML 解析入口。演示文稿展示逐页文本与备注。
+- 新增 MP3 / WAV / OGG / OGA / OPUS / FLAC / M4A / AAC 和 MP4 / M4V / WEBM / OGV / MOV，使用原生音视频控件；CSP 仅允许本次预览的 blob 媒体，解码失败显示不支持。
+- 新增 EML 邮件、FB2 电子书、CBZ 漫画、AVIF / APNG / SVGZ 图片；EPUB 从章节清单升级为按章节阅读正文与内嵌图片。
+- 邮件显示解码后的主题、收发件人、正文及附件名称；附件尚不能在邮件预览中打开。电子书和邮件不联网加载外部资源。
+
+仍不支持旧 DOC / PPT、MSG、MOBI / AZW、加密电子书和 HEIC 的专用预览。音视频能否播放取决于文件实际编码及 WebView 所在系统，不保证每一种编码组合。
+
+本轮 Office Viewer 已通过 75 项测试、lint 和生产前端构建。嵌入页面在 Windows Chrome 中检查了未知中文文本、未知二进制、邮件正文、FB2 章节切换、WAV 时长和 MP4 画面与播放。新增格式尚未逐个在 macOS / Linux 原生 WebView 实机验收。

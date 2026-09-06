@@ -4,7 +4,6 @@ body { margin: 0; }
 main { height: 100vh; display: flex; flex-direction: column; }
 .preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #d9dde5; background: white; }
 .preview-heading strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.preview-heading span { flex-shrink: 0; color: #687080; font-size: 12px; }
 .preview-content { flex: 1; min-height: 0; overflow: auto; }
 .preview-content > .empty-view, .preview-content > .error-view { padding: 40px; }
 .text-view { white-space: pre-wrap; overflow-wrap: anywhere; }
