@@ -94,10 +94,10 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  TextButton.icon(
+                  IconButton(
+                    tooltip: appLocale.getText(LocaleKey.previewOpenSystem),
                     onPressed: () => FileUtils.openFile(widget.path),
                     icon: const Icon(Icons.open_in_new, size: 18),
-                    label: Text(appLocale.getText(LocaleKey.previewOpenSystem)),
                   ),
                   IconButton(
                     tooltip: appLocale.getText(LocaleKey.fileleafPropertyClose),
