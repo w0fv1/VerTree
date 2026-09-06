@@ -1,5 +1,7 @@
 # Vertree
 
+[Documentation](https://vertree.w0fv1.dev/docs/intro) · [Download](https://github.com/w0fv1/VerTree/releases/latest) · [Supported formats](docs/docs/tutorial-usage/preview.md) · [Troubleshooting](docs/docs/tutorial-usage/troubleshooting.md) · [Build guide](docs/docs/tutorial-develop/develop.md)
+
 File previews use the bundled Office Viewer frontend (embedded on Windows/macOS, local browser on Linux). Before the first Flutter build, install Node.js 24 and Python 3 and run `python tools/build_office_preview.py`. Windows additionally needs NuGet CLI for building and WebView2 Runtime for viewing. See [integration notes](docs/office-preview.md).
 
 Vertree is a desktop version manager for single files. It is meant for evolving design files, documents, scripts, and config files that do not fit cleanly into a normal Git workflow. Vertree keeps history as plain files, draws the file lineage as a tree, and exposes native desktop entry points so the workflow stays close to how people already work.
@@ -23,7 +25,7 @@ Windows, macOS, and Linux release artifacts are built by GitHub Actions. The loo
 
 ## Local Automation
 
-Vertree exposes a local HTTP API on `127.0.0.1` by default.
+The local HTTP API is disabled by default. Enable it in Settings and copy the actual loopback address and the token for the current session. Business requests require `Authorization: Bearer <token>`. Only the index, documentation, and minimal `/ping` endpoint are public.
 
 - `GET /api/v1/health`
 - `POST /api/v1/ui/navigation`

@@ -1,8 +1,9 @@
 {
-  "label": "Tutorial - 开发",
+  "label": "开发与架构",
   "position": 3,
   "link": {
     "type": "generated-index",
-    "description":"参与Vertree的开发"
+    "slug": "/category/tutorial---开发",
+    "description": "构建 Flutter 应用与 Office Viewer，了解版本树、监控、本机 API 和发布流程。"
   }
 }

@@ -36,12 +36,21 @@ Vertree 的 macOS 版本已经具备桌面可用性，当前覆盖的能力包�
 
 ## 运行方式
 
+以下是源码运行步骤，需要 Flutter、Python 3、Node.js 24 和 Xcode。直接安装 DMG / ZIP 时不需要这些开发工具。
+
 ```bash
 flutter config --enable-macos-desktop
 brew install cocoapods
+python tools/build_office_preview.py
 flutter pub get
 flutter run -d macos
 ```
+
+## 文件预览
+
+版本树节点可直接打开只读预览，使用 macOS 的 WKWebView，不需要 Windows 的 WebView2。打开另一个文件会关闭上一个应用内预览。
+
+Finder Services 当前提供下述四项动作，尚未增加独立预览项。可以从版本树进入预览，或调用 CLI 的 `preview` 动作。支持格式与排版边界见[文件预览](tutorial-usage/preview.md)。
 
 ## Finder Services 的行为
 

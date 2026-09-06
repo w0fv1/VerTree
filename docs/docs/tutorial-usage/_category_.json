@@ -1,8 +1,9 @@
 {
-  "label": "Tutorial - 使用",
+  "label": "使用指南",
   "position": 2,
   "link": {
     "type": "generated-index",
-    "description": "五分钟入手 Vertree 的使用"
+    "slug": "/category/tutorial---使用",
+    "description": "从安装、备份和文件预览开始，了解右键菜单、分享与常见问题。"
   }
 }

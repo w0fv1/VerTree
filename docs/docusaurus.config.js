@@ -11,7 +11,7 @@ import {themes as prismThemes} from 'prism-react-renderer';
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Vertree维树',
-  tagline: '单文件版本管理工具 - 让每一次迭代都有备无患！',
+  tagline: '为单个文件保留版本、预览内容、自动备份',
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
@@ -28,7 +28,7 @@ const config = {
   onBrokenLinks: 'throw',
   markdown: {
     hooks: {
-      onBrokenMarkdownLinks: 'warn',
+      onBrokenMarkdownLinks: 'throw',
     },
   },
 
@@ -90,9 +90,10 @@ const config = {
             type: 'docSidebar',
             sidebarId: 'tutorialSidebar',
             position: 'left',
-            label: 'Tutorial',
+            label: '使用文档',
           },
-          {to: '/blog', label: 'Blog', position: 'left'},
+          {to: '/docs/tutorial-usage/preview', label: '格式支持', position: 'left'},
+          {to: '/blog', label: '更新日志', position: 'left'},
           {
             href: 'https://github.com/w0fv1/vertree',
             label: 'GitHub',
@@ -104,19 +105,19 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: '文档',
             items: [
               {
-                label: 'Tutorial',
+                label: '使用指南',
                 to: '/docs/intro',
               },
             ],
           },
           {
-            title: 'More',
+            title: '项目',
             items: [
               {
-                label: 'Blog',
+                label: '更新日志',
                 to: '/blog',
               },
               {

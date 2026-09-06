@@ -26,9 +26,9 @@ function HomepageHeader() {
                     <p className="hero__subtitle">{siteConfig.tagline}</p>
                     <div className={styles.buttons}>
                         <Link className="button button--secondary button--lg" to="/docs/intro">
-                            快速开始 _>
+                            开始使用
                         </Link>
-                        <Link className="button button--text button--lg" to="https://github.com/w0fv1/vertree/releases">
+                        <Link className="button button--text button--lg" to="https://github.com/w0fv1/vertree/releases/latest">
                             下载
                         </Link>
                         <Link
@@ -49,11 +49,10 @@ function HomepageHeader() {
 
 
 export default function Home() {
-  const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello ${siteConfig.title}`}
-      description="单文件版本管理工具 - 让每一次迭代都有备无患！">
+      title="文件版本管理与本地预览"
+      description="用版本树保留文件历史，预览办公文档、图片和媒体，自动备份并通过局域网分享。支持 Windows、macOS 和 Linux。">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

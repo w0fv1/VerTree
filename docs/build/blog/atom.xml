@@ -2,11 +2,32 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://vertree.w0fv1.dev/blog</id>
     <title>Vertree维树 Blog</title>
-    <updated>2025-03-06T00:00:00.000Z</updated>
+    <updated>2026-09-07T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://vertree.w0fv1.dev/blog"/>
     <subtitle>Vertree维树 Blog</subtitle>
     <icon>https://vertree.w0fv1.dev/img/favicon.ico</icon>
+    <entry>
+        <title type="html"><![CDATA[Vertree 1.1.0：从版本树直接预览文件]]></title>
+        <id>https://vertree.w0fv1.dev/blog/1-1-0-file-preview</id>
+        <link href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview"/>
+        <updated>2026-09-07T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[1.1.0 把本地文件预览接入了 Vertree。现在可以在 Windows 右键菜单选择“预览文件”，也可以从版本树节点打开历史文件，快速确认内容后再决定是否用原软件编辑。]]></summary>
+        <content type="html"><![CDATA[<p>1.1.0 把本地文件预览接入了 Vertree。现在可以在 Windows 右键菜单选择“预览文件”，也可以从版本树节点打开历史文件，快速确认内容后再决定是否用原软件编辑。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="预览不需要先建立版本树">预览不需要先建立版本树<a href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview#%E9%A2%84%E8%A7%88%E4%B8%8D%E9%9C%80%E8%A6%81%E5%85%88%E5%BB%BA%E7%AB%8B%E7%89%88%E6%9C%AC%E6%A0%91" class="hash-link" aria-label="预览不需要先建立版本树的直接链接" title="预览不需要先建立版本树的直接链接" translate="no">​</a></h2>
+<p>任意文件都可以尝试预览。Windows 和 macOS 在应用内显示，Linux 使用本机浏览器；命令行也支持 <code>vertree preview "文件路径"</code>。</p>
+<p>通用格式能力由配套的 <a href="https://github.com/w0fv1/Office-Viewer" target="_blank" rel="noopener noreferrer" class="">Office-Viewer</a> 仓库维护，Vertree 复用其前端模块，文件内容在本机处理。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="这次补齐了哪些内容">这次补齐了哪些内容<a href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview#%E8%BF%99%E6%AC%A1%E8%A1%A5%E9%BD%90%E4%BA%86%E5%93%AA%E4%BA%9B%E5%86%85%E5%AE%B9" class="hash-link" aria-label="这次补齐了哪些内容的直接链接" title="这次补齐了哪些内容的直接链接" translate="no">​</a></h2>
+<p>除了文档、表格、PDF、常见图片和文本，还扩展了 Office 模板与宏文档、OpenDocument、音视频、电子书、EML、HEIC/HEIF、CUR、Parquet、CRX 和 Java class 等格式。</p>
+<p>PPTX 可查看幻灯片画布并翻页，PSD 显示保存的合成图，XMind 显示可缩放和折叠的主题层级。完整格式、展示方式和限制请查阅<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/preview">格式支持表</a>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="大文件与未知格式">大文件与未知格式<a href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview#%E5%A4%A7%E6%96%87%E4%BB%B6%E4%B8%8E%E6%9C%AA%E7%9F%A5%E6%A0%BC%E5%BC%8F" class="hash-link" aria-label="大文件与未知格式的直接链接" title="大文件与未知格式的直接链接" translate="no">​</a></h2>
+<p>固定的 64 MiB 上限已经取消。媒体、PDF 和 Parquet 支持按需读取，其他格式仍受解析器和资源条件影响；开始预览时仍需建立临时磁盘快照。</p>
+<p>未知扩展名只检测是否为文本，可识别则显示正文，否则提示不支持。十六进制回退和多余的说明文字已经移除。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="菜单和界面整理">菜单和界面整理<a href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview#%E8%8F%9C%E5%8D%95%E5%92%8C%E7%95%8C%E9%9D%A2%E6%95%B4%E7%90%86" class="hash-link" aria-label="菜单和界面整理的直接链接" title="菜单和界面整理的直接链接" translate="no">​</a></h2>
+<p>传统 Windows 菜单的注册、单项开关和折叠布局使用统一逻辑，Windows 11 新菜单仍单独控制。连续打开预览时自动关闭上一个窗口，去掉重复文件名，“用系统程序打开”改为带提示的图标按钮，版本树外层边框也已移除。</p>
+<p>文档站同步重写了安装升级、备份监控、预览格式、系统入口、分享、排障和开发构建说明。可以从<a class="" href="https://vertree.w0fv1.dev/docs/intro">文档首页</a>按任务查找。</p>
+<p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.1.0" target="_blank" rel="noopener noreferrer" class="">下载 V1.1.0</a></p>]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Welcome]]></title>
         <id>https://vertree.w0fv1.dev/blog/welcome</id>
