@@ -220,61 +220,47 @@ class _FileTreePageState extends State<FileTreePage> {
   }
 
   Widget _buildCanvasPanel(BuildContext context, FileNode root) {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
+    final scheme = Theme.of(context).colorScheme;
 
-    return Card(
-      color: scheme.surface,
-      child: Padding(
-        padding: const EdgeInsets.all(10),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(24),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerLowest,
-              border: Border.all(
-                color: scheme.outlineVariant.withValues(alpha: 0.65),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(24),
+      child: ColoredBox(
+        color: scheme.surfaceContainerLowest,
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return FileTree(
+                    rootNode: root,
+                    focusNode: focusNode,
+                    height: constraints.maxHeight,
+                    width: constraints.maxWidth,
+                    viewportController: widget.viewportController,
+                    initialScale: widget.initialScale,
+                    fitToViewportOnLoad: widget.fitToViewportOnLoad,
+                  );
+                },
               ),
             ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return FileTree(
-                        rootNode: root,
-                        focusNode: focusNode,
-                        height: constraints.maxHeight,
-                        width: constraints.maxWidth,
-                        viewportController: widget.viewportController,
-                        initialScale: widget.initialScale,
-                        fitToViewportOnLoad: widget.fitToViewportOnLoad,
-                      );
+            Positioned(
+              top: 16,
+              right: 16,
+              child: Card.filled(
+                color: scheme.surfaceContainerHigh.withValues(alpha: 0.94),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
+                  child: IconButton.filledTonal(
+                    tooltip: appLocale.getText(LocaleKey.vertreeOverviewTitle),
+                    icon: const Icon(Icons.info_outline_rounded),
+                    onPressed: () {
+                      _showOverviewDialog(context, root);
                     },
                   ),
                 ),
-                Positioned(
-                  top: 16,
-                  right: 16,
-                  child: Card.filled(
-                    color: scheme.surfaceContainerHigh.withValues(alpha: 0.94),
-                    child: Padding(
-                      padding: const EdgeInsets.all(6),
-                      child: IconButton.filledTonal(
-                        tooltip: appLocale.getText(
-                          LocaleKey.vertreeOverviewTitle,
-                        ),
-                        icon: const Icon(Icons.info_outline_rounded),
-                        onPressed: () {
-                          _showOverviewDialog(context, root);
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
+          ],
         ),
       ),
     );
