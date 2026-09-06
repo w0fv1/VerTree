@@ -74,6 +74,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Setup Node.js for Office Viewer
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/office_preview/package-lock.json
+
+      - name: Build bundled Office Viewer
+        run: python tools/build_office_preview.py
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -87,6 +97,9 @@ jobs:
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
+
+      - name: Setup NuGet for WebView2
+        uses: NuGet/setup-nuget@v2
 
       - name: Install WiX Toolset
         shell: pwsh
@@ -165,6 +178,16 @@ jobs:
             desktop-file-utils \
             appstream
 
+      - name: Setup Node.js for Office Viewer
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/office_preview/package-lock.json
+
+      - name: Build bundled Office Viewer
+        run: python tools/build_office_preview.py
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
@@ -220,6 +243,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Setup Node.js for Office Viewer
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: web/office_preview/package-lock.json
+
+      - name: Build bundled Office Viewer
+        run: python tools/build_office_preview.py
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2

@@ -32,6 +32,7 @@ class _SettingPageState extends State<SettingPage> {
   late final TextEditingController _monitorMaxSizeController;
   late final ScrollController _settingsScrollController;
 
+  bool previewFile = false;
   bool backupFile = false;
   bool expressBackupFile = false;
   bool monitorFile = false;
@@ -98,10 +99,14 @@ class _SettingPageState extends State<SettingPage> {
     setState(() => isLoading = true);
 
     final success = value ? await enableAction() : await disableAction();
-    await showWindowsNotification(
-      "Vertree",
-      value ? enableNotification : disableNotification,
-    );
+    if (success) {
+      await showWindowsNotification(
+        "Vertree",
+        value ? enableNotification : disableNotification,
+      );
+    } else {
+      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+    }
 
     await Future.delayed(const Duration(milliseconds: 500));
     if (!mounted) return;
@@ -111,10 +116,11 @@ class _SettingPageState extends State<SettingPage> {
       }
       isLoading = false;
       legacyMenuEnabled =
-          backupFile &&
-          expressBackupFile &&
-          monitorFile &&
-          shareFile &&
+          previewFile ||
+          backupFile ||
+          expressBackupFile ||
+          monitorFile ||
+          shareFile ||
           viewTreeFile;
     });
     await _showLinuxMenuToggleResult(success);
@@ -155,6 +161,9 @@ class _SettingPageState extends State<SettingPage> {
       _gnomeTraySupportInfo = null;
     }
     if (PlatformIntegration.supportsContextMenus) {
+      previewFile =
+          PlatformIntegration.isWindows &&
+          await PlatformIntegration.checkPreviewKeyExists();
       backupFile = await PlatformIntegration.checkBackupKeyExists();
       expressBackupFile =
           await PlatformIntegration.checkExpressBackupKeyExists();
@@ -162,23 +171,13 @@ class _SettingPageState extends State<SettingPage> {
       shareFile = await PlatformIntegration.checkShareKeyExists();
       viewTreeFile = await PlatformIntegration.checkViewTreeKeyExists();
       legacyMenuCollapsed = configer.get<bool>('legacyMenuCollapsed', false);
-      final groupedLegacyMenu = PlatformIntegration.isWindows
-          ? await PlatformIntegration.checkLegacyMenuRootExists()
-          : false;
       legacyMenuEnabled =
-          groupedLegacyMenu ||
-          (backupFile &&
-              expressBackupFile &&
-              monitorFile &&
-              shareFile &&
-              viewTreeFile);
-      if (groupedLegacyMenu) {
-        backupFile = true;
-        expressBackupFile = true;
-        monitorFile = true;
-        shareFile = true;
-        viewTreeFile = true;
-      }
+          previewFile ||
+          backupFile ||
+          expressBackupFile ||
+          monitorFile ||
+          shareFile ||
+          viewTreeFile;
       if (PlatformIntegration.isWindows) {
         final configuredWin11MenuEnabled = configer.get(
           "win11MenuEnabled",
@@ -239,7 +238,9 @@ class _SettingPageState extends State<SettingPage> {
       collapsed: PlatformIntegration.isWindows ? legacyMenuCollapsed : false,
     );
 
-    await Future.delayed(const Duration(milliseconds: 200));
+    if (!success && PlatformIntegration.isWindows) {
+      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+    }
     await _refreshLegacyMenuState();
     if (PlatformIntegration.isLinux) {
       showToast(
@@ -258,12 +259,9 @@ class _SettingPageState extends State<SettingPage> {
       return;
     }
     setState(() => isLoading = true);
-    final success = await PlatformIntegration.applyLegacyMenus(
-      true,
-      collapsed: value,
-    );
-    if (success) {
-      configer.set<bool>('legacyMenuCollapsed', value);
+    final success = await PlatformIntegration.setLegacyMenuLayout(value);
+    if (!success) {
+      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
     }
     await Future.delayed(const Duration(milliseconds: 200));
     await _refreshLegacyMenuState();
@@ -276,21 +274,15 @@ class _SettingPageState extends State<SettingPage> {
     setState(() => isLoading = true);
     logger.info('Win11 menu toggle start: target=$value');
     try {
-      final packaged = await PlatformIntegration.isWin11PackagedOrRegistered();
       final success = value
-          ? packaged
-                ? true
-                : await PlatformIntegration.addWin11ContextMenuHandler()
+          ? await PlatformIntegration.addWin11ContextMenuHandler()
           : await PlatformIntegration.removeWin11ContextMenuHandler();
       if (!success) {
         showToast(appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity));
         return;
       }
 
-      configer.set("win11MenuEnabled", value);
-      logger.info(
-        'Win11 menu config updated: enabled=$value packagedOrRegistered=$packaged',
-      );
+      logger.info('Win11 menu display updated: enabled=$value');
     } catch (e) {
       logger.error('Win11 menu toggle failed: $e');
       showToast(appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity));
@@ -301,6 +293,22 @@ class _SettingPageState extends State<SettingPage> {
         setState(() => isLoading = false);
       }
       logger.info('Win11 menu toggle end');
+    }
+  }
+
+  Future<void> _togglePreviewFile(bool? value) async {
+    if (value == null) return;
+    setState(() => isLoading = true);
+    try {
+      final success = value
+          ? await PlatformIntegration.addPreviewContextMenu()
+          : await PlatformIntegration.removePreviewContextMenu();
+      if (!success) {
+        showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+      }
+      await _refreshLegacyMenuState();
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -1104,15 +1112,22 @@ class _SettingPageState extends State<SettingPage> {
                                     firstChild: const SizedBox.shrink(),
                                     secondChild: Column(
                                       children: [
+                                        if (PlatformIntegration.isWindows)
+                                          _buildSwitchTile(
+                                            icon: Icons.preview_outlined,
+                                            title: appLocale.getText(
+                                              LocaleKey.settingAddPreviewMenu,
+                                            ),
+                                            value: previewFile,
+                                            onChanged: _togglePreviewFile,
+                                          ),
                                         _buildSwitchTile(
                                           icon: Icons.save_outlined,
                                           title: appLocale.getText(
                                             LocaleKey.settingAddBackupMenu,
                                           ),
                                           value: backupFile,
-                                          onChanged: legacyMenuCollapsed
-                                              ? null
-                                              : _toggleBackupFile,
+                                          onChanged: _toggleBackupFile,
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.flash_on_outlined,
@@ -1121,9 +1136,7 @@ class _SettingPageState extends State<SettingPage> {
                                                 .settingAddExpressBackupMenu,
                                           ),
                                           value: expressBackupFile,
-                                          onChanged: legacyMenuCollapsed
-                                              ? null
-                                              : _toggleExpressBackupFile,
+                                          onChanged: _toggleExpressBackupFile,
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.monitor_heart_outlined,
@@ -1131,9 +1144,7 @@ class _SettingPageState extends State<SettingPage> {
                                             LocaleKey.settingAddMonitorMenu,
                                           ),
                                           value: monitorFile,
-                                          onChanged: legacyMenuCollapsed
-                                              ? null
-                                              : _toggleMonitorFile,
+                                          onChanged: _toggleMonitorFile,
                                         ),
                                         _buildSwitchTile(
                                           leading: shareActionImage(size: 20),
@@ -1141,9 +1152,7 @@ class _SettingPageState extends State<SettingPage> {
                                             LocaleKey.settingAddShareMenu,
                                           ),
                                           value: shareFile,
-                                          onChanged: legacyMenuCollapsed
-                                              ? null
-                                              : _toggleShareFile,
+                                          onChanged: _toggleShareFile,
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.account_tree_outlined,
@@ -1151,9 +1160,7 @@ class _SettingPageState extends State<SettingPage> {
                                             LocaleKey.settingAddViewtreeMenu,
                                           ),
                                           value: viewTreeFile,
-                                          onChanged: legacyMenuCollapsed
-                                              ? null
-                                              : _toggleViewTreeFile,
+                                          onChanged: _toggleViewTreeFile,
                                         ),
                                       ],
                                     ),

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:vertree/platform/windows_menu_model.dart';
 
 import 'package:vertree/component/elevated_task.dart' deferred as elevated_task;
 import 'package:vertree/component/ver_tree_registry_helper.dart'
@@ -28,96 +29,68 @@ class WindowsRegistryBridge {
     registry.VerTreeRegistryService.reAddContextMenu();
   }
 
-  static Future<bool> checkBackupKeyExists() async {
+  static Future<bool> isActionEnabled(WindowsMenuAction action) async {
     if (!Platform.isWindows) return false;
     await _ensureLoaded();
-    return registry.VerTreeRegistryService.checkBackupKeyExists();
+    return registry.VerTreeRegistryService.isActionEnabled(action);
   }
 
-  static Future<bool> checkExpressBackupKeyExists() async {
+  static Future<bool> setActionEnabled(
+    WindowsMenuAction action,
+    bool enabled,
+  ) async {
     if (!Platform.isWindows) return false;
     await _ensureLoaded();
-    return registry.VerTreeRegistryService.checkExpressBackupKeyExists();
+    return registry.VerTreeRegistryService.setActionEnabled(action, enabled);
   }
 
-  static Future<bool> checkMonitorKeyExists() async {
+  static Future<bool> setLegacyMenuLayout(bool collapsed) async {
     if (!Platform.isWindows) return false;
     await _ensureLoaded();
-    return registry.VerTreeRegistryService.checkMonitorKeyExists();
+    return registry.VerTreeRegistryService.setLegacyMenuLayout(collapsed);
   }
 
-  static Future<bool> checkShareKeyExists() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.checkShareKeyExists();
-  }
+  static Future<bool> checkBackupKeyExists() =>
+      isActionEnabled(WindowsMenuAction.backup);
+  static Future<bool> addBackupContextMenu() =>
+      setActionEnabled(WindowsMenuAction.backup, true);
+  static Future<bool> removeBackupContextMenu() =>
+      setActionEnabled(WindowsMenuAction.backup, false);
 
-  static Future<bool> checkViewTreeKeyExists() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.checkViewTreeKeyExists();
-  }
+  static Future<bool> checkExpressBackupKeyExists() =>
+      isActionEnabled(WindowsMenuAction.expressBackup);
+  static Future<bool> addExpressBackupContextMenu() =>
+      setActionEnabled(WindowsMenuAction.expressBackup, true);
+  static Future<bool> removeExpressBackupContextMenu() =>
+      setActionEnabled(WindowsMenuAction.expressBackup, false);
 
-  static Future<bool> addBackupContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.addVerTreeBackupContextMenu();
-  }
+  static Future<bool> checkMonitorKeyExists() =>
+      isActionEnabled(WindowsMenuAction.monitor);
+  static Future<bool> addMonitorContextMenu() =>
+      setActionEnabled(WindowsMenuAction.monitor, true);
+  static Future<bool> removeMonitorContextMenu() =>
+      setActionEnabled(WindowsMenuAction.monitor, false);
 
-  static Future<bool> removeBackupContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.removeVerTreeBackupContextMenu();
-  }
+  static Future<bool> checkShareKeyExists() =>
+      isActionEnabled(WindowsMenuAction.share);
+  static Future<bool> addShareContextMenu() =>
+      setActionEnabled(WindowsMenuAction.share, true);
+  static Future<bool> removeShareContextMenu() =>
+      setActionEnabled(WindowsMenuAction.share, false);
 
-  static Future<bool> addExpressBackupContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.addVerTreeExpressBackupContextMenu();
-  }
+  static Future<bool> checkViewTreeKeyExists() =>
+      isActionEnabled(WindowsMenuAction.viewTree);
+  static Future<bool> addViewTreeContextMenu() =>
+      setActionEnabled(WindowsMenuAction.viewTree, true);
+  static Future<bool> removeViewTreeContextMenu() =>
+      setActionEnabled(WindowsMenuAction.viewTree, false);
 
-  static Future<bool> removeExpressBackupContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry
-        .VerTreeRegistryService.removeVerTreeExpressBackupContextMenu();
-  }
-
-  static Future<bool> addMonitorContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.addVerTreeMonitorContextMenu();
-  }
-
-  static Future<bool> removeMonitorContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.removeVerTreeMonitorContextMenu();
-  }
-
-  static Future<bool> addShareContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.addVerTreeShareContextMenu();
-  }
-
-  static Future<bool> removeShareContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.removeVerTreeShareContextMenu();
-  }
-
-  static Future<bool> addViewTreeContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.addVerTreeViewContextMenu();
-  }
-
-  static Future<bool> removeViewTreeContextMenu() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return registry.VerTreeRegistryService.removeVerTreeViewContextMenu();
-  }
+  static Future<bool> checkPreviewKeyExists() =>
+      isActionEnabled(WindowsMenuAction.preview);
+  static Future<bool> addPreviewContextMenu() =>
+      setActionEnabled(WindowsMenuAction.preview, true);
+  static Future<bool> removePreviewContextMenu() =>
+      setActionEnabled(WindowsMenuAction.preview, false);
 
   static Future<bool> enableAutoStart() async {
     if (!Platform.isWindows) return false;

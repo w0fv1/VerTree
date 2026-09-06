@@ -59,6 +59,15 @@ class PlatformIntegration {
     return false;
   }
 
+  static Future<bool> checkPreviewKeyExists() =>
+      WindowsRegistryBridge.checkPreviewKeyExists();
+  static Future<bool> addPreviewContextMenu() =>
+      WindowsRegistryBridge.addPreviewContextMenu();
+  static Future<bool> removePreviewContextMenu() =>
+      WindowsRegistryBridge.removePreviewContextMenu();
+  static Future<bool> setLegacyMenuLayout(bool collapsed) =>
+      WindowsRegistryBridge.setLegacyMenuLayout(collapsed);
+
   static Future<bool> checkExpressBackupKeyExists() async {
     if (isWindows) {
       return WindowsRegistryBridge.checkExpressBackupKeyExists();

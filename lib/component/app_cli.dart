@@ -8,6 +8,7 @@ class AppCliRequest {
 }
 
 enum AppCliAction {
+  preview,
   backup,
   expressBackup,
   monit,
@@ -17,6 +18,9 @@ enum AppCliAction {
   static AppCliAction? fromToken(String raw) {
     final token = raw.trim().toLowerCase();
     switch (token) {
+      case 'preview':
+      case '--preview':
+        return AppCliAction.preview;
       case 'backup':
       case '--backup':
         return AppCliAction.backup;

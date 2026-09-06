@@ -19,14 +19,8 @@ class ElevatedTaskRunner {
   static const String taskArg = '--elevated-task';
   static const String payloadArg = '--payload';
 
-  static const String opAddContextMenu = 'add_context_menu';
-  static const String opRemoveContextMenuByKey = 'remove_context_menu_key';
-  static const String opRemoveContextMenuByMenuName =
-      'remove_context_menu_name';
   static const String opEnableAutoStart = 'enable_autostart';
   static const String opDisableAutoStart = 'disable_autostart';
-  static const String opApplySetup = 'apply_setup';
-  static const String opAddWin11Menu = 'add_win11_menu';
   static const String opRemoveWin11Menu = 'remove_win11_menu';
   static const String opRemoveLegacyMenus = 'remove_legacy_menus';
 
@@ -160,85 +154,16 @@ class ElevatedTaskRunner {
     Map<String, dynamic> payload,
   ) {
     switch (operation) {
-      case opAddContextMenu:
-        return _addContextMenu(payload);
-      case opRemoveContextMenuByKey:
-        return _removeContextMenuByKey(payload);
-      case opRemoveContextMenuByMenuName:
-        return _removeContextMenuByMenuName(payload);
       case opEnableAutoStart:
         return _enableAutoStart(payload);
       case opDisableAutoStart:
         return _disableAutoStart(payload);
-      case opApplySetup:
-        return _applySetup(payload);
-      case opAddWin11Menu:
-        return _addWin11Menu(payload);
       case opRemoveWin11Menu:
         return _removeWin11Menu(payload);
       case opRemoveLegacyMenus:
         return _removeLegacyMenus(payload);
       default:
         return false;
-    }
-  }
-
-  static bool _addContextMenu(Map<String, dynamic> payload) {
-    final hive = _parseHive(payload['hive']);
-    final parentPath =
-        _asNonEmptyString(payload['parentPath']) ?? _classesShellPath;
-    final keyName = _asNonEmptyString(payload['keyName']);
-    final menuText = _asNonEmptyString(payload['menuText']);
-    final command = _asString(payload['command']);
-    final iconPath = _asString(payload['iconPath']);
-    final isSubmenu = payload['isSubmenu'] == true;
-
-    if (keyName == null || menuText == null) {
-      return false;
-    }
-    if (!isSubmenu && (command == null || command.isEmpty)) {
-      return false;
-    }
-
-    try {
-      final shellKey = _openOrCreatePath(
-        hive,
-        parentPath,
-        desiredAccessRights: AccessRights.allAccess,
-      );
-      if (shellKey == null) {
-        return false;
-      }
-
-      final menuKey = shellKey.createKey(keyName);
-      menuKey.createValue(RegistryValue.string('MUIVerb', menuText));
-      if (iconPath != null && iconPath.isNotEmpty) {
-        menuKey.createValue(RegistryValue.string('Icon', iconPath));
-      }
-      if (isSubmenu) {
-        menuKey.createValue(RegistryValue.string('SubCommands', ''));
-        menuKey.createKey('shell').close();
-      }
-      menuKey.close();
-      shellKey.close();
-
-      if (!isSubmenu) {
-        final menuCommandKey = _openOrCreatePath(
-          hive,
-          '$parentPath\\$keyName',
-          desiredAccessRights: AccessRights.allAccess,
-        );
-        if (menuCommandKey == null) {
-          return false;
-        }
-        final commandKey = menuCommandKey.createKey('command');
-        commandKey.createValue(RegistryValue.string('', command!));
-        commandKey.close();
-        menuCommandKey.close();
-      }
-      return true;
-    } catch (_) {
-      return false;
     }
   }
 
@@ -262,30 +187,12 @@ class ElevatedTaskRunner {
       }
       try {
         shellKey.deleteKey(keyName, recursive: true);
-      } catch (_) {}
-      shellKey.close();
-      return true;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  static bool _removeContextMenuByMenuName(Map<String, dynamic> payload) {
-    final menuName = _asNonEmptyString(payload['menuName']);
-    if (menuName == null) {
-      return false;
-    }
-
-    try {
-      final shellKey = Registry.openPath(
-        RegistryHive.localMachine,
-        path: _classesShellPath,
-        desiredAccessRights: AccessRights.allAccess,
-      );
-      try {
-        shellKey.deleteKey(menuName, recursive: true);
-      } catch (_) {}
-      shellKey.close();
+      } on WindowsException catch (error) {
+        final hr = error.hr & 0xFFFFFFFF;
+        if (hr != 0x80070002 && hr != 0x80070003) rethrow;
+      } finally {
+        shellKey.close();
+      }
       return true;
     } catch (_) {
       return false;
@@ -373,78 +280,6 @@ class ElevatedTaskRunner {
     }
   }
 
-  static bool _applySetup(Map<String, dynamic> payload) {
-    final contextMenus = payload['contextMenus'];
-    final autostart = payload['autostart'];
-    final win11Menu = payload['win11Menu'];
-    final removeKeys = payload['removeKeys'];
-    if (contextMenus is! List) {
-      if (removeKeys is! List && autostart is! Map && win11Menu is! Map) {
-        return false;
-      }
-    }
-
-    bool success = true;
-
-    if (removeKeys is List) {
-      for (final entry in removeKeys) {
-        if (entry is! Map) {
-          success = false;
-          continue;
-        }
-        final keyName = _asNonEmptyString(entry['keyName']);
-        if (keyName == null) {
-          success = false;
-          continue;
-        }
-        success =
-            _removeContextMenuByKey({
-              'keyName': keyName,
-              'parentPath': _asString(entry['parentPath']),
-            }) &&
-            success;
-      }
-    }
-
-    if (contextMenus is List) {
-      for (final entry in contextMenus) {
-        if (entry is! Map) {
-          success = false;
-          continue;
-        }
-
-        success =
-            _addContextMenu({
-              'keyName': _asString(entry['keyName']),
-              'menuText': _asString(entry['menuText']),
-              'command': _asString(entry['command']),
-              'iconPath': _asString(entry['iconPath']),
-              'parentPath': _asString(entry['parentPath']),
-              'hive': _asString(entry['hive']),
-              'isSubmenu': entry['isSubmenu'] == true,
-            }) &&
-            success;
-      }
-    }
-
-    if (autostart is Map) {
-      final enable = autostart['enable'] == true;
-      if (enable) {
-        success =
-            _enableAutoStart(autostart.cast<String, dynamic>()) && success;
-      } else if (autostart['disable'] == true) {
-        success =
-            _disableAutoStart(autostart.cast<String, dynamic>()) && success;
-      }
-    }
-
-    if (win11Menu is Map) {
-      success = _addWin11Menu(win11Menu.cast<String, dynamic>()) && success;
-    }
-
-    return success;
-  }
-
   static bool _removeLegacyMenus(Map<String, dynamic> payload) {
     final keys = payload['keys'];
     final hive = _asString(payload['hive']);
@@ -467,73 +302,6 @@ class ElevatedTaskRunner {
     return _asString(value) == 'machine'
         ? RegistryHive.localMachine
         : RegistryHive.currentUser;
-  }
-
-  static bool _addWin11Menu(Map<String, dynamic> payload) {
-    final handlerName = _asNonEmptyString(payload['handlerName']);
-    final clsid = _asNonEmptyString(payload['clsid']);
-    final serverPath = _asNonEmptyString(payload['serverPath']);
-    if (handlerName == null || clsid == null || serverPath == null) {
-      return false;
-    }
-    try {
-      final approvedKey = Registry.openPath(
-        RegistryHive.localMachine,
-        path:
-            r'Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved',
-        desiredAccessRights: AccessRights.allAccess,
-      );
-      approvedKey.createValue(RegistryValue.string(clsid, handlerName));
-      approvedKey.close();
-
-      final classesRoot = Registry.openPath(
-        RegistryHive.localMachine,
-        path: r'Software\Classes\CLSID',
-        desiredAccessRights: AccessRights.allAccess,
-      );
-      final clsidKey = classesRoot.createKey(clsid);
-      clsidKey.createValue(RegistryValue.string('', handlerName));
-      try {
-        clsidKey.deleteKey('LocalServer32', recursive: true);
-      } catch (_) {}
-
-      final serverKey = clsidKey.createKey('InprocServer32');
-      serverKey.createValue(RegistryValue.string('', serverPath));
-      serverKey.createValue(
-        RegistryValue.string('ThreadingModel', 'Apartment'),
-      );
-      serverKey.close();
-      clsidKey.close();
-      classesRoot.close();
-
-      try {
-        final legacyHandlerKey = Registry.openPath(
-          RegistryHive.localMachine,
-          path: r'Software\Classes\*\shellex\ContextMenuHandlers',
-          desiredAccessRights: AccessRights.allAccess,
-        );
-        legacyHandlerKey.deleteKey(handlerName, recursive: true);
-        legacyHandlerKey.close();
-      } catch (_) {}
-
-      final shellKey = Registry.openPath(
-        RegistryHive.localMachine,
-        path: r'Software\Classes\*\shell',
-        desiredAccessRights: AccessRights.allAccess,
-      );
-      final menuKey = shellKey.createKey(handlerName);
-      menuKey.createValue(RegistryValue.string('MUIVerb', handlerName));
-      menuKey.createValue(
-        RegistryValue.string('ExplorerCommandHandler', clsid),
-      );
-      menuKey.close();
-      shellKey.close();
-
-      WindowsShellNotify.associationsChanged();
-      return true;
-    } catch (_) {
-      return false;
-    }
   }
 
   static bool _removeWin11Menu(Map<String, dynamic> payload) {

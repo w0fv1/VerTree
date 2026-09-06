@@ -1,0 +1,3 @@
+[submodule "vendor/office-viewer"]
+	path = vendor/office-viewer
+	url = https://github.com/w0fv1/Office-Viewer.git

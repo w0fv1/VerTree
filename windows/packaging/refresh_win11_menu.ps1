@@ -2,8 +2,8 @@ param(
   [ValidateSet("Debug","Profile","Release")]
   [string]$BuildMode = "Release",
   [string]$ExternalLocation = "",
-  [switch]$RestartExplorer = $true,
-  [switch]$KillDllHost = $true
+  [switch]$RestartExplorer,
+  [switch]$KillDllHost
 )
 
 $ErrorActionPreference = "Stop"

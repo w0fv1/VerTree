@@ -1,4 +1,4 @@
-[Setup]
+﻿[Setup]
 AppId={{E3E58F5C-9E78-4A10-9F2B-76F968B8034C}}
 AppName=Vertree
 #ifndef AppVersion
@@ -72,13 +72,25 @@ begin
   Result := True;
 end;
 
+procedure DeleteLegacyMenuKeys(RootKey: Integer);
+begin
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeLegacyRoot');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreePreview');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeBackup');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeExpressBackup');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeMonitor');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeShare');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeViewTree');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\备份文件 VerTree');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\快速备份文件 VerTree');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\监控文件变动 VerTree');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\查看文件版本树 VerTree');
+end;
+
 procedure DeleteRegistryKeys();
 begin
-  RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\RegistryVerTreeBackup');
-  RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\RegistryVerTreeExpressBackup');
-  RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\RegistryVerTreeMonitor');
-  RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\RegistryVerTreeShare');
-  RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\RegistryVerTreeViewTree');
+  DeleteLegacyMenuKeys(HKEY_CURRENT_USER);
+  DeleteLegacyMenuKeys(HKEY_LOCAL_MACHINE);
   RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shell\Vertree');
   RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, 'CLSID\{BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E}');
   RegDeleteKeyIncludingSubkeys(HKEY_CLASSES_ROOT, '*\shellex\ContextMenuHandlers\Vertree');

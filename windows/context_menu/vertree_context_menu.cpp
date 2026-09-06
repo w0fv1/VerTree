@@ -16,11 +16,22 @@ namespace {
 constexpr wchar_t kClsid[] = L"{BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E}";
 constexpr wchar_t kMenuTitle[] = L"Vertree";
 
-constexpr wchar_t kCmdBackup[] = L"backup";
-constexpr wchar_t kCmdExpressBackup[] = L"express-backup";
-constexpr wchar_t kCmdMonitor[] = L"monit";
-constexpr wchar_t kCmdShare[] = L"share";
-constexpr wchar_t kCmdViewTree[] = L"viewtree";
+struct MenuCommandDefinition {
+  const wchar_t* verb;
+  const wchar_t* zh;
+  const wchar_t* en;
+  const wchar_t* ja;
+  int icon;
+};
+
+constexpr MenuCommandDefinition kMenuCommands[] = {
+  {L"preview", L"预览文件", L"Preview file", L"ファイルをプレビュー", IDI_VERTREE_VIEWTREE},
+  {L"backup", L"备份文件", L"Backup file", L"ファイルをバックアップ", IDI_VERTREE_BACKUP},
+  {L"express-backup", L"快速备份文件", L"Quick backup", L"クイックバックアップ", IDI_VERTREE_EXPRESS_BACKUP},
+  {L"monit", L"监控文件变动", L"Monitor file changes", L"ファイル変更を監視", IDI_VERTREE_MONITOR},
+  {L"share", L"局域网分享下载", L"Share on LAN", L"LAN で共有", IDI_VERTREE_SHARE},
+  {L"viewtree", L"查看文件版本树", L"View version tree", L"バージョンツリーを表示", IDI_VERTREE_VIEWTREE},
+};
 
 HINSTANCE g_instance = nullptr;
 long g_module_lock = 0;
@@ -227,49 +238,28 @@ MenuLang GetMenuLang() {
   last_tick = now;
 
   const std::string locale = ReadConfigStringValue("locale", "OTHER");
-  if (locale == "EN") {
+  if (locale == "en" || locale == "EN") {
     cached = MenuLang::EN;
-  } else if (locale == "JA") {
+  } else if (locale == "ja" || locale == "JA") {
     cached = MenuLang::JA;
-  } else if (locale == "ZH_CN") {
+  } else if (locale == "zhCn" || locale == "ZH_CN") {
     cached = MenuLang::ZH_CN;
   } else {
 
-    cached = MenuLang::ZH_CN;
+    const LANGID language = PRIMARYLANGID(GetUserDefaultUILanguage());
+    cached = language == LANG_CHINESE ? MenuLang::ZH_CN : language == LANG_JAPANESE ? MenuLang::JA : MenuLang::EN;
   }
   return cached;
 }
 
 std::wstring GetCommandTitle(const wchar_t* verb) {
   const MenuLang lang = GetMenuLang();
-
-  const bool is_backup = (wcscmp(verb, kCmdBackup) == 0);
-  const bool is_express = (wcscmp(verb, kCmdExpressBackup) == 0);
-  const bool is_monitor = (wcscmp(verb, kCmdMonitor) == 0);
-  const bool is_share = (wcscmp(verb, kCmdShare) == 0);
-  const bool is_viewtree = (wcscmp(verb, kCmdViewTree) == 0);
-
-  if (lang == MenuLang::EN) {
-    if (is_backup) return L"Backup Files VerTree";
-    if (is_express) return L"Quick Backup Files VerTree";
-    if (is_monitor) return L"Monitor File Changes VerTree";
-    if (is_share) return L"Share for LAN Download VerTree";
-    if (is_viewtree) return L"View File Version Tree VerTree";
-  } else if (lang == MenuLang::JA) {
-    if (is_backup) return L"バックアップファイル VerTree";
-    if (is_express) return L"クイックバックアップファイル VerTree";
-    if (is_monitor) return L"ファイル変更監視 VerTree";
-    if (is_share) return L"LAN ダウンロード共有 VerTree";
-    if (is_viewtree) return L"ファイルバージョンツリー表示 VerTree";
-  } else {
-    if (is_backup) return L"备份文件 VerTree";
-    if (is_express) return L"快速备份文件 VerTree";
-    if (is_monitor) return L"监控文件变动 VerTree";
-    if (is_share) return L"局域网分享下载 VerTree";
-    if (is_viewtree) return L"查看文件版本树 VerTree";
+  for (const auto& command : kMenuCommands) {
+    if (wcscmp(verb, command.verb) == 0) {
+      return lang == MenuLang::EN ? command.en : lang == MenuLang::JA ? command.ja : command.zh;
+    }
   }
-
-  return L"VerTree";
+  return kMenuTitle;
 }
 
 std::wstring GetAppPath() {
@@ -308,12 +298,10 @@ std::wstring BuildModuleIconSpec(int resource_id) {
 }
 
 int GetIconResourceIdForVerb(const std::wstring& verb) {
-  if (verb == kCmdBackup) return IDI_VERTREE_BACKUP;
-  if (verb == kCmdExpressBackup) return IDI_VERTREE_EXPRESS_BACKUP;
-  if (verb == kCmdMonitor) return IDI_VERTREE_MONITOR;
-  if (verb == kCmdShare) return IDI_VERTREE_SHARE;
-  if (verb == kCmdViewTree) return IDI_VERTREE_VIEWTREE;
-  return IDI_VERTREE_ROOT;
+  for (const auto& command : kMenuCommands) {
+    if (verb == command.verb) return command.icon;
+  }
+  return IDI_VERTREE_VIEWTREE;
 }
 
 HRESULT DupToCoTaskMem(const std::wstring& value, LPWSTR* out) {
@@ -347,9 +335,6 @@ bool LaunchAppWithArgs(const std::wstring& args) {
 
 std::wstring BuildArgs(const std::wstring& verb, const std::wstring& path) {
   std::wstring quoted = L"\"" + path + L"\"";
-  if (verb == kCmdViewTree) {
-    return quoted;
-  }
   return std::wstring(verb) + L" " + quoted;
 }
 
@@ -659,14 +644,10 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
     *enum_commands = nullptr;
 
     std::vector<IExplorerCommand*> cmds;
-    cmds.reserve(5);
-
-
-    cmds.push_back(new LeafCommand(kCmdBackup, GetCommandTitle(kCmdBackup)));
-    cmds.push_back(new LeafCommand(kCmdExpressBackup, GetCommandTitle(kCmdExpressBackup)));
-    cmds.push_back(new LeafCommand(kCmdMonitor, GetCommandTitle(kCmdMonitor)));
-    cmds.push_back(new LeafCommand(kCmdShare, GetCommandTitle(kCmdShare)));
-    cmds.push_back(new LeafCommand(kCmdViewTree, GetCommandTitle(kCmdViewTree)));
+    cmds.reserve(_countof(kMenuCommands));
+    for (const auto& command : kMenuCommands) {
+      cmds.push_back(new LeafCommand(command.verb, GetCommandTitle(command.verb)));
+    }
 
     *enum_commands = new CommandEnumerator(std::move(cmds), 0);
     return S_OK;

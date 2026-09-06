@@ -29,6 +29,7 @@ import 'package:vertree/service/local_http_api_service.dart';
 import 'package:vertree/service/app_announcement_service.dart';
 import 'package:vertree/view/module/file_tree.dart';
 import 'package:vertree/view/module/lan_share_dialog.dart';
+import 'package:vertree/view/module/file_preview_dialog.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:vertree/view/page/monit_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
@@ -460,6 +461,7 @@ Future<void> runVertreeApp(
     onMonit: monit,
     onShare: share,
     onViewTree: viewtree,
+    onPreview: previewFile,
     onNotify: showWindowsNotification,
     onLogInfo: logger.info,
     onLogError: logger.error,
@@ -530,6 +532,7 @@ Future<void> runVertreeApp(
       args: args,
       onSecondInstanceArgs: _handleSecondInstance,
     );
+    await PlatformIntegration.reAddContextMenu();
     await initLocalNotifier();
     try {
       await localHttpApiServer.syncWithConfig();
@@ -602,6 +605,20 @@ Future<void> runVertreeApp(
 
 Future<void> _ensureWindowVisible() async {
   await showMainWindow(animate: true);
+}
+
+void previewFile(String path) {
+  unawaited(() async {
+    try {
+      await _waitForUiReady();
+      await _ensureWindowVisible();
+      final context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) return;
+      await showFilePreview(context, path);
+    } catch (error) {
+      logger.error('打开文件预览失败: $error');
+    }
+  }());
 }
 
 Future<void> _waitForUiReady() async {

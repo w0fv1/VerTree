@@ -7,6 +7,7 @@ import 'package:vertree/component/themed_assets.dart';
 import 'package:vertree/core/file_version_tree.dart';
 import 'package:vertree/main.dart';
 import 'package:vertree/view/component/tree/canvas_component.dart';
+import 'package:vertree/view/module/file_preview_dialog.dart';
 
 class FileLeaf extends CanvasComponent {
   static const double minCardWidth = 240;
@@ -538,6 +539,14 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
             ]),
           ),
           actions: [
+            FilledButton.icon(
+              onPressed: () {
+                Navigator.of(context).pop();
+                showFilePreview(this.context, fileNode.mate.fullPath);
+              },
+              icon: const Icon(Icons.preview_outlined),
+              label: Text(appLocale.getText(LocaleKey.fileleafMenuPreview)),
+            ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(appLocale.getText(LocaleKey.fileleafCancel)),
@@ -565,6 +574,14 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
         globalPosition.dy,
       ),
       items: [
+        PopupMenuItem(
+          value: 'preview',
+          child: _buildMenuEntry(
+            context,
+            icon: const Icon(Icons.preview_outlined, size: 18),
+            label: appLocale.getText(LocaleKey.fileleafMenuPreview),
+          ),
+        ),
         PopupMenuItem(
           value: 'backup',
           enabled: fileNode.child == null,
@@ -684,6 +701,8 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
         context: context,
         builder: (context) => FilePropertiesDialog(meta: fileNode.mate),
       );
+    } else if (result == 'preview' && mounted) {
+      await showFilePreview(context, fileNode.mate.fullPath);
     } else if (result == 'share') {
       _openLanShareDialog();
     }

@@ -13,6 +13,7 @@ class AppCommandHandler {
     required this.onMonit,
     required this.onShare,
     required this.onViewTree,
+    required this.onPreview,
     required this.onNotify,
     required this.onLogInfo,
     required this.onLogError,
@@ -23,6 +24,7 @@ class AppCommandHandler {
   final FileActionCallback onMonit;
   final FileActionCallback onShare;
   final FileActionCallback onViewTree;
+  final FileActionCallback onPreview;
   final UserNotificationCallback onNotify;
   final void Function(String message) onLogInfo;
   final void Function(String message) onLogError;
@@ -54,6 +56,9 @@ class AppCommandHandler {
       }
 
       switch (request.action) {
+        case AppCliAction.preview:
+          onPreview(path);
+          break;
         case AppCliAction.backup:
           onBackup(path);
           break;

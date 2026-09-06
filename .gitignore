@@ -44,6 +44,12 @@ app.*.map.json
 
 # Dependencies
 /docs/node_modules
+/web/office_preview/node_modules/
+/assets/office_viewer/*
+!/assets/office_viewer/.gitkeep
+!/assets/office_viewer/assets/
+/assets/office_viewer/assets/*
+!/assets/office_viewer/assets/.gitkeep
 
 # Production
 /build

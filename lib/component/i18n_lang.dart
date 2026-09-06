@@ -38,6 +38,9 @@ enum Lang {
 }
 
 enum LocaleKey {
+  registryPreviewKeyName,
+  settingAddPreviewMenu,
+  settingMenuUpdateFailed,
   registryBackupKeyName,
   registryExpressBackupKeyName,
   registryMonitorKeyName,
@@ -239,6 +242,11 @@ enum LocaleKey {
   fileleafMenuMonit,
   fileleafMenuProperty,
   fileleafMenuShare,
+  fileleafMenuPreview,
+  previewOpenSystem,
+  previewFailed,
+  previewBrowserHint,
+  previewOpenBrowser,
   fileleafSharePreparing,
   fileleafShareCreateFailed,
   fileleafShareReady,
@@ -381,6 +389,10 @@ class AppLocale {
   }
 
   static const Map<LocaleKey, String> _en = {
+    LocaleKey.registryPreviewKeyName: 'Preview file · Vertree',
+    LocaleKey.settingAddPreviewMenu: 'Preview file',
+    LocaleKey.settingMenuUpdateFailed:
+        'Could not update the context menu. Your changes were not fully applied.',
     LocaleKey.appTitle: "Vertree",
     LocaleKey.registryBackupKeyName: "Backup Files VerTree",
     LocaleKey.registryExpressBackupKeyName: "Quick Backup Files VerTree",
@@ -631,6 +643,13 @@ class AppLocale {
     LocaleKey.fileleafMenuMonit: "Monitor changes",
     LocaleKey.fileleafMenuProperty: "Properties",
     LocaleKey.fileleafMenuShare: "Share on LAN",
+    LocaleKey.fileleafMenuPreview: "Preview",
+    LocaleKey.previewOpenSystem: "Open in default app",
+    LocaleKey.previewFailed:
+        "Could not load preview. You can open the file in its default app.",
+    LocaleKey.previewBrowserHint:
+        "On Linux, preview opens in your local browser. Keep this dialog open while viewing; closing it ends access to the file.",
+    LocaleKey.previewOpenBrowser: "Preview in browser",
     LocaleKey.fileleafSharePreparing: "Preparing LAN share...",
     LocaleKey.fileleafShareCreateFailed: "Unable to create LAN share: %a",
     LocaleKey.fileleafShareReady:
@@ -689,6 +708,9 @@ class AppLocale {
   };
 
   static const Map<LocaleKey, String> _zhCn = {
+    LocaleKey.registryPreviewKeyName: '预览文件 · Vertree',
+    LocaleKey.settingAddPreviewMenu: '预览文件',
+    LocaleKey.settingMenuUpdateFailed: '右键菜单更新失败，未能完整应用更改。',
     LocaleKey.appTitle: "Vertree维树",
     LocaleKey.registryBackupKeyName: "备份文件 VerTree",
     LocaleKey.registryExpressBackupKeyName: "快速备份文件 VerTree",
@@ -907,6 +929,11 @@ class AppLocale {
     LocaleKey.fileleafMenuMonit: "监控变更",
     LocaleKey.fileleafMenuProperty: "属性",
     LocaleKey.fileleafMenuShare: "分享到局域网",
+    LocaleKey.fileleafMenuPreview: "预览",
+    LocaleKey.previewOpenSystem: "用系统程序打开",
+    LocaleKey.previewFailed: "无法加载预览，可以使用系统程序打开文件。",
+    LocaleKey.previewBrowserHint: "Linux 使用本机浏览器显示预览。预览时请保持此窗口打开，关闭后将停止提供文件。",
+    LocaleKey.previewOpenBrowser: "在浏览器中预览",
     LocaleKey.fileleafSharePreparing: "正在准备局域网分享…",
     LocaleKey.fileleafShareCreateFailed: "创建局域网分享失败：%a",
     LocaleKey.fileleafShareReady: "%a 的局域网下载已生成，点击查看。",
@@ -963,6 +990,9 @@ class AppLocale {
   };
 
   static const Map<LocaleKey, String> _ja = {
+    LocaleKey.registryPreviewKeyName: 'ファイルをプレビュー · Vertree',
+    LocaleKey.settingAddPreviewMenu: 'ファイルをプレビュー',
+    LocaleKey.settingMenuUpdateFailed: 'コンテキストメニューを更新できませんでした。',
     LocaleKey.appTitle: "Vertree",
     LocaleKey.registryBackupKeyName: "バックアップファイル VerTree",
     LocaleKey.registryExpressBackupKeyName: "クイックバックアップファイル VerTree",
@@ -1188,6 +1218,12 @@ class AppLocale {
     LocaleKey.fileleafMenuMonit: "変更を監視",
     LocaleKey.fileleafMenuProperty: "プロパティ",
     LocaleKey.fileleafMenuShare: "LAN で共有",
+    LocaleKey.fileleafMenuPreview: "プレビュー",
+    LocaleKey.previewOpenSystem: "既定のアプリで開く",
+    LocaleKey.previewFailed: "プレビューを読み込めません。既定のアプリで開けます。",
+    LocaleKey.previewBrowserHint:
+        "Linux ではローカルブラウザーで表示します。このダイアログを閉じるとファイルの配信を終了します。",
+    LocaleKey.previewOpenBrowser: "ブラウザーでプレビュー",
     LocaleKey.fileleafSharePreparing: "LAN 共有を準備しています...",
     LocaleKey.fileleafShareCreateFailed: "LAN 共有を作成できませんでした: %a",
     LocaleKey.fileleafShareReady: "%a の LAN ダウンロードができました。クリックして確認できます。",

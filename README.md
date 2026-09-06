@@ -20,6 +20,7 @@ Vertree 是一个面向单文件的可视化版本管理工具，适合设计稿
 ## 核心能力
 
 - 树状版本管理：主线版本、分支版本、备注标签都会直接体现在文件名和界面里。
+- 文件预览：版本节点支持通过 Office Viewer 只读预览文档、表格、图片和文本，详见[集成与构建说明](docs/office-preview.md)。
 - 自动监控备份：监控文件变化，按配置频率自动写入 `*_bak` 目录，并按数量上限清理旧备份。
 - 快速入口：Windows 右键菜单、macOS Finder Services、Linux GNOME Files 右键菜单、托盘菜单、应用菜单都可以直接触发操作。
 - 跨平台命令入口：`vertree /path/to/file` 查看版本树，`vertree backup <path>`、`vertree monit <path>`、`vertree express-backup <path>` 直接执行动作。
@@ -124,6 +125,8 @@ python tools/update_doc_images.py
 它会通过 `POST /ensure-ready` 拉起或复用开发中的应用实例，再调用 `ui/theme-mode`、`ui/navigation` 和 `ui/screenshot` 自动更新截图资源。除专门说明暗色模式的图片外，文档截图默认使用浅色主题。
 
 ## 开发运行
+
+首次构建先安装 Node.js 24 和 Python 3，运行 `python tools/build_office_preview.py` 生成内置预览资源；Windows 还需要 NuGet CLI 和 WebView2 Runtime。详见[Office Viewer 集成说明](docs/office-preview.md)。
 
 ### Windows
 

@@ -1,0 +1,60 @@
+# Office Viewer 集成
+
+版本树节点的打开对话框和右键菜单提供「预览」。Windows 使用 WebView2，macOS 使用 WKWebView 在 Vertree 内显示；Linux 使用本机浏览器，关闭 Vertree 的预览对话框后该页面的文件访问立即失效。
+
+Windows 资源管理器也提供「预览文件」：Win11 新菜单在 `Vertree` 子菜单内；传统菜单按设置显示在顶层或 `Vertree` 子菜单内。点击后启动/唤起 Vertree，直接打开所选文件的预览，无需先建立版本树或监控文件。命令行为 `vertree.exe preview "文件路径"`。
+
+传统菜单的注册、单项开关、布局切换和语言更新统一使用 `WindowsMenuAction` / `WindowsMenuPlan`。菜单写入当前用户的 `Software\Classes\*\shell`；切换布局保留已选项目，先写新布局再删除旧布局。升级时从旧注册表迁移选择，原来启用了传统菜单的用户自动获得预览项；原来关闭全部菜单的用户保持关闭。设置页可以单独切换预览项，折叠时也可调整各项。
+
+Win11 新菜单由安装包维护包身份，应用内开关只修改显示配置，不再卸载包；新菜单固定包含六个动作，传统菜单的单项设置仅影响传统菜单。`refresh_win11_menu.ps1` 默认不重启资源管理器，维护时可显式传入 `-RestartExplorer` / `-KillDllHost`。Inno 安装包卸载会清理当前用户和旧机器级传统菜单，包括折叠根和预览项。
+
+## 构建
+
+需要 Flutter、Python 3、Node.js 22.12+（推荐 24）。Windows 还需要 PATH 中可用的 NuGet CLI，运行设备需要 Microsoft Edge WebView2 Runtime。
+
+```sh
+git submodule update --init vendor/office-viewer
+python tools/build_office_preview.py
+flutter pub get
+flutter run -d windows
+```
+
+macOS / Linux 替换最后一行的设备名称。前端改动后重新运行构建脚本，再 hot restart；首次添加 WebView 插件需要完整重启应用。已有 node_modules 时可加 `--skip-install`。三平台 release 工作流会自动生成预览资源。
+
+## 结构
+
+- `vendor/office-viewer`：上游 `https://github.com/w0fv1/Office-Viewer` 的固定 Git submodule 提交，保持上游代码不变。无需初始化上游的 vscode-office 子模块，它是能力参考，不参与此预览构建。
+- `web/office_preview`：只读 React 入口，直接复用上游 `registry`、`Preview`、解析器和样式。依赖通过该目录的 package-lock.json 固定，升级上游时同步检查其 package.json 中的运行时依赖。
+- `assets/office_viewer`：Vite 生成的离线资源，作为 Flutter assets 打包，生成内容不入 Git。
+- `FilePreviewSession`：每次预览读取不超过 64 MiB 的文件快照，监听随机 loopback 端口，只服务当前随机 token 下的文件和内置资源。校验 Host / Origin，不提供目录遍历、写文件或跨域接口。CSP 禁止外部网络资源。
+- `FilePreviewDialog`：管理 WebView 和 session 的生命周期，关闭后销毁视图和服务；Windows 的浏览器环境在应用内共享，由 Flutter 引擎退出时回收，避免反复创建浏览器环境。WebView 数据目录放在用户应用支持目录，以支持安装在只读目录下的应用。
+
+预览不依赖本机自动化 API 或局域网分享服务开关，不向云端上传文件，不提供编辑或保存功能。
+
+## 格式边界
+
+以固定版本的上游 registry 为准。支持 DOCX / DOTX / ODT / RTF，XLSX / XLSM / XLS / ODS / CSV / TSV，PPTX / PPTM，PDF，Markdown、HTML、SVG、图片、结构化文本、代码和多种压缩文件。
+
+这是上游现有能力的嵌入，不保证 Office 原版版式：PPTX 展示文本及备注；旧 XLS 的支持有限；EPUB / XMind / PSD 展示结构摘要；7Z 展示条目列表；未知格式回退为文本尝试和十六进制。旧 DOC / PPT 没有专用渲染器。损坏或加密文件可能解析失败，仍可通过系统程序打开。
+
+外部图片、字体和链接不联网加载。WebView 自身的 PDF 显示能力因平台而异，PDF 文本提取由上游 pdf.js 提供。
+
+## 验证
+
+```sh
+npm --prefix web/office_preview test
+flutter test test/service/file_preview_session_test.dart
+flutter analyze
+```
+
+Windows 菜单回归测试：`flutter test test/platform/windows_menu_model_test.dart test/component/app_command_handler_test.dart`。原生 COM 菜单及 Windows 命令行参数验证（无需注册菜单）：
+
+```sh
+cmake -S windows/context_menu/tests -B build/context-menu-tests -A x64
+cmake --build build/context-menu-tests --config Release
+ctest --test-dir build/context-menu-tests -C Release --output-on-failure
+```
+
+前端测试使用子模块自带真实样例，验证注册器到解析结果；Dart 测试验证快照、特殊字符文件名、大小限制、资源 MIME、访问边界及关闭回收。Windows / macOS 的原生 WebView 仍需在对应平台做 UI 验证。
+
+本次集成在 Windows 已通过主程序 Debug / Release 构建、64 项 Flutter 测试、12 项前端测试和静态分析；独立原生测试窗口中验证了 DOCX 正文与大纲、XLSX 多 Sheet 切换、PDF 页面与文本、Markdown、7Z 条目，以及关闭后再次打开。菜单重构另通过原生 COM 枚举、六项菜单及特殊字符路径传参验证；新安装包尚未覆盖安装后在 Explorer 中点击验收。macOS / Linux 尚未进行实机验证。
