@@ -10,11 +10,13 @@ import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/main.dart';
 import 'package:vertree/service/file_preview_session.dart';
 import 'package:vertree/service/preview_webview_environment.dart';
+import 'package:vertree/view/module/preview_dialog_controller.dart';
+
+final _previewDialogs = PreviewDialogController();
 
 Future<void> showFilePreview(BuildContext context, String path) =>
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
+    _previewDialogs.show(
+      context,
       builder: (_) => FilePreviewDialog(path: path),
     );
 
