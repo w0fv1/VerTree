@@ -5,7 +5,7 @@
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">Vertree 开发入门 | Vertree维树</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://vertree.w0fv1.dev/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://vertree.w0fv1.dev/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://vertree.w0fv1.dev/docs/tutorial-develop/develop"><meta data-rh="true" property="og:locale" content="zh"><meta data-rh="true" name="docusaurus_locale" content="zh"><meta data-rh="true" name="docsearch:language" content="zh"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Vertree 开发入门 | Vertree维树"><meta data-rh="true" name="description" content="Vertree 是一个基于 Flutter 的桌面应用，目标是给“单文件持续演进”的工作流提供版本树、自动备份、平台原生入口和本机自动化接口。"><meta data-rh="true" property="og:description" content="Vertree 是一个基于 Flutter 的桌面应用，目标是给“单文件持续演进”的工作流提供版本树、自动备份、平台原生入口和本机自动化接口。"><link data-rh="true" rel="icon" href="/img/favicon.ico"><link data-rh="true" rel="canonical" href="https://vertree.w0fv1.dev/docs/tutorial-develop/develop"><link data-rh="true" rel="alternate" href="https://vertree.w0fv1.dev/docs/tutorial-develop/develop" hreflang="zh"><link data-rh="true" rel="alternate" href="https://vertree.w0fv1.dev/docs/tutorial-develop/develop" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Tutorial - 开发","item":"https://vertree.w0fv1.dev/docs/category/tutorial---开发"},{"@type":"ListItem","position":2,"name":"Vertree 开发入门","item":"https://vertree.w0fv1.dev/docs/tutorial-develop/develop"}]}</script><link rel="alternate" type="application/rss+xml" href="/blog/rss.xml" title="Vertree维树 RSS Feed">
 <link rel="alternate" type="application/atom+xml" href="/blog/atom.xml" title="Vertree维树 Atom Feed"><link rel="stylesheet" href="/assets/css/styles.10557c8b.css">
-<script src="/assets/js/runtime~main.08052bb8.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.59800f66.js" defer="defer"></script>
 <script src="/assets/js/main.8063099a.js" defer="defer"></script>
 </head>
 <body>
@@ -63,7 +63,7 @@
 <li class=""><code>POST /stop</code></li>
 <li class=""><code>POST /ensure-ready</code></li>
 </ul>
-<p>应用自己的本机 HTTP API 默认起始端口为 <code>31414</code>，除了监控/备份/版本树接口外，现在还支持：</p>
+<p>应用自己的本机 HTTP API 默认关闭，启用后的起始端口为 <code>31414</code>。<code>dev_server.py</code> 会为开发进程生成临时 Bearer Token、通过环境变量注入应用，并写入 <code>.dart_tool/vertree_local_api_token</code> 供仓库工具复用。除静态文档和 <code>/api/v1/ping</code> 外，所有接口都必须携带该 Token。除了监控/备份/版本树接口外，现在还支持：</p>
 <ul>
 <li class=""><code>POST /api/v1/app/quit</code>：退出当前桌面应用</li>
 <li class=""><code>POST /api/v1/ui/navigation</code>：切换到 <code>brand</code>、<code>monitor</code>、<code>settings</code>、<code>version-tree</code></li>
@@ -85,10 +85,10 @@
 <li class=""><code>lib/app_runtime.dart</code>：应用启动总控、页面切换、单实例、托盘、HTTP API、命令行分发</li>
 <li class=""><code>lib/component/app_cli.dart</code>：CLI 参数解析</li>
 <li class=""><code>lib/component/app_command_handler.dart</code>：把 CLI 请求分发到备份 / 监控 / 版本树动作</li>
-<li class=""><code>lib/core/FileVersionTree.dart</code>：版本号、文件元信息、文件节点与备份/分支逻辑</li>
-<li class=""><code>lib/core/MonitManager.dart</code>、<code>lib/core/Monitor.dart</code>：监控任务管理与自动备份</li>
-<li class=""><code>lib/api/LocalHttpApiServer.dart</code>、<code>lib/service/LocalHttpApiService.dart</code>：本机自动化接口</li>
-<li class=""><code>lib/service/LanFileShareServer.dart</code>：局域网临时分享服务与 token 下载映射</li>
+<li class=""><code>lib/core/file_version_tree.dart</code>：版本号、文件元信息、文件节点与备份/分支逻辑</li>
+<li class=""><code>lib/core/monit_manager.dart</code>、<code>lib/core/monitor.dart</code>：监控任务管理与自动备份</li>
+<li class=""><code>lib/api/local_http_api_server.dart</code>、<code>lib/service/local_http_api_service.dart</code>：本机自动化接口</li>
+<li class=""><code>lib/service/lan_file_share_server.dart</code>：局域网临时分享服务与 token 下载映射</li>
 <li class=""><code>lib/platform/platform_integration.dart</code>：跨平台上下文菜单、开机自启、GNOME 检测、Win11 包身份等封装</li>
 </ul>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="构建发布工件">构建发布工件<a href="#构建发布工件" class="hash-link" aria-label="构建发布工件的直接链接" title="构建发布工件的直接链接" translate="no">​</a></h2>

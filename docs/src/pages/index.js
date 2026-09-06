@@ -17,8 +17,8 @@ function HomepageHeader() {
                 {/* 左侧内容 */}
                 <div className={styles.heroText}>
                     <div className="margin-bottom--sm">
-                        <strong>V1.0.0 已发布</strong>
-                        <span> · 首个稳定版发布</span>
+                        <strong>V1.1.0 已发布</strong>
+                        <span> · 本地文件预览与更多格式支持</span>
                     </div>
                     <Heading as="h1" className="hero__title">
                         {siteConfig.title}

@@ -6,9 +6,11 @@ Vertree is a desktop version manager for single files. It is meant for evolving 
 
 ![Version tree overview](docs/static/img/version-tree-overview.png)
 
-## 1.0.0 Status
+## 1.1.0 Status
 
-Vertree 1.0.0 is the first stable release line. Windows, macOS, and Linux release artifacts are built by GitHub Actions, the loopback HTTP API is documented through OpenAPI, and LAN file sharing is available from version-tree nodes.
+Vertree 1.1.0 adds local file previews through Office Viewer, including office documents, PDF, images, media, ebooks, email, archives, and selected data and developer formats. Preview files from version-tree nodes, the Windows context menu, or `vertree preview <path>`. Opening another preview closes the previous window. The fixed 64 MiB limit is removed, with range loading for media, PDF, and Parquet. Unknown formats are shown as text when detected, or marked unsupported.
+
+Windows, macOS, and Linux release artifacts are built by GitHub Actions. The loopback HTTP API and LAN file sharing remain available.
 
 ## What It Does
 

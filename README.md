@@ -6,7 +6,11 @@ Vertree 是一个面向单文件的可视化版本管理工具，适合设计稿
 
 ![Version tree overview](docs/static/img/version-tree-overview.png)
 
-## 1.0.0 正式版现状
+## 1.1.0 正式版现状
+
+- 集成 Office Viewer 本地文件预览，支持办公文档、PDF、图片、音视频、电子书、邮件、压缩包及部分数据和开发文件。
+- Windows 文件右键菜单新增“预览文件”，版本树节点和 `vertree preview <path>` 也可直接预览；连续预览时自动关闭上一个窗口。
+- 取消 64 MiB 预览上限，支持媒体、PDF 和 Parquet 按需分段读取；未知格式仅尝试识别文本，否则显示不支持。
 
 - 支持 Windows 桌面使用，提供安装包、托盘、右键菜单、Windows 11 新菜单适配、监控页、版本树、设置页。
 - 支持 macOS 桌面使用，GitHub Release 会生成带架构标识的 `zip` / `dmg` 和符号包，并提供菜单栏/托盘、Finder Services、应用菜单和开机自启。
@@ -20,7 +24,7 @@ Vertree 是一个面向单文件的可视化版本管理工具，适合设计稿
 ## 核心能力
 
 - 树状版本管理：主线版本、分支版本、备注标签都会直接体现在文件名和界面里。
-- 文件预览：版本节点支持通过 Office Viewer 只读预览文档、表格、图片和文本，详见[集成与构建说明](docs/office-preview.md)。
+- 文件预览：通过 Office Viewer 只读预览文件，支持幻灯片画布、PSD 合成图、XMind 思维导图、HEIC、Parquet 等，详见[集成与构建说明](docs/office-preview.md)。
 - 自动监控备份：监控文件变化，按配置频率自动写入 `*_bak` 目录，并按数量上限清理旧备份。
 - 快速入口：Windows 右键菜单、macOS Finder Services、Linux GNOME Files 右键菜单、托盘菜单、应用菜单都可以直接触发操作。
 - 跨平台命令入口：`vertree /path/to/file` 查看版本树，`vertree backup <path>`、`vertree monit <path>`、`vertree express-backup <path>` 直接执行动作。
