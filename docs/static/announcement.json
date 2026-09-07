@@ -1,6 +1,6 @@
 {
-  "uuid": "v1-1-4-release-20260907",
-  "content": "Vertree V1.1.4 已发布：修复 Windows 任务栏 Logo 白底与退出卡顿，统一 Logo 资源。退出旧版后覆盖安装即可。",
+  "uuid": "v1-2-0-release-20260907",
+  "content": "Vertree V1.2.0 已发布：新增文件预览图 API、版本恢复、批处理、异步任务与实时事件；Office-Viewer 支持导出 PNG。退出旧版后覆盖安装即可。",
   "expiresAt": "2026-10-07T23:59:59+08:00",
-  "link": "https://github.com/w0fv1/VerTree/releases/tag/V1.1.4"
+  "link": "https://github.com/w0fv1/VerTree/releases/tag/V1.2.0"
 }
