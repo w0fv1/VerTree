@@ -12,7 +12,8 @@ import {themes as prismThemes} from 'prism-react-renderer';
 const config = {
   title: 'Vertree维树',
   tagline: '为单个文件保留版本、预览内容、自动备份',
-  favicon: 'img/favicon.ico',
+  favicon: 'logo.ico',
+  staticDirectories: ['static', '../assets/img/logo'],
 
   // Set the production url of your site here
   url: 'https://vertree.w0fv1.dev',
@@ -83,7 +84,7 @@ const config = {
         title: 'Vertree',
         logo: {
           alt: 'Vertree Logo',
-          src: 'img/logo.svg',
+          src: 'logo.png',
         },
         items: [
           {

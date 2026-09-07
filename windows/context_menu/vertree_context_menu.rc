@@ -1,6 +1,6 @@
 #include "resource.h"
 
-IDI_VERTREE_ROOT ICON "..\\..\\windows\\runner\\resources\\app_icon.ico"
+IDI_VERTREE_ROOT ICON "..\\..\\assets\\img\\logo\\logo.ico"
 IDI_VERTREE_BACKUP ICON "..\\..\\assets\\img\\icon\\save.ico"
 IDI_VERTREE_EXPRESS_BACKUP ICON "..\\..\\assets\\img\\icon\\express-save.ico"
 IDI_VERTREE_MONITOR ICON "..\\..\\assets\\img\\icon\\monit.ico"

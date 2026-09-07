@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -264,7 +263,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                           ),
                           OutlinedButton.icon(
                             onPressed: () async {
-                              exit(0);
+                              await quitApplication();
                             },
                             icon: const Icon(Icons.exit_to_app_rounded),
                             label: Text(appLocale.getText(LocaleKey.brandExit)),

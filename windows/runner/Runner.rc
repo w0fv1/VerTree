@@ -52,7 +52,7 @@ END
 
 
 
-IDI_APP_ICON            ICON                    "resources\\app_icon.ico"
+IDI_APP_ICON            ICON                    "..\\..\\assets\\img\\logo\\logo.ico"
 
 
 

@@ -339,6 +339,8 @@ Set-Location $scriptDir
 $issFile = Join-Path $scriptDir "setup.iss"
 $runnerOutputDir = (Resolve-Path (Join-Path $scriptDir "..\\build\\windows\\x64\\runner\\$BuildMode")).Path
 
+& (Join-Path $scriptDir 'build_icon_resources.ps1')
+
 
 $contextMenuDll = Join-Path $scriptDir "..\\build\\windows\\x64\\context_menu\\$BuildMode\\vertree_context_menu.dll"
 $runnerDll = Join-Path $runnerOutputDir "vertree_context_menu.dll"

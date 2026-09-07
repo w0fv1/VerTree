@@ -28,7 +28,7 @@ cp -a "$RELEASE_BUNDLE_DIR" "$STAGE_DIR/bundle"
 cp "$ROOT_DIR/linux/packaging/vertree.desktop" "$STAGE_DIR/dev.w0fv1.vertree.desktop"
 cp "$ROOT_DIR/linux/packaging/vertree.metainfo.xml" "$STAGE_DIR/dev.w0fv1.vertree.metainfo.xml"
 cp "$ROOT_DIR/linux/packaging/vertree_nautilus.py" "$STAGE_DIR/vertree_nautilus.py"
-cp "$ROOT_DIR/assets/icon/app_icon.png" "$STAGE_DIR/vertree.png"
+cp "$ROOT_DIR/assets/img/logo/logo.png" "$STAGE_DIR/vertree.png"
 
 cat > "$STAGE_DIR/vertree" <<'EOF'
 #!/usr/bin/env sh

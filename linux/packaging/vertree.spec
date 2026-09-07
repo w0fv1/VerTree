@@ -47,7 +47,6 @@ cp -a bundle/. %{buildroot}%{_libexecdir}/vertree/
 install -Dpm0755 %{SOURCE3} %{buildroot}%{_bindir}/vertree
 install -Dpm0644 %{SOURCE1} %{buildroot}%{_datadir}/applications/%{app_id}.desktop
 install -Dpm0644 %{SOURCE2} %{buildroot}%{_datadir}/icons/hicolor/256x256/apps/vertree.png
-install -Dpm0644 %{SOURCE2} %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/vertree.png
 install -Dpm0644 %{SOURCE4} %{buildroot}%{_datadir}/metainfo/%{app_id}.metainfo.xml
 install -Dpm0644 %{SOURCE5} %{buildroot}%{_datadir}/nautilus-python/extensions/vertree_extension.py
 
@@ -63,7 +62,6 @@ appstreamcli validate --no-net %{buildroot}%{_datadir}/metainfo/%{app_id}.metain
 %{_libexecdir}/vertree
 %{_datadir}/applications/%{app_id}.desktop
 %{_datadir}/icons/hicolor/256x256/apps/vertree.png
-%{_datadir}/icons/hicolor/512x512/apps/vertree.png
 %{_datadir}/metainfo/%{app_id}.metainfo.xml
 %{_datadir}/nautilus-python/extensions/vertree_extension.py
 

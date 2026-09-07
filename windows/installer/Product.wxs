@@ -18,7 +18,7 @@
       DowngradeErrorMessage="A newer version of Vertree is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
-    <Icon Id="VertreeAppIcon" SourceFile="$(var.RootDir)\windows\runner\resources\app_icon.ico" />
+    <Icon Id="VertreeAppIcon" SourceFile="$(var.RootDir)\assets\img\logo\logo.ico" />
     <Property Id="ARPPRODUCTICON" Value="VertreeAppIcon" />
     <Property Id="ARPURLINFOABOUT" Value="https://vertree.w0fv1.dev" />
     <Property Id="ARPHELPLINK" Value="https://github.com/w0fv1/vertree" />
@@ -44,7 +44,9 @@
           Target="[INSTALLDIR]vertree.exe"
           WorkingDirectory="INSTALLDIR"
           Icon="VertreeAppIcon"
-          Advertise="no" />
+          Advertise="no">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="dev.w0fv1.vertree.desktop" />
+        </Shortcut>
         <RemoveFolder Id="ProgramMenuDirCleanup" On="uninstall" />
         <RegistryValue
           Root="HKLM"
@@ -66,7 +68,9 @@
           Target="[INSTALLDIR]vertree.exe"
           WorkingDirectory="INSTALLDIR"
           Icon="VertreeAppIcon"
-          Advertise="no" />
+          Advertise="no">
+          <ShortcutProperty Key="System.AppUserModel.ID" Value="dev.w0fv1.vertree.desktop" />
+        </Shortcut>
         <RegistryValue
           Root="HKLM"
           Key="Software\Vertree"

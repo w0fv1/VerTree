@@ -55,7 +55,7 @@ sed \
   -e "s/@CHANGELOG_DATE@/$CHANGELOG_DATE/g" \
   "$ROOT_DIR/linux/packaging/vertree.spec" > "$SPECS_DIR/vertree.spec"
 cp "$ROOT_DIR/linux/packaging/vertree.desktop" "$SOURCES_DIR/"
-cp "$ROOT_DIR/assets/icon/app_icon.png" "$SOURCES_DIR/vertree.png"
+cp "$ROOT_DIR/assets/img/logo/logo.png" "$SOURCES_DIR/vertree.png"
 cp "$ROOT_DIR/linux/packaging/vertree.sh" "$SOURCES_DIR/"
 sed \
   -e "s/@VERSION@/$RAW_VERSION/g" \

@@ -31,6 +31,8 @@ npm run build
 
 ## 图片
 
+Logo 统一使用 `assets/img/logo/logo.png` 和 `logo.ico`（相对于仓库根目录）。官网通过静态目录配置直接读取它们；不要在 `docs/static` 新增 Logo 副本。平台尺寸资源的生成方式见 [Logo 资源](logo-assets.md)。
+
 仓库根目录提供 `python tools/update_doc_images.py`，通过受控开发进程与应用 API 生成截图。使用标准样例和浅色主题，提交前实际检查图片。界面未重新截图时，不把旧画面标作当前版本的验收证据。
 
 ## 公告

@@ -24,6 +24,7 @@ import 'package:vertree/component/app_window_controller.dart';
 import 'package:vertree/component/tray_manager.dart';
 import 'package:vertree/platform/bootstrap/platform_bootstrap.dart';
 import 'package:vertree/platform/platform_integration.dart';
+import 'package:vertree/platform/process_exit.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
 import 'package:vertree/service/local_http_api_service.dart';
 import 'package:vertree/service/app_announcement_service.dart';
@@ -365,23 +366,27 @@ Future<void> quitApplication() async {
     return;
   }
   _isQuittingApplication = true;
-  unawaited(_disposeBackgroundServicesForQuit());
-  unawaited(_forceExitAfterQuitTimeout());
-  try {
-    await windowManager.setPreventClose(false);
-  } catch (_) {}
-  try {
-    await windowManager.destroy();
-    return;
-  } catch (_) {}
-  exit(0);
+  // Keep the engine/message loop alive until bounded service cleanup finishes.
+  // windowManager.destroy() posts WM_QUIT on Windows, tearing down the engine
+  // before Dart cleanup or a Dart fallback timer can reliably complete.
+  await _disposeBackgroundServicesForQuit();
+  exitAfterCleanup();
 }
 
 Future<void> _disposeBackgroundServicesForQuit() async {
   await Future.wait<void>([
     _safeShutdownLanFileShareServer(),
     _safeStopLocalHttpApiServer(),
+    _safeHideTrayForQuit(),
   ], eagerError: false);
+}
+
+Future<void> _safeHideTrayForQuit() async {
+  try {
+    await TrayManager().hideForQuit().timeout(
+      const Duration(milliseconds: 700),
+    );
+  } catch (_) {}
 }
 
 Future<void> _safeShutdownLanFileShareServer() async {
@@ -396,13 +401,6 @@ Future<void> _safeStopLocalHttpApiServer() async {
   try {
     await localHttpApiServer.stop().timeout(const Duration(milliseconds: 700));
   } catch (_) {}
-}
-
-Future<void> _forceExitAfterQuitTimeout() async {
-  await Future<void>.delayed(const Duration(seconds: 2));
-  if (_isQuittingApplication) {
-    exit(0);
-  }
 }
 
 Future<void> toggleMainWindowVisibility({Widget? page}) async {

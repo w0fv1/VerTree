@@ -67,7 +67,7 @@ class AppDelegate: FlutterAppDelegate {
 
   private func refreshDockIcon() {
 
-    if let image = NSImage(named: NSImage.Name("DockIcon")) {
+    if let image = NSImage(named: NSImage.Name("AppIcon")) {
       NSApplication.shared.applicationIconImage = image
       NSApp.dockTile.display()
     }

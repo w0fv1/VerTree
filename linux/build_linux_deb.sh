@@ -43,7 +43,6 @@ mkdir -p \
   "$PKG_ROOT/usr/bin" \
   "$PKG_ROOT/usr/share/applications" \
   "$PKG_ROOT/usr/share/icons/hicolor/256x256/apps" \
-  "$PKG_ROOT/usr/share/icons/hicolor/512x512/apps" \
   "$PKG_ROOT/usr/share/metainfo" \
   "$PKG_ROOT/usr/share/nautilus-python/extensions" \
   "$DIST_DIR"
@@ -52,10 +51,8 @@ cp -a "$RELEASE_BUNDLE_DIR/." "$PKG_ROOT/usr/libexec/vertree/"
 install -m 0755 "$ROOT_DIR/linux/packaging/vertree.sh" "$PKG_ROOT/usr/bin/vertree"
 install -m 0644 "$ROOT_DIR/linux/packaging/vertree.desktop" \
   "$PKG_ROOT/usr/share/applications/dev.w0fv1.vertree.desktop"
-install -m 0644 "$ROOT_DIR/assets/icon/app_icon.png" \
+install -m 0644 "$ROOT_DIR/assets/img/logo/logo.png" \
   "$PKG_ROOT/usr/share/icons/hicolor/256x256/apps/vertree.png"
-install -m 0644 "$ROOT_DIR/assets/icon/app_icon.png" \
-  "$PKG_ROOT/usr/share/icons/hicolor/512x512/apps/vertree.png"
 sed \
   -e "s/@VERSION@/$RAW_VERSION/g" \
   -e "s/@RELEASE_DATE@/$RELEASE_DATE/g" \

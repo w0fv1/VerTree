@@ -2,6 +2,10 @@
 
 #include <dwmapi.h>
 #include <flutter_windows.h>
+#include <propkey.h>
+#include <propvarutil.h>
+#include <shobjidl.h>
+#include <wrl/client.h>
 
 #include "resource.h"
 
@@ -35,6 +39,68 @@ using EnableNonClientDpiScaling = BOOL __stdcall(HWND hwnd);
 
 int Scale(int source, double scale_factor) {
   return static_cast<int>(source * scale_factor);
+}
+
+void SetWindowIcons(HWND window, UINT dpi) {
+  // Provide current icons for the title bar and window switcher at this DPI.
+  // LR_SHARED keeps these module resources valid for the process lifetime.
+  const HINSTANCE instance = GetModuleHandle(nullptr);
+  const auto set_icon = [window, instance, dpi](WPARAM kind, int metric) {
+    const int size = GetSystemMetricsForDpi(metric, dpi);
+    const HICON icon = static_cast<HICON>(LoadImage(
+        instance, MAKEINTRESOURCE(IDI_APP_ICON), IMAGE_ICON, size, size,
+        LR_SHARED));
+    if (icon) {
+      SendMessage(window, WM_SETICON, kind, reinterpret_cast<LPARAM>(icon));
+    }
+  };
+  set_icon(ICON_SMALL, SM_CXSMICON);
+  set_icon(ICON_BIG, SM_CXICON);
+}
+
+void SetTaskbarIdentity(HWND window) {
+  Microsoft::WRL::ComPtr<IPropertyStore> properties;
+  if (FAILED(SHGetPropertyStoreForWindow(window, IID_PPV_ARGS(&properties)))) {
+    return;
+  }
+
+  wchar_t executable[32768];
+  const DWORD length = GetModuleFileName(nullptr, executable, 32768);
+  if (length == 0 || length >= 32768) {
+    return;
+  }
+  const std::wstring path(executable, length);
+  const std::wstring directory = path.substr(0, path.find_last_of(L"\\/"));
+  const auto set_string = [&properties](REFPROPERTYKEY key,
+                                        const std::wstring& text) {
+    PROPVARIANT value;
+    if (SUCCEEDED(InitPropVariantFromString(text.c_str(), &value))) {
+      properties->SetValue(key, value);
+      PropVariantClear(&value);
+    }
+  };
+
+  // Keep the desktop window and installer shortcuts in the same taskbar group.
+  // Explicit icon metadata avoids stale Shell/package icon associations after
+  // an upgrade. Set relaunch metadata before the ID, as required by the Shell.
+  set_string(PKEY_AppUserModel_RelaunchCommand, L"\"" + path + L"\"");
+  set_string(PKEY_AppUserModel_RelaunchIconResource,
+             directory + L"\\data\\flutter_assets\\assets\\img\\logo\\logo.ico,0");
+  set_string(PKEY_AppUserModel_RelaunchDisplayNameResource, L"Vertree");
+  set_string(PKEY_AppUserModel_ID, L"dev.w0fv1.vertree.desktop");
+}
+
+void ClearTaskbarIdentity(HWND window) {
+  Microsoft::WRL::ComPtr<IPropertyStore> properties;
+  if (SUCCEEDED(SHGetPropertyStoreForWindow(window, IID_PPV_ARGS(&properties)))) {
+    const PROPVARIANT empty{};
+    for (const auto& key : {PKEY_AppUserModel_ID,
+                            PKEY_AppUserModel_RelaunchCommand,
+                            PKEY_AppUserModel_RelaunchIconResource,
+                            PKEY_AppUserModel_RelaunchDisplayNameResource}) {
+      properties->SetValue(key, empty);
+    }
+  }
 }
 
 
@@ -146,6 +212,9 @@ bool Win32Window::Create(const std::wstring& title,
 
   UpdateTheme(window);
 
+  SetWindowIcons(window, dpi);
+  SetTaskbarIdentity(window);
+
   return OnCreate();
 }
 
@@ -180,6 +249,7 @@ Win32Window::MessageHandler(HWND hwnd,
                             LPARAM const lparam) noexcept {
   switch (message) {
     case WM_DESTROY:
+      ClearTaskbarIdentity(hwnd);
       window_handle_ = nullptr;
       Destroy();
       if (quit_on_close_) {
@@ -188,6 +258,7 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
 
     case WM_DPICHANGED: {
+      SetWindowIcons(hwnd, HIWORD(wparam));
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
       LONG newWidth = newRectSize->right - newRectSize->left;
       LONG newHeight = newRectSize->bottom - newRectSize->top;

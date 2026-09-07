@@ -103,6 +103,7 @@ $pubspecVersion = Get-PubspecVersion -projectRoot $projectRoot
 $msixPackageVersion = Get-MsixPackageVersion -pubspecVersion $pubspecVersion
 $runnerOutputDir = (Resolve-Path (Join-Path $scriptDir "..\\build\\windows\\x64\\runner\\$BuildMode")).Path
 $packagingSourceDir = Join-Path $scriptDir "packaging"
+& (Join-Path $scriptDir 'build_icon_resources.ps1')
 $msixBaseName = "vertree-windows-x64-$pubspecVersion"
 $msixStageRoot = Join-Path $scriptDir "..\\build\\windows\\msix"
 $msixStageDir = Join-Path $msixStageRoot "package"

@@ -89,7 +89,7 @@ class TrayManager with lean_tray.TrayListener {
     }
     _iconPath = Platform.isWindows
         ? 'assets/img/logo/logo.ico'
-        : 'assets/icon/app_icon.png';
+        : 'assets/img/logo/logo.png';
     if (Platform.isLinux) {
       await refreshTray();
       return;
@@ -445,6 +445,18 @@ class TrayManager with lean_tray.TrayListener {
         _rebuildQueued = false;
         unawaited(refreshTray(forceRebuild: rebuildQueued));
       }
+    }
+  }
+
+  Future<void> hideForQuit() async {
+    _initialized = false;
+    _refreshTimer?.cancel();
+    _refreshQueued = false;
+    _rebuildQueued = false;
+    if (Platform.isLinux) {
+      await lean_tray.trayManager.destroy();
+    } else {
+      _trayIcon?.isVisible = false;
     }
   }
 

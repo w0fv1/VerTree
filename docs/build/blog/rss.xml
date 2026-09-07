@@ -30,6 +30,21 @@
 <p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.1.0" target="_blank" rel="noopener noreferrer" class="">下载 V1.1.0</a></p>]]></content:encoded>
         </item>
         <item>
+            <title><![CDATA[Vertree 1.1.4：修复任务栏图标与退出卡顿]]></title>
+            <link>https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes</link>
+            <guid>https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes</guid>
+            <pubDate>Mon, 07 Sep 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[1.1.4 修复 Windows 任务栏 Logo 白底和退出拖延，并统一各平台与官网使用的 Logo 资源。]]></description>
+            <content:encoded><![CDATA[<p>1.1.4 修复 Windows 任务栏 Logo 白底和退出拖延，并统一各平台与官网使用的 Logo 资源。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="任务栏图标">任务栏图标<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E4%BB%BB%E5%8A%A1%E6%A0%8F%E5%9B%BE%E6%A0%87" class="hash-link" aria-label="任务栏图标的直接链接" title="任务栏图标的直接链接" translate="no">​</a></h2>
+<p>运行窗口明确指定公共透明 ICO，并与安装器创建的快捷方式使用相同的应用标识，避免升级后继续选取旧的图标关联。修复已在实际 Windows 任务栏确认。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="退出流程">退出流程<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E9%80%80%E5%87%BA%E6%B5%81%E7%A8%8B" class="hash-link" aria-label="退出流程的直接链接" title="退出流程的直接链接" translate="no">​</a></h2>
+<p>主页、托盘和本地 API 现在使用同一个退出入口。后台服务关闭、托盘图标移除后，Windows 进程直接结束，避开引擎销毁时的原生异常。实测退出约 0.19 秒，退出码为 0；实际耗时取决于运行环境。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="公共-logo">公共 Logo<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E5%85%AC%E5%85%B1-logo" class="hash-link" aria-label="公共 Logo的直接链接" title="公共 Logo的直接链接" translate="no">​</a></h2>
+<p>Logo 以公共目录中的 PNG 和 ICO 为源。官网直接读取公共文件，macOS 和 Windows 包身份所需的不同尺寸由脚本生成，减少重复维护。</p>
+<p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.1.4" target="_blank" rel="noopener noreferrer" class="">下载 1.1.4</a>。Windows 用户退出旧版后覆盖安装即可，文件预览功能保持可用。</p>]]></content:encoded>
+        </item>
+        <item>
             <title><![CDATA[Welcome]]></title>
             <link>https://vertree.w0fv1.dev/blog/welcome</link>
             <guid>https://vertree.w0fv1.dev/blog/welcome</guid>
