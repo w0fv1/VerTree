@@ -21,6 +21,45 @@ if ($menuDir.TrimEnd('\') -ne (Join-Path $programMenu 'Vertree')) {
     throw "Start menu resolves incorrectly: $menuDir; expected $programMenu\Vertree"
 }
 $db = $installer.OpenDatabase($packagePath, 0)
+# Inspect the linked artifact: /qn installation alone cannot detect a missing wizard.
+function Assert-MsiRow([string]$Query, [string]$Message) {
+    $checkView = $null
+    $checkRecord = $null
+    try {
+        $checkView = $db.OpenView($Query)
+        $checkView.Execute()
+        $checkRecord = $checkView.Fetch()
+        if ($null -eq $checkRecord) { throw $Message }
+    } catch {
+        throw "$Message ($($_.Exception.Message))"
+    } finally {
+        if ($null -ne $checkView) { $checkView.Close() }
+        foreach ($item in @($checkRecord, $checkView)) {
+            if ($null -ne $item) { [void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($item) }
+        }
+    }
+}
+foreach ($dialog in @('WelcomeDlg', 'InstallDirDlg', 'VerifyReadyDlg', 'ProgressDlg',
+                     'ExitDialog', 'MaintenanceWelcomeDlg', 'MaintenanceTypeDlg', 'FatalError', 'UserExit')) {
+    Assert-MsiRow ('SELECT `Dialog` FROM `Dialog` WHERE `Dialog` = ''' + $dialog + '''') "Missing MSI dialog: $dialog"
+}
+foreach ($dialog in @('WelcomeDlg', 'MaintenanceWelcomeDlg', 'ExitDialog', 'FatalError', 'UserExit')) {
+    Assert-MsiRow ('SELECT `Action` FROM `InstallUISequence` WHERE `Action` = ''' + $dialog + '''') "MSI dialog is not scheduled: $dialog"
+}
+Assert-MsiRow 'SELECT `Control` FROM `Control` WHERE `Dialog_` = ''ExitDialog'' AND `Control` = ''OptionalCheckBox''' 'Missing launch checkbox.'
+Assert-MsiRow 'SELECT `Event` FROM `ControlEvent` WHERE `Dialog_` = ''ExitDialog'' AND `Control_` = ''Finish'' AND `Event` = ''DoAction'' AND `Argument` = ''LaunchApplication'' AND `Condition` = ''WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed AND NOT REMOVE''' 'Finish must launch only when opted in after installation.'
+Assert-MsiRow 'SELECT `Action` FROM `CustomAction` WHERE `Action` = ''LaunchApplication'' AND `Target` = ''WixShellExec''' 'Missing application launch action.'
+Assert-MsiRow 'SELECT `Event` FROM `ControlEvent` WHERE `Dialog_` = ''ExitDialog'' AND `Control_` = ''Finish'' AND `Argument` = ''SetLaunchTarget'' AND `Ordering` = 1' 'Finish must resolve the launch path before launching.'
+if ($session.DoAction('SetLaunchTarget') -ne 1 -or
+    $session.Property('WixShellExecTarget') -ne (Join-Path $installDir 'vertree.exe')) {
+    throw 'Launch target does not resolve to the installed application.'
+}
+$launchSequence = $db.OpenView('SELECT `Action` FROM `InstallExecuteSequence` WHERE `Action` = ''LaunchApplication''')
+$launchSequence.Execute()
+if ($null -ne $launchSequence.Fetch()) { throw 'Application launch must not run during silent installation or uninstall.' }
+$launchSequence.Close()
+[void][Runtime.InteropServices.Marshal]::FinalReleaseComObject($launchSequence)
+Write-Host 'MSI wizard, maintenance, completion, and opt-in launch validation passed.'
 $view = $db.OpenView('SELECT `Directory_` FROM `Shortcut` WHERE `Shortcut` = ''DesktopShortcut''')
 $view.Execute()
 $record = $view.Fetch()

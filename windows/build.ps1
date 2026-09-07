@@ -592,6 +592,8 @@ if ([string]::IsNullOrWhiteSpace($wixBin)) {
 
         & $lightExe `
             -nologo `
+            -ext (Join-Path $wixBin 'WixUIExtension.dll') `
+            -ext (Join-Path $wixBin 'WixUtilExtension.dll') `
             -cultures:en-us `
             -out $msiPath `
             $productWixObj `

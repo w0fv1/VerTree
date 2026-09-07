@@ -15,8 +15,29 @@
       Platform="x64" />
 
     <MajorUpgrade
+      AllowSameVersionUpgrades="yes"
+      Schedule="afterInstallInitialize"
       DowngradeErrorMessage="A newer version of Vertree is already installed." />
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+    <WixVariable Id="WixUILicenseRtf" Value="$(var.RootDir)\windows\installer\License.rtf" />
+    <UI>
+      <UIRef Id="WixUI_InstallDir" />
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction"
+               Value="SetLaunchTarget" Order="1">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed AND NOT REMOVE</Publish>
+      <Publish Dialog="ExitDialog" Control="Finish" Event="DoAction"
+               Value="LaunchApplication" Order="2">WIXUI_EXITDIALOGOPTIONALCHECKBOX = 1 AND NOT Installed AND NOT REMOVE</Publish>
+    </UI>
+    <Property Id="WIXUI_EXITDIALOGOPTIONALTEXT"
+              Value="You can open Vertree from the Start menu or the desktop shortcut." />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOXTEXT" Value="Launch Vertree" />
+    <Property Id="WIXUI_EXITDIALOGOPTIONALCHECKBOX" Value="1" />
+    <CustomAction Id="SetLaunchTarget" Property="WixShellExecTarget"
+                  Value="[INSTALLDIR]vertree.exe" />
+    <!-- Run only from the successful Finish page, as the interactive user. -->
+    <CustomAction Id="LaunchApplication" BinaryKey="WixCA"
+                  DllEntry="WixShellExec" Impersonate="yes" />
 
     <Icon Id="VertreeAppIcon" SourceFile="$(var.RootDir)\assets\img\logo\logo.ico" />
     <Property Id="ARPPRODUCTICON" Value="VertreeAppIcon" />
