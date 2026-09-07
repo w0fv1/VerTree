@@ -1,6 +1,6 @@
 {
-  "uuid": "v1-1-0-release-20260907",
-  "content": "Vertree V1.1.0 已发布：新增本地文件预览和 Windows 右键预览入口，扩展办公文档、图片、媒体等格式支持，取消固定 64 MiB 预览上限，并简化预览和版本树界面。",
+  "uuid": "v1-1-4-release-20260907",
+  "content": "Vertree V1.1.4 已发布：修复 Windows 任务栏 Logo 白底与退出卡顿，统一 Logo 资源。退出旧版后覆盖安装即可。",
   "expiresAt": "2026-10-07T23:59:59+08:00",
-  "link": "https://github.com/w0fv1/vertree/releases/tag/V1.1.0"
+  "link": "https://github.com/w0fv1/VerTree/releases/tag/V1.1.4"
 }
