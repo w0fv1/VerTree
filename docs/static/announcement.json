@@ -1,6 +1,6 @@
 {
-  "uuid": "v1-2-0-release-20260907",
-  "content": "Vertree V1.2.0 已发布：新增文件预览图 API、版本恢复、批处理、异步任务与实时事件；Office-Viewer 支持导出 PNG。退出旧版后覆盖安装即可。",
-  "expiresAt": "2026-10-07T23:59:59+08:00",
-  "link": "https://github.com/w0fv1/VerTree/releases/tag/V1.2.0"
+  "uuid": "v2-0-0-release-20260908",
+  "content": "Vertree V2.0.0 已发布：统一版本、快照与监控架构，修复 Windows MSI 安装包。注意：旧配置和旧自动备份不自动导入，升级后请重新设置偏好与监控任务；手动版本文件继续保留。",
+  "expiresAt": "2026-10-08T23:59:59+08:00",
+  "link": "https://github.com/w0fv1/VerTree/releases/tag/V2.0.0"
 }
