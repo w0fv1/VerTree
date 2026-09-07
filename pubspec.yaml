@@ -2,7 +2,7 @@ name: vertree
 description: "针对单文件的版本管理系统"
 publish_to: 'none'
 
-version: 2.0.0
+version: 2.0.1
 
 environment:
   sdk: '>=3.10.0 <4.0.0'

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -84,7 +85,8 @@ class AppAnnouncementService {
 
   final String announcementUrl;
   final Map<String, dynamic> Function() readConfigSnapshot;
-  final void Function(List<String> uuids) writeDismissedAnnouncementUuids;
+  final FutureOr<void> Function(List<String> uuids)
+  writeDismissedAnnouncementUuids;
   final Future<http.Response> Function(Uri uri) _httpGet;
   final DateTime Function() _now;
   final void Function(String message)? _onLogInfo;
@@ -138,15 +140,13 @@ class AppAnnouncementService {
     return _shownInSession.contains(uuid);
   }
 
-  void markShownInSession(String uuid) {
-    final normalized = uuid.trim();
-    if (normalized.isEmpty) {
-      return;
-    }
-    _shownInSession.add(normalized);
+  /// Claim after any awaited visibility check, so focus/restore cannot race.
+  bool tryClaim(AppAnnouncement announcement) {
+    if (isExpired(announcement) || isDismissed(announcement.uuid)) return false;
+    return _shownInSession.add(announcement.uuid);
   }
 
-  void dismissAnnouncement(String uuid) {
+  Future<void> dismissAnnouncement(String uuid) async {
     final normalized = uuid.trim();
     if (normalized.isEmpty) {
       return;
@@ -154,7 +154,8 @@ class AppAnnouncementService {
 
     final values = <String>{...dismissedAnnouncementUuids, normalized}.toList()
       ..sort();
-    writeDismissedAnnouncementUuids(values);
+    _shownInSession.add(normalized);
+    await writeDismissedAnnouncementUuids(values);
   }
 
   List<String> get dismissedAnnouncementUuids {

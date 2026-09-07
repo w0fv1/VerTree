@@ -15,8 +15,6 @@ import 'package:vertree/view/page/setting_page.dart';
 
 import 'package:window_manager/window_manager.dart';
 
-enum _AnnouncementDialogAction { close, dismissForever }
-
 class BrandPage extends StatefulWidget {
   const BrandPage({
     super.key,
@@ -42,9 +40,14 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   bool _announcementDialogOpen = false;
 
   Future<void> _runStartupFlow() async {
-    await setup();
-    await _loadAnnouncementIfNeeded();
-    await _tryShowAnnouncement();
+    try {
+      await setup();
+      if (!mounted) return;
+      await _loadAnnouncementIfNeeded();
+      await _tryShowAnnouncement();
+    } catch (error) {
+      _desktop.logger.error('Startup prompt failed: $error');
+    }
   }
 
   Future<void> _loadAnnouncementIfNeeded() async {
@@ -67,110 +70,103 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
     }
 
     final isVisible = await windowManager.isVisible();
-    if (!isVisible || !mounted) {
+    if (!isVisible ||
+        !mounted ||
+        !_desktop.appAnnouncementService.tryClaim(announcement)) {
       return;
     }
 
     _announcementDialogOpen = true;
-    _desktop.appAnnouncementService.markShownInSession(announcement.uuid);
-    final action = await showDialog<_AnnouncementDialogAction>(
-      context: context,
-      builder: (dialogContext) {
-        final theme = Theme.of(dialogContext);
-        final scheme = theme.colorScheme;
-        return AlertDialog(
-          content: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: scheme.primaryContainer.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(14),
+    try {
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) {
+          final theme = Theme.of(dialogContext);
+          final scheme = theme.colorScheme;
+          return AlertDialog(
+            content: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: scheme.primaryContainer.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      Icons.campaign_rounded,
+                      color: scheme.onPrimaryContainer,
+                      size: 22,
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: Icon(
-                    Icons.campaign_rounded,
-                    color: scheme.onPrimaryContainer,
-                    size: 22,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _desktop.appLocale.getText(
+                            LocaleKey.brandAnnouncementTitle,
+                          ),
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SelectableText(
+                          announcement.content,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            height: 1.45,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _desktop.appLocale.getText(
-                          LocaleKey.brandAnnouncementTitle,
-                        ),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      SelectableText(
-                        announcement.content,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          height: 1.45,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(
-                dialogContext,
-              ).pop(_AnnouncementDialogAction.close),
-              child: Text(
-                _desktop.appLocale.getText(LocaleKey.brandAnnouncementClose),
+                ],
               ),
             ),
-            if (announcement.linkUri != null)
-              FilledButton(
-                onPressed: () async {
-                  final opened = await _openAnnouncementLink(
-                    announcement.linkUri!,
-                  );
-                  if (opened && dialogContext.mounted) {
-                    Navigator.of(
-                      dialogContext,
-                    ).pop(_AnnouncementDialogAction.close);
-                  }
-                },
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: Text(
-                  _desktop.appLocale.getText(LocaleKey.brandAnnouncementGo),
+                  _desktop.appLocale.getText(LocaleKey.brandAnnouncementClose),
                 ),
               ),
-            FilledButton.tonal(
-              onPressed: () => Navigator.of(
-                dialogContext,
-              ).pop(_AnnouncementDialogAction.dismissForever),
-              child: Text(
-                _desktop.appLocale.getText(
-                  LocaleKey.brandAnnouncementDontShowAgain,
+              if (announcement.linkUri != null)
+                FilledButton(
+                  onPressed: () async {
+                    final opened = await _openAnnouncementLink(
+                      announcement.linkUri!,
+                    );
+                    if (opened && dialogContext.mounted) {
+                      Navigator.of(dialogContext).pop();
+                    }
+                  },
+                  child: Text(
+                    _desktop.appLocale.getText(LocaleKey.brandAnnouncementGo),
+                  ),
                 ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
+            ],
+          );
+        },
+      );
 
-    if (action == _AnnouncementDialogAction.dismissForever) {
-      _desktop.appAnnouncementService.dismissAnnouncement(announcement.uuid);
+      // Closing, following the link, or dismissing the barrier all acknowledge
+      // this UUID. A new announcement UUID remains eligible on a later launch.
+      await _desktop.appAnnouncementService.dismissAnnouncement(
+        announcement.uuid,
+      );
+    } catch (error) {
+      _desktop.logger.error('Announcement dialog failed: $error');
+    } finally {
+      _pendingAnnouncement = null;
+      _announcementDialogOpen = false;
     }
-
-    _pendingAnnouncement = null;
-    _announcementDialogOpen = false;
   }
 
   Future<bool> _openAnnouncementLink(Uri uri) async {
@@ -312,10 +308,14 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
         );
         final expressExists =
             await PlatformIntegration.checkExpressBackupKeyExists();
-        if (!alreadyPrompted && !expressExists) {
+        if (!mounted) return;
+        if (!alreadyPrompted &&
+            !expressExists &&
+            !_desktop.configer.get<bool>(_expressMenuPromptedKey, false)) {
           _desktop.configer.set<bool>(_expressMenuPromptedKey, true);
 
-          Future.delayed(const Duration(milliseconds: 300), () async {
+          await _desktop.configer.flush();
+          await Future.delayed(const Duration(milliseconds: 300), () async {
             if (!mounted) return;
             final consent = await showDialog<bool>(
               context: context,
@@ -362,8 +362,27 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
       return;
     }
 
-    if (!mounted) return;
-    bool? userConsent = await showDialog<bool>(
+    await _desktop.initialSetupService.run(
+      force: shouldForceInitialSetupDialog,
+      requestConsent: _requestInitialSetupConsent,
+      applySetup: PlatformIntegration.applyInitialSetup,
+      notifyResult: (success) => showWindowsNotification(
+        success
+            ? _desktop.appLocale.getText(LocaleKey.brandInitDoneTitle)
+            : 'Vertree',
+        _desktop.appLocale.getText(
+          success
+              ? LocaleKey.brandInitDoneBody
+              : LocaleKey.brandSetupPartialFailedBody,
+        ),
+      ),
+      onError: (error) => _desktop.logger.error('Initial setup failed: $error'),
+    );
+  }
+
+  Future<bool?> _requestInitialSetupConsent() async {
+    if (!mounted) return null;
+    return showDialog<bool>(
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
@@ -384,24 +403,6 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
         );
       },
     );
-
-    if (userConsent == true) {
-      final allSuccess = await PlatformIntegration.applyInitialSetup();
-      if (allSuccess) {
-        await showWindowsNotification(
-          _desktop.appLocale.getText(LocaleKey.brandInitDoneTitle),
-          _desktop.appLocale.getText(LocaleKey.brandInitDoneBody),
-        );
-        _desktop.configer.set<bool>('isSetupDone', true);
-      } else {
-        _desktop.logger.error("初始化未全部成功，请在设置页面重试并完成授权");
-        await showWindowsNotification(
-          "Vertree",
-          _desktop.appLocale.getText(LocaleKey.brandSetupPartialFailedBody),
-        );
-        _desktop.configer.set<bool>('isSetupDone', false);
-      }
-    }
   }
 
   @override

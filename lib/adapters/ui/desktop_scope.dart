@@ -9,6 +9,7 @@ import '../../modules/versions/versions.dart';
 import '../../foundation/app_events.dart';
 import '../../modules/preview/preview.dart';
 import '../../service/app_announcement_service.dart';
+import '../../service/initial_setup_service.dart';
 import 'versions/version_actions.dart';
 
 enum AppThemeSetting { system, light, dark }
@@ -28,6 +29,7 @@ class DesktopDependencies {
     required this.appVersionInfo,
     required this.localHttpApiServer,
     required this.appAnnouncementService,
+    required this.initialSetupService,
     required this.suppressAnnouncements,
     required this.go,
     required this.quitApplication,
@@ -48,6 +50,7 @@ class DesktopDependencies {
   final AppVersionInfo appVersionInfo;
   final LocalHttpApiServer localHttpApiServer;
   final AppAnnouncementService appAnnouncementService;
+  final InitialSetupService initialSetupService;
   final bool Function() suppressAnnouncements;
   final void Function(Widget) go;
   final Future<void> Function() quitApplication;

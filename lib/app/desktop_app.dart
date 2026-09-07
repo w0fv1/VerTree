@@ -29,6 +29,7 @@ import 'package:vertree/platform/process_exit.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
 import 'package:vertree/service/local_http_api_service.dart';
 import 'package:vertree/service/app_announcement_service.dart';
+import 'package:vertree/service/initial_setup_service.dart';
 import 'package:vertree/view/module/file_tree.dart';
 import 'package:vertree/view/module/lan_share_dialog.dart';
 import 'package:vertree/view/module/file_preview_dialog.dart';
@@ -86,13 +87,18 @@ late final AppVersionInfo appVersionInfo;
 final appAnnouncementService = AppAnnouncementService(
   announcementUrl: 'https://vertree.w0fv1.dev/announcement.json',
   readConfigSnapshot: () => configer.toJson(),
-  writeDismissedAnnouncementUuids: (uuids) => configer.set<List<String>>(
-    AppAnnouncementService.dismissedAnnouncementUuidsKey,
-    uuids,
-  ),
+  writeDismissedAnnouncementUuids: (uuids) async {
+    configer.set<List<String>>(
+      AppAnnouncementService.dismissedAnnouncementUuidsKey,
+      uuids,
+    );
+    await configer.flush();
+  },
   onLogInfo: logger.info,
   onLogError: logger.error,
 );
+
+final initialSetupService = InitialSetupService(configer);
 
 late final DesktopThemeController themeController;
 bool get defaultLaunchToTray => !Platform.isLinux;
@@ -427,6 +433,7 @@ Future<void> runVertreeApp(
           appVersionInfo: appVersionInfo,
           localHttpApiServer: localHttpApiServer,
           appAnnouncementService: appAnnouncementService,
+          initialSetupService: initialSetupService,
           suppressAnnouncements: () => suppressAnnouncementDialogs,
           go: (page) => go(page),
           quitApplication: quitApplication,
@@ -1046,9 +1053,17 @@ Future<void> share(String path) => openLanShareDialogForPath(path);
 Future<void> openLanShareDialogForPath(String path) async {
   logger.info('share $path');
   await showMainWindow(animate: false);
-  showToast(appLocale.getText(LocaleKey.fileleafSharePreparing));
-
-  final result = await lanFileShareServer.createShare(path);
+  final result = await withProgressToast(
+    appLocale.getText(LocaleKey.fileleafSharePreparing),
+    () async {
+      try {
+        return await lanFileShareServer.createShare(path);
+      } catch (error) {
+        logger.error('Failed to prepare LAN share: $error');
+        return Result<Map<String, dynamic>, String>.eMsg(error.toString());
+      }
+    },
+  );
   if (result.isErr) {
     final message = appLocale.getText(LocaleKey.fileleafShareCreateFailed).tr([
       result.msg,

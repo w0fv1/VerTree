@@ -88,12 +88,32 @@ Future<void> showWindowsNotificationWithTask(
   await notification.show();
 }
 
-void showToast(String message) {
-  toastification.show(
+ToastificationItem showToast(String message) {
+  return toastification.show(
     title: Text(message),
     autoCloseDuration: const Duration(seconds: 3),
     style: ToastificationStyle.simple,
     showProgressBar: false,
+    pauseOnHover: false,
     alignment: Alignment.bottomCenter,
   );
+}
+
+/// A task owns its preparation notice, including error paths.
+Future<T> withProgressToast<T>(
+  String message,
+  Future<T> Function() task,
+) async {
+  final notice = showToast(message);
+  try {
+    return await task();
+  } finally {
+    toastification.dismiss(notice);
+    // The library inserts a toast after the frame. A synchronously completed
+    // task can otherwise dismiss it before insertion and leave it visible.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      toastification.dismiss(notice);
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
 }
