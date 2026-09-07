@@ -19,9 +19,9 @@ class SnapshotCommands {
     String source,
     String monitorId, {
     required int keep,
-  }) async => writes.run(
-    [await files.canonicalize(p.dirname(source)), 'snapshots:$monitorId'],
-    () async {
+  }) async {
+    source = await files.canonicalize(source);
+    return writes.run([p.dirname(source), 'snapshots:$monitorId'], () async {
       final snapshot = await store.create(source, monitorId);
       emit('snapshot.created', {
         'path': source,
@@ -45,15 +45,22 @@ class SnapshotCommands {
         });
       }
       return snapshot;
-    },
-  );
+    });
+  }
 
-  Future<List<Snapshot>> list(String source, String monitorId) =>
-      writes.run(['snapshots:$monitorId'], () => store.list(source, monitorId));
-  Future<void> clear(String source, String monitorId) =>
-      writes.run(['snapshots:$monitorId'], () async {
-        final owned = (await store.list(source, monitorId));
-        await store.deleteOwned(source, monitorId, owned);
-        emit('snapshots.deleted', {'monitorId': monitorId});
-      });
+  Future<List<Snapshot>> list(String source, String monitorId) async {
+    source = await files.canonicalize(source);
+    return writes.run([
+      'snapshots:$monitorId',
+    ], () => store.list(source, monitorId));
+  }
+
+  Future<void> clear(String source, String monitorId) async {
+    source = await files.canonicalize(source);
+    return writes.run(['snapshots:$monitorId'], () async {
+      final owned = await store.list(source, monitorId);
+      await store.deleteOwned(source, monitorId, owned);
+      emit('snapshots.deleted', {'monitorId': monitorId});
+    });
+  }
 }

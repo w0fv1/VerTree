@@ -110,7 +110,10 @@ void main() {
       expect(versions.$2['data']['count'], 2);
       final graph = await request('GET', '/version-trees$query');
       expect(graph.$2['data']['entries'], hasLength(2));
-      expect(graph.$2['data']['parents'][versionPath], source.path);
+      expect(
+        graph.$2['data']['parents'][versionPath],
+        await source.resolveSymbolicLinks(),
+      );
       final invalid = await request('POST', '/versions', {
         'path': source.path,
         'label': '../bad',

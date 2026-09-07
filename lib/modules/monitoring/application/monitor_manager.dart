@@ -117,28 +117,29 @@ class MonitManager {
         return Result.ok(task);
       });
 
-  Future<void> removeFileMonitTask(String path) => _commands.run(
-    ['tasks'],
-    () async {
-      final index = _tasks.indexWhere((task) => p.equals(task.filePath, path));
-      if (index < 0) return;
-      final task = _tasks[index];
-      await task._monitor?.stop();
-      task._monitor = null;
-      _tasks.removeAt(index);
-      _archived.add(task);
-      try {
-        await _save();
-      } catch (_) {
-        _archived.remove(task);
-        _tasks.insert(index, task);
-        if (task.enabled) await _start(task);
-        rethrow;
-      }
-      _changed();
-      emit('monitor.removed', {'id': task.id, 'path': task.filePath});
-    },
-  );
+  Future<void> removeFileMonitTask(String path) =>
+      _commands.run(['tasks'], () async {
+        final source = await files.canonicalize(path);
+        final index = _tasks.indexWhere(
+          (task) => p.equals(task.filePath, source),
+        );
+        if (index < 0) return;
+        final task = _tasks[index];
+        await task._monitor?.stop();
+        task._monitor = null;
+        _tasks.removeAt(index);
+        _archived.add(task);
+        try {
+          await _save();
+        } catch (_) {
+          _archived.remove(task);
+          _tasks.insert(index, task);
+          if (task.enabled) await _start(task);
+          rethrow;
+        }
+        _changed();
+        emit('monitor.removed', {'id': task.id, 'path': task.filePath});
+      });
 
   Future<Result<FileMonitTask, String>> toggleFileMonitTaskStatus(
     FileMonitTask task,

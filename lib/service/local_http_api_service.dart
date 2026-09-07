@@ -277,7 +277,7 @@ class LocalHttpApiService {
   Future<Result<Map<String, dynamic>, String>> listSnapshots(
     String filePath,
   ) async {
-    final normalized = _normalizePath(filePath);
+    final normalized = await monitManager.files.canonicalize(filePath);
     final task = monitManager.taskForPath(normalized);
     final snapshots = task == null
         ? []
