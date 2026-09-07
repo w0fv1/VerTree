@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:vertree/platform/platform_integration.dart';
 
-import '../main.dart';
+import 'configer.dart';
 
 extension StringTranslate on String {
   String tr([List<String>? args]) {
@@ -220,6 +220,7 @@ enum LocaleKey {
   monitcardCleanDialogContent,
   monitcardCleanDialogCancel,
   monitcardCleanDialogConfirm,
+  monitcardStatusDegraded,
   monitcardStatusRunning,
   monitcardStatusStopped,
   monitcardStatusEnabled,
@@ -305,12 +306,14 @@ class AppLocale {
   Future<void>? _contextMenuRefreshTask;
   bool _contextMenuRefreshQueued = false;
 
-  AppLocale() {
-    _initializeLocale();
+  AppLocale({this.config, this.onLog}) {
+    initialize();
   }
+  final Configer? config;
+  final void Function(String)? onLog;
 
-  void _initializeLocale() {
-    final String localeStr = configer.get<String>('locale', 'OTHER');
+  void initialize() {
+    final String localeStr = config?.get<String>('locale', 'OTHER') ?? 'OTHER';
     final Lang configLang = Lang.fromString(localeStr);
 
     if (configLang == Lang.other) {
@@ -327,7 +330,7 @@ class AppLocale {
     } else {
       lang = configLang;
     }
-    logger.info("AppLocale initialized. Language set to: ${lang.name}");
+    onLog?.call("AppLocale initialized. Language set to: ${lang.name}");
   }
 
   void changeLang(Lang newLang) {
@@ -335,11 +338,11 @@ class AppLocale {
       return;
     }
     lang = newLang;
-    configer.set<String>('locale', newLang.name);
+    config?.set<String>('locale', newLang.name);
 
     _scheduleContextMenuRefresh();
 
-    logger.info("AppLocale language changed to: ${lang.name}");
+    onLog?.call("AppLocale language changed to: ${lang.name}");
   }
 
   void _scheduleContextMenuRefresh() {
@@ -619,9 +622,12 @@ class AppLocale {
     LocaleKey.monitcardCleanFail: "Failed to clean backup folder %a",
     LocaleKey.monitcardCleanDialogTitle: "Confirm Clean Backup Folder",
     LocaleKey.monitcardCleanDialogContent:
-        "Are you sure you want to clean all files in backup folder %a? This action cannot be undone.",
+        "Are you sure you want to delete this task's recognized snapshots in %a? This action cannot be undone.",
     LocaleKey.monitcardCleanDialogCancel: "Cancel",
     LocaleKey.monitcardCleanDialogConfirm: "Confirm",
+    LocaleKey.monitcardStatusDegraded: "Monitoring error; retrying",
+    LocaleKey.monitcardStatusRunning: "Monitoring",
+    LocaleKey.monitcardStatusStopped: "Stopped",
     LocaleKey.monitcardStatusEnabled: "enabled",
     LocaleKey.monitcardStatusDisabled: "disabled",
 
@@ -904,10 +910,11 @@ class AppLocale {
     LocaleKey.monitcardCleanSuccess: "清理备份文件夹 %a 成功",
     LocaleKey.monitcardCleanFail: "清理备份文件夹 %a 失败",
     LocaleKey.monitcardCleanDialogTitle: "确认清理备份文件夹",
-    LocaleKey.monitcardCleanDialogContent: "确定要清理备份文件夹 %a 中的所有文件吗？此操作不可撤销。",
+    LocaleKey.monitcardCleanDialogContent: "确定要删除 %a 中已识别的本任务快照吗？此操作不可撤销。",
     LocaleKey.monitcardCleanDialogCancel: "取消",
     LocaleKey.monitcardCleanDialogConfirm: "确认",
-    LocaleKey.monitcardStatusRunning: "监控中..",
+    LocaleKey.monitcardStatusDegraded: "监控异常，正在重试",
+    LocaleKey.monitcardStatusRunning: "监控中",
     LocaleKey.monitcardStatusStopped: "已暂停",
     LocaleKey.monitcardStatusEnabled: "开启",
     LocaleKey.monitcardStatusDisabled: "关闭",
@@ -1194,9 +1201,12 @@ class AppLocale {
     LocaleKey.monitcardCleanFail: "バックアップフォルダ %a のクリーンアップに失敗しました",
     LocaleKey.monitcardCleanDialogTitle: "バックアップフォルダのクリーンアップ確認",
     LocaleKey.monitcardCleanDialogContent:
-        "バックアップフォルダ %a 内のすべてのファイルをクリーンアップしますか？この操作は元に戻せません。",
+        "%a 内のこのタスクに属する認識済みスナップショットを削除しますか？この操作は元に戻せません。",
     LocaleKey.monitcardCleanDialogCancel: "キャンセル",
     LocaleKey.monitcardCleanDialogConfirm: "確認",
+    LocaleKey.monitcardStatusDegraded: "監視エラー、再試行中",
+    LocaleKey.monitcardStatusRunning: "監視中",
+    LocaleKey.monitcardStatusStopped: "停止中",
     LocaleKey.monitcardStatusEnabled: "有効",
     LocaleKey.monitcardStatusDisabled: "無効",
 

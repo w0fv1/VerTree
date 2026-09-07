@@ -8,17 +8,19 @@ Vertree is a desktop version manager for single files. It is meant for evolving 
 
 ![Version tree overview](docs/static/img/version-tree-overview.png)
 
-## 1.1.0 Status
+## 2.0.0
 
-Vertree 1.1.0 adds local file previews through Office Viewer, including office documents, PDF, images, media, ebooks, email, archives, and selected data and developer formats. Preview files from version-tree nodes, the Windows context menu, or `vertree preview <path>`. Opening another preview closes the previous window. The fixed 64 MiB limit is removed, with range loading for media, PDF, and Parquet. Unknown formats are shown as text when detected, or marked unsupported.
+Version commands and file writes now share one backend across UI, CLI, tray and HTTP. Automatic snapshots have task UUIDs and ownership manifests; failed monitoring retries without losing subsequent changes. Windows MSI shortcut destinations are corrected and installation is checked before release.
 
-Windows, macOS, and Linux release artifacts are built by GitHub Actions. The loopback HTTP API and LAN file sharing remain available.
+**Breaking upgrade:** settings move to settings.json; old configuration and *_bak snapshots are not imported. Reconfigure preferences and monitoring after upgrading. Manual version files remain readable. The local API uses /versions and /snapshots; old backup routes are removed.
+
+[Release notes](https://github.com/w0fv1/VerTree/releases/tag/V2.0.0)
 
 ## What It Does
 
 - Visual version tree for a single file and its branches
 - Manual backup and express backup
-- File monitoring with automatic backups into `*_bak`
+- File monitoring with owned snapshots under `.vertree/snapshots`
 - Native entry points on Windows, macOS, and Linux GNOME
 - Local loopback-only HTTP API for automation and verification
 - Temporary LAN file sharing with a short share page and QR code

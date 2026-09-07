@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:vertree/service/app_events.dart';
+import 'package:vertree/foundation/app_events.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,9 +11,8 @@ import 'package:vertree/component/file_utils.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/component/tray_manager.dart';
-import 'package:vertree/core/result.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/foundation/result.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/platform/linux_gnome_integration.dart';
 import 'package:vertree/platform/platform_integration.dart';
 import 'package:vertree/view/component/app_bar.dart';
@@ -29,6 +28,8 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
+  late final DesktopDependencies _desktop;
+
   StreamSubscription<AppEvent>? _settingsEvents;
   late final TextEditingController _monitorRateController;
   late final TextEditingController _monitorMaxSizeController;
@@ -61,31 +62,35 @@ class _SettingPageState extends State<SettingPage> {
   bool get _shouldShowEnvironmentInfoSection =>
       _shouldShowGnomeTraySupportCard || _shouldShowWindowsWin11IdentityCard;
   String get _launchBehaviorTitle => PlatformIntegration.isLinuxGnome
-      ? appLocale.getText(LocaleKey.settingLaunchMinimized)
-      : appLocale.getText(LocaleKey.settingLaunchToTray);
+      ? _desktop.appLocale.getText(LocaleKey.settingLaunchMinimized)
+      : _desktop.appLocale.getText(LocaleKey.settingLaunchToTray);
   String get _linuxContextMenuToggleTitle =>
       _gnomeFilesSupportInfo?.isAvailable == false
-      ? appLocale.getText(LocaleKey.settingLinuxContextMenuToggleInstallHint)
-      : appLocale.getText(LocaleKey.settingLinuxContextMenuToggle);
+      ? _desktop.appLocale.getText(
+          LocaleKey.settingLinuxContextMenuToggleInstallHint,
+        )
+      : _desktop.appLocale.getText(LocaleKey.settingLinuxContextMenuToggle);
   GnomeSupportInfo get _windowsWin11IdentityInfo => GnomeSupportInfo(
     status: GnomeSupportStatus.missingDependency,
-    message: appLocale.getText(LocaleKey.settingWin11IdentityRequired),
+    message: _desktop.appLocale.getText(LocaleKey.settingWin11IdentityRequired),
     installCommand:
         r'powershell -ExecutionPolicy Bypass -File windows\packaging\install_sparse_package.ps1 -Force',
-    installCommandLabel: appLocale.getText(
+    installCommandLabel: _desktop.appLocale.getText(
       LocaleKey.settingCopyRegisterCommand,
     ),
     restartCommand:
         r'powershell -ExecutionPolicy Bypass -File windows\packaging\refresh_win11_menu.ps1',
-    restartCommandLabel: appLocale.getText(LocaleKey.settingCopyRefreshCommand),
+    restartCommandLabel: _desktop.appLocale.getText(
+      LocaleKey.settingCopyRefreshCommand,
+    ),
   );
 
   Future<void> _showLinuxMenuToggleResult(bool success) async {
     if (!PlatformIntegration.isLinux) return;
     showToast(
       success
-          ? appLocale.getText(LocaleKey.settingGnomeMenuUpdated)
-          : appLocale.getText(LocaleKey.settingGnomeMenuUnavailable),
+          ? _desktop.appLocale.getText(LocaleKey.settingGnomeMenuUpdated)
+          : _desktop.appLocale.getText(LocaleKey.settingGnomeMenuUnavailable),
     );
   }
 
@@ -107,7 +112,7 @@ class _SettingPageState extends State<SettingPage> {
         value ? enableNotification : disableNotification,
       );
     } else {
-      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+      showToast(_desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed));
     }
 
     await Future.delayed(const Duration(milliseconds: 500));
@@ -130,16 +135,17 @@ class _SettingPageState extends State<SettingPage> {
 
   @override
   void initState() {
+    _desktop = DesktopScope.read(context);
     super.initState();
     _monitorRateController = TextEditingController(
-      text: configer.get("monitorRate", 5).toString(),
+      text: _desktop.configer.get("monitorRate", 5).toString(),
     );
     _monitorMaxSizeController = TextEditingController(
-      text: configer.get("monitorMaxSize", 50).toString(),
+      text: _desktop.configer.get("monitorMaxSize", 50).toString(),
     );
     _settingsScrollController = ScrollController();
     _loadPlatformState();
-    _settingsEvents = AppEvents.instance
+    _settingsEvents = _desktop.events
         .watch()
         .where((event) => event.type == 'settings.updated')
         .listen((_) {
@@ -179,7 +185,10 @@ class _SettingPageState extends State<SettingPage> {
       monitorFile = await PlatformIntegration.checkMonitorKeyExists();
       shareFile = await PlatformIntegration.checkShareKeyExists();
       viewTreeFile = await PlatformIntegration.checkViewTreeKeyExists();
-      legacyMenuCollapsed = configer.get<bool>('legacyMenuCollapsed', false);
+      legacyMenuCollapsed = _desktop.configer.get<bool>(
+        'legacyMenuCollapsed',
+        false,
+      );
       legacyMenuEnabled =
           previewFile ||
           backupFile ||
@@ -188,7 +197,7 @@ class _SettingPageState extends State<SettingPage> {
           shareFile ||
           viewTreeFile;
       if (PlatformIntegration.isWindows) {
-        final configuredWin11MenuEnabled = configer.get(
+        final configuredWin11MenuEnabled = _desktop.configer.get(
           "win11MenuEnabled",
           true,
         );
@@ -200,16 +209,19 @@ class _SettingPageState extends State<SettingPage> {
     if (PlatformIntegration.supportsAutoStart) {
       autoStart = await PlatformIntegration.isAutoStartEnabled();
     }
-    launchToTray = configer.get<bool>(
+    launchToTray = _desktop.configer.get<bool>(
       'launch2Tray',
       PlatformIntegration.defaultLaunchToTray,
     );
     if (!_launchToTrayAvailable && launchToTray) {
       launchToTray = false;
-      configer.set<bool>('launch2Tray', false);
+      _desktop.configer.set<bool>('launch2Tray', false);
     }
-    localHttpApiEnabled = configer.get<bool>('localHttpApiEnabled', false);
-    _themeModeSetting = configer.get<String>('themeMode', 'system');
+    localHttpApiEnabled = _desktop.configer.get<bool>(
+      'localHttpApiEnabled',
+      false,
+    );
+    _themeModeSetting = _desktop.configer.get<String>('themeMode', 'system');
     _syncMonitorControllers();
     if (!mounted) return;
     setState(() {});
@@ -218,11 +230,11 @@ class _SettingPageState extends State<SettingPage> {
   void _syncMonitorControllers() {
     _setControllerText(
       _monitorRateController,
-      configer.get("monitorRate", 5).toString(),
+      _desktop.configer.get("monitorRate", 5).toString(),
     );
     _setControllerText(
       _monitorMaxSizeController,
-      configer.get("monitorMaxSize", 50).toString(),
+      _desktop.configer.get("monitorMaxSize", 50).toString(),
     );
   }
 
@@ -248,14 +260,14 @@ class _SettingPageState extends State<SettingPage> {
     );
 
     if (!success && PlatformIntegration.isWindows) {
-      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+      showToast(_desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed));
     }
     await _refreshLegacyMenuState();
     if (PlatformIntegration.isLinux) {
       showToast(
         success
-            ? appLocale.getText(LocaleKey.settingGnomeMenuRestartHint)
-            : appLocale.getText(LocaleKey.settingGnomeMenuUnavailable),
+            ? _desktop.appLocale.getText(LocaleKey.settingGnomeMenuRestartHint)
+            : _desktop.appLocale.getText(LocaleKey.settingGnomeMenuUnavailable),
       );
     }
     if (mounted) {
@@ -270,7 +282,7 @@ class _SettingPageState extends State<SettingPage> {
     setState(() => isLoading = true);
     final success = await PlatformIntegration.setLegacyMenuLayout(value);
     if (!success) {
-      showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+      showToast(_desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed));
     }
     await Future.delayed(const Duration(milliseconds: 200));
     await _refreshLegacyMenuState();
@@ -281,27 +293,31 @@ class _SettingPageState extends State<SettingPage> {
   Future<void> _toggleWin11Menu(bool? value) async {
     if (value == null) return;
     setState(() => isLoading = true);
-    logger.info('Win11 menu toggle start: target=$value');
+    _desktop.logger.info('Win11 menu toggle start: target=$value');
     try {
       final success = value
           ? await PlatformIntegration.addWin11ContextMenuHandler()
           : await PlatformIntegration.removeWin11ContextMenuHandler();
       if (!success) {
-        showToast(appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity));
+        showToast(
+          _desktop.appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity),
+        );
         return;
       }
 
-      logger.info('Win11 menu display updated: enabled=$value');
+      _desktop.logger.info('Win11 menu display updated: enabled=$value');
     } catch (e) {
-      logger.error('Win11 menu toggle failed: $e');
-      showToast(appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity));
+      _desktop.logger.error('Win11 menu toggle failed: $e');
+      showToast(
+        _desktop.appLocale.getText(LocaleKey.settingWin11MenuNeedsIdentity),
+      );
     } finally {
       await Future.delayed(const Duration(milliseconds: 200));
       await _refreshLegacyMenuState();
       if (mounted) {
         setState(() => isLoading = false);
       }
-      logger.info('Win11 menu toggle end');
+      _desktop.logger.info('Win11 menu toggle end');
     }
   }
 
@@ -313,7 +329,9 @@ class _SettingPageState extends State<SettingPage> {
           ? await PlatformIntegration.addPreviewContextMenu()
           : await PlatformIntegration.removePreviewContextMenu();
       if (!success) {
-        showToast(appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+        showToast(
+          _desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed),
+        );
       }
       await _refreshLegacyMenuState();
     } finally {
@@ -326,8 +344,10 @@ class _SettingPageState extends State<SettingPage> {
       value: value,
       enableAction: PlatformIntegration.addBackupContextMenu,
       disableAction: PlatformIntegration.removeBackupContextMenu,
-      enableNotification: appLocale.getText(LocaleKey.settingNotifyAddBackup),
-      disableNotification: appLocale.getText(
+      enableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyAddBackup,
+      ),
+      disableNotification: _desktop.appLocale.getText(
         LocaleKey.settingNotifyRemoveBackup,
       ),
       updateState: (nextValue) => backupFile = nextValue,
@@ -339,8 +359,10 @@ class _SettingPageState extends State<SettingPage> {
       value: value,
       enableAction: PlatformIntegration.addMonitorContextMenu,
       disableAction: PlatformIntegration.removeMonitorContextMenu,
-      enableNotification: appLocale.getText(LocaleKey.settingNotifyAddMonitor),
-      disableNotification: appLocale.getText(
+      enableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyAddMonitor,
+      ),
+      disableNotification: _desktop.appLocale.getText(
         LocaleKey.settingNotifyRemoveMonitor,
       ),
       updateState: (nextValue) => monitorFile = nextValue,
@@ -352,8 +374,12 @@ class _SettingPageState extends State<SettingPage> {
       value: value,
       enableAction: PlatformIntegration.addViewTreeContextMenu,
       disableAction: PlatformIntegration.removeViewTreeContextMenu,
-      enableNotification: appLocale.getText(LocaleKey.settingNotifyAddView),
-      disableNotification: appLocale.getText(LocaleKey.settingNotifyRemoveView),
+      enableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyAddView,
+      ),
+      disableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyRemoveView,
+      ),
       updateState: (nextValue) => viewTreeFile = nextValue,
     );
   }
@@ -363,8 +389,10 @@ class _SettingPageState extends State<SettingPage> {
       value: value,
       enableAction: PlatformIntegration.addShareContextMenu,
       disableAction: PlatformIntegration.removeShareContextMenu,
-      enableNotification: appLocale.getText(LocaleKey.settingNotifyAddShare),
-      disableNotification: appLocale.getText(
+      enableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyAddShare,
+      ),
+      disableNotification: _desktop.appLocale.getText(
         LocaleKey.settingNotifyRemoveShare,
       ),
       updateState: (nextValue) => shareFile = nextValue,
@@ -380,13 +408,13 @@ class _SettingPageState extends State<SettingPage> {
       success = await PlatformIntegration.enableAutoStart();
       await showWindowsNotification(
         "Vertree",
-        appLocale.getText(LocaleKey.settingNotifyEnableAutostart),
+        _desktop.appLocale.getText(LocaleKey.settingNotifyEnableAutostart),
       );
     } else {
       success = await PlatformIntegration.disableAutoStart();
       await showWindowsNotification(
         "Vertree",
-        appLocale.getText(LocaleKey.settingNotifyDisableAutostart),
+        _desktop.appLocale.getText(LocaleKey.settingNotifyDisableAutostart),
       );
     }
 
@@ -406,19 +434,23 @@ class _SettingPageState extends State<SettingPage> {
       final suggestion = _gnomeTraySupportInfo?.installCommand;
       showToast(
         suggestion == null
-            ? appLocale.getText(LocaleKey.settingLaunchToTrayUnsupported)
-            : appLocale.getText(LocaleKey.settingLaunchToTraySetupHint),
+            ? _desktop.appLocale.getText(
+                LocaleKey.settingLaunchToTrayUnsupported,
+              )
+            : _desktop.appLocale.getText(
+                LocaleKey.settingLaunchToTraySetupHint,
+              ),
       );
       setState(() {
         launchToTray = false;
       });
-      configer.set<bool>('launch2Tray', false);
+      _desktop.configer.set<bool>('launch2Tray', false);
       return;
     }
     setState(() {
       launchToTray = value;
     });
-    configer.set<bool>('launch2Tray', value);
+    _desktop.configer.set<bool>('launch2Tray', value);
   }
 
   Future<void> _copyCommand(String command, String successMessage) async {
@@ -429,21 +461,29 @@ class _SettingPageState extends State<SettingPage> {
   String _statusLabel(GnomeSupportInfo? info) {
     switch (info?.status) {
       case GnomeSupportStatus.available:
-        return appLocale.getText(LocaleKey.settingSupportStatusAvailable);
+        return _desktop.appLocale.getText(
+          LocaleKey.settingSupportStatusAvailable,
+        );
       case GnomeSupportStatus.missingDependency:
-        return appLocale.getText(
+        return _desktop.appLocale.getText(
           LocaleKey.settingSupportStatusMissingDependency,
         );
       case GnomeSupportStatus.installedButDisabled:
-        return appLocale.getText(
+        return _desktop.appLocale.getText(
           LocaleKey.settingSupportStatusInstalledButDisabled,
         );
       case GnomeSupportStatus.unavailable:
-        return appLocale.getText(LocaleKey.settingSupportStatusUnavailable);
+        return _desktop.appLocale.getText(
+          LocaleKey.settingSupportStatusUnavailable,
+        );
       case GnomeSupportStatus.unknown:
-        return appLocale.getText(LocaleKey.settingSupportStatusUnknown);
+        return _desktop.appLocale.getText(
+          LocaleKey.settingSupportStatusUnknown,
+        );
       case null:
-        return appLocale.getText(LocaleKey.settingSupportStatusChecking);
+        return _desktop.appLocale.getText(
+          LocaleKey.settingSupportStatusChecking,
+        );
     }
   }
 
@@ -466,17 +506,17 @@ class _SettingPageState extends State<SettingPage> {
     if (value == null) return;
     setState(() => isLoading = true);
 
-    configer.set<bool>('localHttpApiEnabled', value);
+    _desktop.configer.set<bool>('localHttpApiEnabled', value);
     try {
-      await localHttpApiServer.syncWithConfig();
+      await _desktop.localHttpApiServer.syncWithConfig();
     } catch (e) {
-      logger.error('Local HTTP API toggle failed: $e');
+      _desktop.logger.error('Local HTTP API toggle failed: $e');
       showToast(
-        appLocale.getText(LocaleKey.settingLocalHttpApiToggleFailed).tr([
-          e.toString(),
-        ]),
+        _desktop.appLocale
+            .getText(LocaleKey.settingLocalHttpApiToggleFailed)
+            .tr([e.toString()]),
       );
-      configer.set<bool>('localHttpApiEnabled', !value);
+      _desktop.configer.set<bool>('localHttpApiEnabled', !value);
     }
 
     await _loadPlatformState();
@@ -489,8 +529,10 @@ class _SettingPageState extends State<SettingPage> {
       value: value,
       enableAction: PlatformIntegration.addExpressBackupContextMenu,
       disableAction: PlatformIntegration.removeExpressBackupContextMenu,
-      enableNotification: appLocale.getText(LocaleKey.settingNotifyAddExpress),
-      disableNotification: appLocale.getText(
+      enableNotification: _desktop.appLocale.getText(
+        LocaleKey.settingNotifyAddExpress,
+      ),
+      disableNotification: _desktop.appLocale.getText(
         LocaleKey.settingNotifyRemoveExpress,
       ),
       updateState: (nextValue) => expressBackupFile = nextValue,
@@ -499,9 +541,9 @@ class _SettingPageState extends State<SettingPage> {
 
   void _updateLanguage(Lang lang) {
     setState(() {
-      appLocale.changeLang(lang);
+      _desktop.appLocale.changeLang(lang);
     });
-    unawaited(TrayManager().refreshTray(forceRebuild: true));
+    unawaited(_desktop.refreshTray());
   }
 
   void _updateThemeMode(String value) {
@@ -510,13 +552,13 @@ class _SettingPageState extends State<SettingPage> {
     });
     switch (value) {
       case 'system':
-        updateThemeSetting(AppThemeSetting.system);
+        _desktop.updateThemeSetting(AppThemeSetting.system);
         break;
       case 'light':
-        updateThemeSetting(AppThemeSetting.light);
+        _desktop.updateThemeSetting(AppThemeSetting.light);
         break;
       case 'dark':
-        updateThemeSetting(AppThemeSetting.dark);
+        _desktop.updateThemeSetting(AppThemeSetting.dark);
         break;
     }
   }
@@ -524,7 +566,7 @@ class _SettingPageState extends State<SettingPage> {
   void _handleIntegerSettingChanged(String key, String value) {
     final parsed = int.tryParse(value);
     if (parsed != null && parsed > 0) {
-      configer.set(key, parsed);
+      _desktop.configer.set(key, parsed);
     }
   }
 
@@ -535,16 +577,18 @@ class _SettingPageState extends State<SettingPage> {
   ) {
     final parsed = int.tryParse(controller.text);
     if (parsed != null && parsed > 0) {
-      configer.set(key, parsed);
+      _desktop.configer.set(key, parsed);
     }
-    final current = configer.get(key, fallback).toString();
+    final current = _desktop.configer.get(key, fallback).toString();
     _setControllerText(controller, current);
   }
 
   void _openUrl(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw appLocale.getText(LocaleKey.settingOpenUrlFailed).tr([url]);
+      throw _desktop.appLocale.getText(LocaleKey.settingOpenUrlFailed).tr([
+        url,
+      ]);
     }
   }
 
@@ -795,7 +839,7 @@ class _SettingPageState extends State<SettingPage> {
     return FilledButton.tonalIcon(
       onPressed: () => _copyCommand(
         command,
-        appLocale.getText(LocaleKey.settingCommandCopied),
+        _desktop.appLocale.getText(LocaleKey.settingCommandCopied),
       ),
       icon: Icon(icon),
       label: Text(label),
@@ -831,7 +875,7 @@ class _SettingPageState extends State<SettingPage> {
           child: Text(
             (info?.message.isNotEmpty ?? false)
                 ? info!.message
-                : appLocale.getText(
+                : _desktop.appLocale.getText(
                     LocaleKey.settingDetectingPlatformIntegration,
                   ),
           ),
@@ -888,8 +932,8 @@ class _SettingPageState extends State<SettingPage> {
   @override
   Widget build(BuildContext context) {
     final contextMenuGroupTitle = PlatformIntegration.isLinux
-        ? appLocale.getText(LocaleKey.settingLinuxContextMenuGroup)
-        : appLocale.getText(LocaleKey.settingContextMenuGroup);
+        ? _desktop.appLocale.getText(LocaleKey.settingLinuxContextMenuGroup)
+        : _desktop.appLocale.getText(LocaleKey.settingContextMenuGroup);
     final gnomeTrayCommands = <Widget>[
       if (_gnomeTraySupportInfo?.installCommand case final installCommand?)
         _buildCommandButton(
@@ -897,7 +941,7 @@ class _SettingPageState extends State<SettingPage> {
           label:
               (_gnomeTraySupportInfo?.installCommandLabel?.isNotEmpty ?? false)
               ? _gnomeTraySupportInfo!.installCommandLabel!
-              : appLocale.getText(LocaleKey.settingCopyConfigCommand),
+              : _desktop.appLocale.getText(LocaleKey.settingCopyConfigCommand),
           command: installCommand,
         ),
       if (_gnomeTraySupportInfo?.restartCommand case final restartCommand?)
@@ -906,7 +950,7 @@ class _SettingPageState extends State<SettingPage> {
           label:
               (_gnomeTraySupportInfo?.restartCommandLabel?.isNotEmpty ?? false)
               ? _gnomeTraySupportInfo!.restartCommandLabel!
-              : appLocale.getText(LocaleKey.settingCopyAssistCommand),
+              : _desktop.appLocale.getText(LocaleKey.settingCopyAssistCommand),
           command: restartCommand,
         ),
     ];
@@ -918,7 +962,9 @@ class _SettingPageState extends State<SettingPage> {
               (_windowsWin11IdentityInfo.installCommandLabel?.isNotEmpty ??
                   false)
               ? _windowsWin11IdentityInfo.installCommandLabel!
-              : appLocale.getText(LocaleKey.settingCopyRegisterCommand),
+              : _desktop.appLocale.getText(
+                  LocaleKey.settingCopyRegisterCommand,
+                ),
           command: installCommand,
         ),
       if (_windowsWin11IdentityInfo.restartCommand case final restartCommand?)
@@ -928,7 +974,7 @@ class _SettingPageState extends State<SettingPage> {
               (_windowsWin11IdentityInfo.restartCommandLabel?.isNotEmpty ??
                   false)
               ? _windowsWin11IdentityInfo.restartCommandLabel!
-              : appLocale.getText(LocaleKey.settingCopyRefreshCommand),
+              : _desktop.appLocale.getText(LocaleKey.settingCopyRefreshCommand),
           command: restartCommand,
         ),
     ];
@@ -941,7 +987,7 @@ class _SettingPageState extends State<SettingPage> {
             children: [
               const Icon(Icons.settings_rounded, size: 18),
               const SizedBox(width: 8),
-              Text(appLocale.getText(LocaleKey.settingTitleBar)),
+              Text(_desktop.appLocale.getText(LocaleKey.settingTitleBar)),
             ],
           ),
         ),
@@ -959,7 +1005,7 @@ class _SettingPageState extends State<SettingPage> {
                       if (_shouldShowEnvironmentInfoSection) ...[
                         _buildSection(
                           icon: Icons.info_outline_rounded,
-                          title: appLocale.getText(
+                          title: _desktop.appLocale.getText(
                             LocaleKey.settingEnvironmentGroup,
                           ),
                           children: [
@@ -968,7 +1014,7 @@ class _SettingPageState extends State<SettingPage> {
                                 horizontal: 12,
                               ),
                               child: Text(
-                                appLocale.getText(
+                                _desktop.appLocale.getText(
                                   LocaleKey.settingEnvironmentDescription,
                                 ),
                               ),
@@ -976,7 +1022,7 @@ class _SettingPageState extends State<SettingPage> {
                             if (_shouldShowGnomeTraySupportCard)
                               _buildGnomeSupportCard(
                                 icon: Icons.notifications_active_outlined,
-                                title: appLocale.getText(
+                                title: _desktop.appLocale.getText(
                                   LocaleKey.settingTraySupportTitle,
                                 ),
                                 info: _gnomeTraySupportInfo,
@@ -985,7 +1031,7 @@ class _SettingPageState extends State<SettingPage> {
                             if (_shouldShowWindowsWin11IdentityCard)
                               _buildGnomeSupportCard(
                                 icon: Icons.apps_outlined,
-                                title: appLocale.getText(
+                                title: _desktop.appLocale.getText(
                                   LocaleKey.settingWin11MenuEnvironmentTitle,
                                 ),
                                 info: _windowsWin11IdentityInfo,
@@ -997,15 +1043,17 @@ class _SettingPageState extends State<SettingPage> {
                       ],
                       _buildSection(
                         icon: Icons.palette_outlined,
-                        title: appLocale.getText(
+                        title: _desktop.appLocale.getText(
                           LocaleKey.settingAppearanceGroup,
                         ),
                         children: [
                           _buildSegmentedPreference<Lang>(
                             icon: Icons.language_rounded,
-                            title: appLocale.getText(LocaleKey.settingLanguage),
-                            selected: {appLocale.lang},
-                            segments: appLocale.supportedLangs
+                            title: _desktop.appLocale.getText(
+                              LocaleKey.settingLanguage,
+                            ),
+                            selected: {_desktop.appLocale.lang},
+                            segments: _desktop.appLocale.supportedLangs
                                 .map(
                                   (lang) => ButtonSegment<Lang>(
                                     value: lang,
@@ -1017,7 +1065,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           _buildSegmentedPreference<String>(
                             icon: Icons.dark_mode_rounded,
-                            title: appLocale.getText(
+                            title: _desktop.appLocale.getText(
                               LocaleKey.settingThemeModeLabel,
                             ),
                             selected: {_themeModeSetting},
@@ -1026,7 +1074,7 @@ class _SettingPageState extends State<SettingPage> {
                                 value: 'system',
                                 icon: const Icon(Icons.brightness_auto_rounded),
                                 label: Text(
-                                  appLocale.getText(
+                                  _desktop.appLocale.getText(
                                     LocaleKey.settingThemeModeSystem,
                                   ),
                                 ),
@@ -1035,7 +1083,7 @@ class _SettingPageState extends State<SettingPage> {
                                 value: 'light',
                                 icon: const Icon(Icons.light_mode_rounded),
                                 label: Text(
-                                  appLocale.getText(
+                                  _desktop.appLocale.getText(
                                     LocaleKey.settingThemeModeLight,
                                   ),
                                 ),
@@ -1044,7 +1092,7 @@ class _SettingPageState extends State<SettingPage> {
                                 value: 'dark',
                                 icon: const Icon(Icons.dark_mode_rounded),
                                 label: Text(
-                                  appLocale.getText(
+                                  _desktop.appLocale.getText(
                                     LocaleKey.settingThemeModeDark,
                                   ),
                                 ),
@@ -1059,7 +1107,7 @@ class _SettingPageState extends State<SettingPage> {
                           PlatformIntegration.supportsAutoStart) ...[
                         _buildSection(
                           icon: Icons.extension_outlined,
-                          title: appLocale.getText(
+                          title: _desktop.appLocale.getText(
                             LocaleKey.settingIntegrationsGroup,
                           ),
                           children: [
@@ -1075,7 +1123,7 @@ class _SettingPageState extends State<SettingPage> {
                                 icon: Icons.history_toggle_off_rounded,
                                 title: PlatformIntegration.isLinux
                                     ? contextMenuGroupTitle
-                                    : "$contextMenuGroupTitle${appLocale.getText(LocaleKey.settingContextMenuLegacySuffix)}",
+                                    : "$contextMenuGroupTitle${_desktop.appLocale.getText(LocaleKey.settingContextMenuLegacySuffix)}",
                                 trailing: IconButton.filledTonal(
                                   onPressed: () {
                                     setState(() {
@@ -1094,7 +1142,7 @@ class _SettingPageState extends State<SettingPage> {
                                     icon: Icons.toggle_on_rounded,
                                     title: PlatformIntegration.isLinux
                                         ? _linuxContextMenuToggleTitle
-                                        : appLocale.getText(
+                                        : _desktop.appLocale.getText(
                                             LocaleKey.settingContextMenuToggle,
                                           ),
                                     value: legacyMenuEnabled,
@@ -1104,7 +1152,7 @@ class _SettingPageState extends State<SettingPage> {
                                     _buildSwitchTile(
                                       icon: Icons
                                           .subdirectory_arrow_right_rounded,
-                                      title: appLocale.getText(
+                                      title: _desktop.appLocale.getText(
                                         LocaleKey
                                             .settingLegacyMenuCollapseToggle,
                                       ),
@@ -1124,7 +1172,7 @@ class _SettingPageState extends State<SettingPage> {
                                         if (PlatformIntegration.isWindows)
                                           _buildSwitchTile(
                                             icon: Icons.preview_outlined,
-                                            title: appLocale.getText(
+                                            title: _desktop.appLocale.getText(
                                               LocaleKey.settingAddPreviewMenu,
                                             ),
                                             value: previewFile,
@@ -1132,7 +1180,7 @@ class _SettingPageState extends State<SettingPage> {
                                           ),
                                         _buildSwitchTile(
                                           icon: Icons.save_outlined,
-                                          title: appLocale.getText(
+                                          title: _desktop.appLocale.getText(
                                             LocaleKey.settingAddBackupMenu,
                                           ),
                                           value: backupFile,
@@ -1140,7 +1188,7 @@ class _SettingPageState extends State<SettingPage> {
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.flash_on_outlined,
-                                          title: appLocale.getText(
+                                          title: _desktop.appLocale.getText(
                                             LocaleKey
                                                 .settingAddExpressBackupMenu,
                                           ),
@@ -1149,7 +1197,7 @@ class _SettingPageState extends State<SettingPage> {
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.monitor_heart_outlined,
-                                          title: appLocale.getText(
+                                          title: _desktop.appLocale.getText(
                                             LocaleKey.settingAddMonitorMenu,
                                           ),
                                           value: monitorFile,
@@ -1157,7 +1205,7 @@ class _SettingPageState extends State<SettingPage> {
                                         ),
                                         _buildSwitchTile(
                                           leading: shareActionImage(size: 20),
-                                          title: appLocale.getText(
+                                          title: _desktop.appLocale.getText(
                                             LocaleKey.settingAddShareMenu,
                                           ),
                                           value: shareFile,
@@ -1165,7 +1213,7 @@ class _SettingPageState extends State<SettingPage> {
                                         ),
                                         _buildSwitchTile(
                                           icon: Icons.account_tree_outlined,
-                                          title: appLocale.getText(
+                                          title: _desktop.appLocale.getText(
                                             LocaleKey.settingAddViewtreeMenu,
                                           ),
                                           value: viewTreeFile,
@@ -1181,7 +1229,7 @@ class _SettingPageState extends State<SettingPage> {
                                 icon: Icons.move_to_inbox_outlined,
                                 title: _launchToTrayAvailable
                                     ? _launchBehaviorTitle
-                                    : appLocale.getText(
+                                    : _desktop.appLocale.getText(
                                         LocaleKey
                                             .settingLaunchToTrayUnsupported,
                                       ),
@@ -1193,7 +1241,7 @@ class _SettingPageState extends State<SettingPage> {
                             if (PlatformIntegration.supportsAutoStart)
                               _buildSwitchTile(
                                 icon: Icons.power_settings_new_rounded,
-                                title: appLocale.getText(
+                                title: _desktop.appLocale.getText(
                                   LocaleKey.settingEnableAutostart,
                                 ),
                                 value: autoStart,
@@ -1205,11 +1253,13 @@ class _SettingPageState extends State<SettingPage> {
                       ],
                       _buildSection(
                         icon: Icons.monitor_heart_outlined,
-                        title: appLocale.getText(LocaleKey.settingMonitGroup),
+                        title: _desktop.appLocale.getText(
+                          LocaleKey.settingMonitGroup,
+                        ),
                         children: [
                           _buildIntegerSettingTile(
                             icon: Icons.schedule_rounded,
-                            title: appLocale.getText(
+                            title: _desktop.appLocale.getText(
                               LocaleKey.settingMonitRate,
                             ),
                             controller: _monitorRateController,
@@ -1218,7 +1268,7 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           _buildIntegerSettingTile(
                             icon: Icons.inventory_2_outlined,
-                            title: appLocale.getText(
+                            title: _desktop.appLocale.getText(
                               LocaleKey.settingMonitMaxSize,
                             ),
                             controller: _monitorMaxSizeController,
@@ -1230,11 +1280,13 @@ class _SettingPageState extends State<SettingPage> {
                       const SizedBox(height: 16),
                       _buildSection(
                         icon: Icons.hub_outlined,
-                        title: appLocale.getText(LocaleKey.settingHttpApiGroup),
+                        title: _desktop.appLocale.getText(
+                          LocaleKey.settingHttpApiGroup,
+                        ),
                         children: [
                           _buildSwitchTile(
                             icon: Icons.lan_rounded,
-                            title: appLocale.getText(
+                            title: _desktop.appLocale.getText(
                               LocaleKey.settingEnableLocalHttpApi,
                             ),
                             value: localHttpApiEnabled,
@@ -1248,15 +1300,15 @@ class _SettingPageState extends State<SettingPage> {
                               children: [
                                 Flexible(
                                   child: Text(
-                                    appLocale
+                                    _desktop.appLocale
                                         .getText(LocaleKey.settingHttpApiStatus)
                                         .tr([
-                                          localHttpApiServer.isRunning
-                                              ? appLocale.getText(
+                                          _desktop.localHttpApiServer.isRunning
+                                              ? _desktop.appLocale.getText(
                                                   LocaleKey
                                                       .settingHttpApiRunning,
                                                 )
-                                              : appLocale.getText(
+                                              : _desktop.appLocale.getText(
                                                   LocaleKey
                                                       .settingHttpApiStopped,
                                                 ),
@@ -1265,11 +1317,11 @@ class _SettingPageState extends State<SettingPage> {
                                 ),
                                 const SizedBox(width: 6),
                                 Icon(
-                                  localHttpApiServer.isRunning
+                                  _desktop.localHttpApiServer.isRunning
                                       ? Icons.check_circle_rounded
                                       : Icons.pause_circle_outline_rounded,
                                   size: 18,
-                                  color: localHttpApiServer.isRunning
+                                  color: _desktop.localHttpApiServer.isRunning
                                       ? Theme.of(context).colorScheme.primary
                                       : Theme.of(
                                           context,
@@ -1277,16 +1329,17 @@ class _SettingPageState extends State<SettingPage> {
                                 ),
                               ],
                             ),
-                            supportingText: localHttpApiServer.isRunning
+                            supportingText:
+                                _desktop.localHttpApiServer.isRunning
                                 ? InkWell(
                                     borderRadius: BorderRadius.circular(8),
                                     onTap: () => _openUrl(
-                                      localHttpApiServer.baseUrl ??
-                                          'http://127.0.0.1:${localHttpApiServer.port ?? LocalHttpApiServer.defaultPort}/api/v1',
+                                      _desktop.localHttpApiServer.baseUrl ??
+                                          'http://127.0.0.1:${_desktop.localHttpApiServer.port ?? LocalHttpApiServer.defaultPort}/api/v1',
                                     ),
                                     child: Text(
-                                      localHttpApiServer.baseUrl ??
-                                          'http://127.0.0.1:${localHttpApiServer.port ?? LocalHttpApiServer.defaultPort}/api/v1',
+                                      _desktop.localHttpApiServer.baseUrl ??
+                                          'http://127.0.0.1:${_desktop.localHttpApiServer.port ?? LocalHttpApiServer.defaultPort}/api/v1',
                                       style: TextStyle(
                                         color: Theme.of(
                                           context,
@@ -1304,31 +1357,35 @@ class _SettingPageState extends State<SettingPage> {
                               runSpacing: 8,
                               children: [
                                 FilledButton.tonalIcon(
-                                  onPressed: localHttpApiServer.docsUrl == null
+                                  onPressed:
+                                      _desktop.localHttpApiServer.docsUrl ==
+                                          null
                                       ? null
                                       : () => _openUrl(
-                                          localHttpApiServer.docsUrl!,
+                                          _desktop.localHttpApiServer.docsUrl!,
                                         ),
                                   icon: const Icon(
                                     Icons.open_in_browser_rounded,
                                   ),
                                   label: Text(
-                                    appLocale.getText(
+                                    _desktop.appLocale.getText(
                                       LocaleKey.settingHttpApiDocs,
                                     ),
                                   ),
                                 ),
                                 FilledButton.tonalIcon(
-                                  onPressed: localHttpApiServer.isRunning
+                                  onPressed:
+                                      _desktop.localHttpApiServer.isRunning
                                       ? () async {
                                           await Clipboard.setData(
                                             ClipboardData(
-                                              text: localHttpApiServer
+                                              text: _desktop
+                                                  .localHttpApiServer
                                                   .accessToken,
                                             ),
                                           );
                                           showToast(
-                                            appLocale.getText(
+                                            _desktop.appLocale.getText(
                                               LocaleKey
                                                   .settingHttpApiTokenCopied,
                                             ),
@@ -1337,7 +1394,7 @@ class _SettingPageState extends State<SettingPage> {
                                       : null,
                                   icon: const Icon(Icons.key_rounded),
                                   label: Text(
-                                    appLocale.getText(
+                                    _desktop.appLocale.getText(
                                       LocaleKey.settingHttpApiCopyToken,
                                     ),
                                   ),
@@ -1350,7 +1407,7 @@ class _SettingPageState extends State<SettingPage> {
                       const SizedBox(height: 16),
                       _buildSection(
                         icon: Icons.folder_outlined,
-                        title: appLocale.getText(
+                        title: _desktop.appLocale.getText(
                           LocaleKey.settingResourcesGroup,
                         ),
                         children: [
@@ -1360,20 +1417,24 @@ class _SettingPageState extends State<SettingPage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Tooltip(
-                                  message: appLocale.getText(
+                                  message: _desktop.appLocale.getText(
                                     LocaleKey.settingVersionInfo,
                                   ),
                                   child: AppVersionDisplay(
-                                    appVersion: appVersionInfo.currentVersion,
+                                    appVersion:
+                                        _desktop.appVersionInfo.currentVersion,
                                     defaultLink:
                                         "https://github.com/w0fv1/vertree/releases",
                                     checkNewVersion: () async {
                                       final Result<UpdateInfo, String>
-                                      checkUpdateResult = await appVersionInfo
+                                      checkUpdateResult = await _desktop
+                                          .appVersionInfo
                                           .checkUpdate();
 
                                       if (checkUpdateResult.isErr) {
-                                        logger.error(checkUpdateResult.msg);
+                                        _desktop.logger.error(
+                                          checkUpdateResult.msg,
+                                        );
                                         return false;
                                       }
 
@@ -1388,7 +1449,7 @@ class _SettingPageState extends State<SettingPage> {
                                           newVersionTag != null &&
                                           newVersionTag.isNotEmpty) {
                                         showToast(
-                                          appLocale
+                                          _desktop.appLocale
                                               .getText(
                                                 LocaleKey.settingHasNewVertion,
                                               )
@@ -1399,10 +1460,13 @@ class _SettingPageState extends State<SettingPage> {
                                     },
                                     getNewVersionDownloadUrl: () async {
                                       final Result<String?, String>
-                                      checkUpdateResult = await appVersionInfo
+                                      checkUpdateResult = await _desktop
+                                          .appVersionInfo
                                           .getPreferredDownloadUrl();
                                       if (checkUpdateResult.isErr) {
-                                        logger.info(checkUpdateResult.msg);
+                                        _desktop.logger.info(
+                                          checkUpdateResult.msg,
+                                        );
                                         return "https://github.com/w0fv1/vertree/releases";
                                       }
                                       return checkUpdateResult.unwrap();
@@ -1417,26 +1481,26 @@ class _SettingPageState extends State<SettingPage> {
                                   children: [
                                     FilledButton.tonalIcon(
                                       onPressed: () => FileUtils.openFile(
-                                        configer.configFilePath,
+                                        _desktop.configer.configFilePath,
                                       ),
                                       icon: const Icon(
                                         Icons.description_outlined,
                                       ),
                                       label: Text(
-                                        appLocale.getText(
+                                        _desktop.appLocale.getText(
                                           LocaleKey.settingOpenConfig,
                                         ),
                                       ),
                                     ),
                                     FilledButton.tonalIcon(
                                       onPressed: () => FileUtils.openFolder(
-                                        logger.logDirPath,
+                                        _desktop.logger.logDirPath,
                                       ),
                                       icon: const Icon(
                                         Icons.receipt_long_outlined,
                                       ),
                                       label: Text(
-                                        appLocale.getText(
+                                        _desktop.appLocale.getText(
                                           LocaleKey.settingOpenLogs,
                                         ),
                                       ),
@@ -1455,7 +1519,7 @@ class _SettingPageState extends State<SettingPage> {
                                       ),
                                       icon: const Icon(Icons.language_rounded),
                                       label: Text(
-                                        appLocale.getText(
+                                        _desktop.appLocale.getText(
                                           LocaleKey.settingVisitWebsite,
                                         ),
                                       ),
@@ -1468,7 +1532,7 @@ class _SettingPageState extends State<SettingPage> {
                                         MaterialCommunityIcons.github,
                                       ),
                                       label: Text(
-                                        appLocale.getText(
+                                        _desktop.appLocale.getText(
                                           LocaleKey.settingOpenGithub,
                                         ),
                                       ),
@@ -1486,7 +1550,7 @@ class _SettingPageState extends State<SettingPage> {
                                         Icons.volunteer_activism_rounded,
                                       ),
                                       label: Text(
-                                        appLocale.getText(
+                                        _desktop.appLocale.getText(
                                           LocaleKey.settingDonate,
                                         ),
                                       ),

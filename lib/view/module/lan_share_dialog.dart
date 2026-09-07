@@ -5,7 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/themed_assets.dart';
 import 'package:vertree/component/notifier.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 
 class LanShareDialog extends StatelessWidget {
   const LanShareDialog({super.key, required this.shareData});
@@ -18,6 +18,7 @@ class LanShareDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = DesktopScope.read(context);
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     final mediaQuery = MediaQuery.of(context);
@@ -44,7 +45,9 @@ class LanShareDialog extends StatelessWidget {
       actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       actionsOverflowButtonSpacing: 10,
       title: Text(
-        appLocale.getText(LocaleKey.fileleafShareDialogTitle).tr([fileName]),
+        desktop.appLocale.getText(LocaleKey.fileleafShareDialogTitle).tr([
+          fileName,
+        ]),
       ),
       content: SizedBox(
         width: dialogWidth,
@@ -55,7 +58,7 @@ class LanShareDialog extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  appLocale.getText(LocaleKey.fileleafShareDialogHint),
+                  desktop.appLocale.getText(LocaleKey.fileleafShareDialogHint),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -67,17 +70,21 @@ class LanShareDialog extends StatelessWidget {
                   children: [
                     _StatCard(
                       icon: Icons.insert_drive_file_outlined,
-                      label: appLocale.getText(LocaleKey.fileleafPropertyName),
+                      label: desktop.appLocale.getText(
+                        LocaleKey.fileleafPropertyName,
+                      ),
                       value: fileName,
                     ),
                     _StatCard(
                       icon: Icons.data_object_rounded,
-                      label: appLocale.getText(LocaleKey.fileleafPropertySize),
+                      label: desktop.appLocale.getText(
+                        LocaleKey.fileleafPropertySize,
+                      ),
                       value: _formatBytes(fileSize),
                     ),
                     _StatCard(
                       icon: Icons.timer_outlined,
-                      label: appLocale.getText(
+                      label: desktop.appLocale.getText(
                         LocaleKey.fileleafShareExpiresAt,
                       ),
                       value: expiresAt,
@@ -111,7 +118,7 @@ class LanShareDialog extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            appLocale.getText(
+                            desktop.appLocale.getText(
                               LocaleKey.fileleafShareLandingLink,
                             ),
                             style: theme.textTheme.titleSmall?.copyWith(
@@ -147,14 +154,14 @@ class LanShareDialog extends StatelessWidget {
                   const SizedBox(height: 18),
                 ],
                 Text(
-                  appLocale.getText(LocaleKey.fileleafShareCandidates),
+                  desktop.appLocale.getText(LocaleKey.fileleafShareCandidates),
                   style: theme.textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  appLocale.getText(LocaleKey.fileleafShareBrowserHint),
+                  desktop.appLocale.getText(LocaleKey.fileleafShareBrowserHint),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -178,7 +185,9 @@ class LanShareDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(appLocale.getText(LocaleKey.fileleafPropertyClose)),
+          child: Text(
+            desktop.appLocale.getText(LocaleKey.fileleafPropertyClose),
+          ),
         ),
         FilledButton.tonalIcon(
           onPressed: sharePageUrl == null
@@ -186,11 +195,15 @@ class LanShareDialog extends StatelessWidget {
               : () async {
                   await Clipboard.setData(ClipboardData(text: sharePageUrl));
                   showToast(
-                    appLocale.getText(LocaleKey.fileleafShareCopiedLink),
+                    desktop.appLocale.getText(
+                      LocaleKey.fileleafShareCopiedLink,
+                    ),
                   );
                 },
           icon: const Icon(Icons.copy_all_rounded),
-          label: Text(appLocale.getText(LocaleKey.fileleafShareCopyLink)),
+          label: Text(
+            desktop.appLocale.getText(LocaleKey.fileleafShareCopyLink),
+          ),
         ),
         FilledButton.icon(
           onPressed: sharePageUrl == null
@@ -202,12 +215,16 @@ class LanShareDialog extends StatelessWidget {
                     mode: LaunchMode.externalApplication,
                   )) {
                     showToast(
-                      appLocale.getText(LocaleKey.fileleafShareOpenFailed),
+                      desktop.appLocale.getText(
+                        LocaleKey.fileleafShareOpenFailed,
+                      ),
                     );
                   }
                 },
           icon: const Icon(Icons.open_in_browser_rounded),
-          label: Text(appLocale.getText(LocaleKey.fileleafShareOpenLanding)),
+          label: Text(
+            desktop.appLocale.getText(LocaleKey.fileleafShareOpenLanding),
+          ),
         ),
       ],
     );
@@ -334,6 +351,7 @@ class _DirectDownloadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desktop = DesktopScope.read(context);
     final theme = Theme.of(context);
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -363,12 +381,16 @@ class _DirectDownloadCard extends StatelessWidget {
                       onPressed: () async {
                         await Clipboard.setData(ClipboardData(text: url));
                         showToast(
-                          appLocale.getText(LocaleKey.fileleafShareCopiedLink),
+                          desktop.appLocale.getText(
+                            LocaleKey.fileleafShareCopiedLink,
+                          ),
                         );
                       },
                       icon: const Icon(Icons.copy_rounded),
                       label: Text(
-                        appLocale.getText(LocaleKey.fileleafShareCopyLink),
+                        desktop.appLocale.getText(
+                          LocaleKey.fileleafShareCopyLink,
+                        ),
                       ),
                     ),
                   ),
@@ -390,12 +412,16 @@ class _DirectDownloadCard extends StatelessWidget {
                     onPressed: () async {
                       await Clipboard.setData(ClipboardData(text: url));
                       showToast(
-                        appLocale.getText(LocaleKey.fileleafShareCopiedLink),
+                        desktop.appLocale.getText(
+                          LocaleKey.fileleafShareCopiedLink,
+                        ),
                       );
                     },
                     icon: const Icon(Icons.copy_rounded),
                     label: Text(
-                      appLocale.getText(LocaleKey.fileleafShareCopyLink),
+                      desktop.appLocale.getText(
+                        LocaleKey.fileleafShareCopyLink,
+                      ),
                     ),
                   ),
                 ],

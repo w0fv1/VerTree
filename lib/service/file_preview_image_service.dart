@@ -9,6 +9,7 @@ import 'package:path/path.dart' as p;
 import 'file_preview_session.dart';
 import 'preview_webview_environment.dart';
 import 'chromium_preview_renderer.dart';
+import '../foundation/operation_failure.dart';
 
 class PreviewImageRequest {
   PreviewImageRequest.fromJson(Map<String, dynamic> json)
@@ -42,11 +43,8 @@ class PreviewImageRequest {
   };
 }
 
-class PreviewRenderException implements Exception {
-  PreviewRenderException(this.code, this.message);
-  final String code, message;
-  @override
-  String toString() => '$code: $message';
+class PreviewRenderException extends OperationFailure {
+  const PreviewRenderException(super.code, super.message);
 }
 
 class FilePreviewImageService {

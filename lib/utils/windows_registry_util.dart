@@ -1,4 +1,4 @@
-import 'package:vertree/main.dart';
+import 'dart:developer' as developer;
 import 'package:win32/win32.dart';
 import 'package:win32_registry/win32_registry.dart';
 
@@ -44,7 +44,7 @@ class RegistryHelper {
       if (_isKeyMissingError(e)) {
         return false;
       }
-      logger.error('检查注册表path: "$path" 失败: $e');
+      developer.log('检查注册表path: "$path" 失败: $e');
       return false;
     }
   }
@@ -120,7 +120,7 @@ class RegistryHelper {
       return current;
     } catch (e) {
       current?.close();
-      logger.error('打开或创建注册表路径失败: "$fullPath" error=$e');
+      developer.log('打开或创建注册表路径失败: "$fullPath" error=$e');
       return null;
     }
   }
@@ -143,7 +143,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('添加或更新注册表项失败: $e');
+      developer.log('添加或更新注册表项失败: $e');
       return false;
     }
   }
@@ -162,7 +162,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('删除注册表项失败: $e');
+      developer.log('删除注册表项失败: $e');
       return false;
     }
   }
@@ -195,7 +195,7 @@ class RegistryHelper {
       String registryPath = '$parentPath\\$keyName';
       String commandPath = '$registryPath\\command';
 
-      logger.info(
+      developer.log(
         '尝试创建右键菜单: registryPath="$registryPath", commandPath="$commandPath"',
       );
 
@@ -213,7 +213,7 @@ class RegistryHelper {
 
       if (iconPath != null && iconPath.isNotEmpty) {
         menuKey.createValue(RegistryValue.string('Icon', iconPath));
-        logger.info('已为 "$keyName" 设置图标: $iconPath');
+        developer.log('已为 "$keyName" 设置图标: $iconPath');
       }
 
       if (isSubmenu) {
@@ -224,7 +224,7 @@ class RegistryHelper {
       menuKey.close();
       shellKey.close();
 
-      logger.info('成功创建 registryPath: $registryPath');
+      developer.log('成功创建 registryPath: $registryPath');
 
       if (!isSubmenu && command != null && command.isNotEmpty) {
         final menuCommandKey = _openOrCreatePath(
@@ -240,7 +240,7 @@ class RegistryHelper {
         commandKey.close();
         menuCommandKey.close();
 
-        logger.info('成功创建 commandPath: $commandPath -> $command');
+        developer.log('成功创建 commandPath: $commandPath -> $command');
       }
 
       return true;
@@ -248,7 +248,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('添加右键菜单失败: $e');
+      developer.log('添加右键菜单失败: $e');
       return false;
     }
   }
@@ -272,13 +272,13 @@ class RegistryHelper {
       }
       key.close();
 
-      logger.info('成功删除右键菜单项: $registryPath');
+      developer.log('成功删除右键菜单项: $registryPath');
       return true;
     } catch (e) {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('删除右键菜单失败: $e');
+      developer.log('删除右键菜单失败: $e');
       return false;
     }
   }
@@ -314,13 +314,13 @@ class RegistryHelper {
       }
       parentKey.close();
 
-      logger.info('成功通过键名 "$keyName" 删除右键菜单项');
+      developer.log('成功通过键名 "$keyName" 删除右键菜单项');
       return true;
     } catch (e) {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('通过键名 "$keyName" 删除右键菜单项失败: $e');
+      developer.log('通过键名 "$keyName" 删除右键菜单项失败: $e');
       return false;
     }
   }
@@ -357,13 +357,13 @@ class RegistryHelper {
       );
       key.createValue(RegistryValue.string(appName, appCommand));
       key.close();
-      logger.info('成功设置应用 "$appName" 开机自启');
+      developer.log('成功设置应用 "$appName" 开机自启');
       return true;
     } catch (e) {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('设置开机自启失败: $e');
+      developer.log('设置开机自启失败: $e');
       return false;
     }
   }
@@ -383,13 +383,13 @@ class RegistryHelper {
         }
       }
       key.close();
-      logger.info('成功移除应用 "$appName" 的开机自启');
+      developer.log('成功移除应用 "$appName" 的开机自启');
       return true;
     } catch (e) {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('移除开机自启失败: $e');
+      developer.log('移除开机自启失败: $e');
       return false;
     }
   }
@@ -408,7 +408,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e) || _isKeyMissingError(e)) {
         return false;
       }
-      logger.error('检查开机自启状态失败: $e');
+      developer.log('检查开机自启状态失败: $e');
       return false;
     }
   }
@@ -457,7 +457,7 @@ class RegistryHelper {
         legacyHandlerKey.close();
       } catch (e) {
         if (!_isKeyMissingError(e) && !_isAccessDeniedError(e)) {
-          logger.error('清理旧 Win11 handler 失败: $e');
+          developer.log('清理旧 Win11 handler 失败: $e');
         }
       }
 
@@ -480,7 +480,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('添加 Win11 右键菜单处理器失败: $e');
+      developer.log('添加 Win11 右键菜单处理器失败: $e');
       return false;
     }
   }
@@ -501,7 +501,7 @@ class RegistryHelper {
         if (_isAccessDeniedError(e)) {
           accessDenied = true;
         } else if (!_isKeyMissingError(e)) {
-          logger.error('移除 Approved 项失败: $e');
+          developer.log('移除 Approved 项失败: $e');
         }
       }
 
@@ -517,7 +517,7 @@ class RegistryHelper {
         if (_isAccessDeniedError(e)) {
           accessDenied = true;
         } else if (!_isKeyMissingError(e)) {
-          logger.error('移除 Win11 shell verb 失败: $e');
+          developer.log('移除 Win11 shell verb 失败: $e');
         }
       }
 
@@ -533,7 +533,7 @@ class RegistryHelper {
         if (_isAccessDeniedError(e)) {
           accessDenied = true;
         } else if (!_isKeyMissingError(e)) {
-          logger.error('移除旧 Win11 handler 失败: $e');
+          developer.log('移除旧 Win11 handler 失败: $e');
         }
       }
 
@@ -549,7 +549,7 @@ class RegistryHelper {
         if (_isAccessDeniedError(e)) {
           accessDenied = true;
         } else if (!_isKeyMissingError(e)) {
-          logger.error('移除 CLSID 注册失败: $e');
+          developer.log('移除 CLSID 注册失败: $e');
         }
       }
 
@@ -563,7 +563,7 @@ class RegistryHelper {
       if (_isAccessDeniedError(e)) {
         return false;
       }
-      logger.error('移除 Win11 右键菜单处理器失败: $e');
+      developer.log('移除 Win11 右键菜单处理器失败: $e');
       return false;
     }
   }
@@ -591,7 +591,7 @@ class RegistryHelper {
       if (_isKeyMissingError(e)) {
         return false;
       }
-      logger.error('检查 Win11 右键菜单处理器失败: $e');
+      developer.log('检查 Win11 右键菜单处理器失败: $e');
       return false;
     }
   }

@@ -96,7 +96,9 @@ void main() {
     await third;
   });
 
-  testWidgets('coalesces requests before the first preview frame', (tester) async {
+  testWidgets('coalesces requests before the first preview frame', (
+    tester,
+  ) async {
     await mount(tester);
     final first = open('first');
     final second = open('second');

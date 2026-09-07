@@ -1,9 +1,10 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/app_cli.dart';
 
-typedef FileActionCallback = void Function(String path);
+typedef FileActionCallback = FutureOr<void> Function(String path);
 typedef UserNotificationCallback = void Function(String title, String body);
 
 class AppCommandHandler {
@@ -31,7 +32,7 @@ class AppCommandHandler {
 
   bool isActionable(List<String> args) => parseAppCliArgs(args) != null;
 
-  void process(List<String> args) {
+  Future<void> process(List<String> args) async {
     try {
       final request = parseAppCliArgs(args);
       if (request == null) {
@@ -57,22 +58,22 @@ class AppCommandHandler {
 
       switch (request.action) {
         case AppCliAction.preview:
-          onPreview(path);
+          await onPreview(path);
           break;
         case AppCliAction.backup:
-          onBackup(path);
+          await onBackup(path);
           break;
         case AppCliAction.expressBackup:
-          onExpressBackup(path);
+          await onExpressBackup(path);
           break;
         case AppCliAction.monit:
-          onMonit(path);
+          await onMonit(path);
           break;
         case AppCliAction.share:
-          onShare(path);
+          await onShare(path);
           break;
         case AppCliAction.viewtree:
-          onViewTree(path);
+          await onViewTree(path);
           break;
       }
     } catch (e) {

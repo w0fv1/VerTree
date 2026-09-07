@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:local_notifier/local_notifier.dart';
 import 'package:toastification/toastification.dart';
 import 'package:vertree/component/file_utils.dart';
-import 'package:vertree/main.dart';
+import 'dart:developer' as developer;
 
 Future<void> initLocalNotifier() async {
   await localNotifier.setup(
@@ -20,15 +20,15 @@ Future<void> showWindowsNotification(String title, String description) async {
   );
 
   notification.onShow = () {
-    logger.info('通知已显示: ${notification.identifier}');
+    developer.log('通知已显示: ${notification.identifier}');
   };
 
   notification.onClose = (closeReason) {
-    logger.info('通知已关闭: ${notification.identifier} - 关闭原因: $closeReason');
+    developer.log('通知已关闭: ${notification.identifier} - 关闭原因: $closeReason');
   };
 
   notification.onClick = () {
-    logger.info('用户点击了通知: ${notification.identifier}');
+    developer.log('用户点击了通知: ${notification.identifier}');
   };
 
   await notification.show();
@@ -45,7 +45,7 @@ Future<void> showWindowsNotificationWithFile(
   );
 
   notification.onClick = () {
-    logger.info('用户点击了通知: ${notification.identifier}');
+    developer.log('用户点击了通知: ${notification.identifier}');
     FileUtils.openFile(filePath);
   };
 
@@ -63,7 +63,7 @@ Future<void> showWindowsNotificationWithFolder(
   );
 
   notification.onClick = () {
-    logger.info('用户点击了通知: ${notification.identifier}');
+    developer.log('用户点击了通知: ${notification.identifier}');
     FileUtils.openFolder(folderPath);
   };
 
@@ -81,7 +81,7 @@ Future<void> showWindowsNotificationWithTask(
   );
 
   notification.onClick = () {
-    logger.info('用户点击了通知: ${notification.identifier}');
+    developer.log('用户点击了通知: ${notification.identifier}');
     unawaited(Future<void>.sync(task));
   };
 

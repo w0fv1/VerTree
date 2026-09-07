@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:vertree/service/app_events.dart';
+import 'package:vertree/foundation/app_events.dart';
 
 void main() {
   test('replays events and then delivers live events without gaps', () async {
@@ -13,9 +13,14 @@ void main() {
     expect(received.map((e) => e.id), [2, 3]);
     await subscription.cancel();
   });
-  test('rejects expired replay cursors instead of silently dropping history', () {
-    final events = AppEvents(capacity: 2);
-    for (var i = 0; i < 5; i++) { events.emit('event', {}); }
-    expect(() => events.watch(after: 1), throwsStateError);
-  });
+  test(
+    'rejects expired replay cursors instead of silently dropping history',
+    () {
+      final events = AppEvents(capacity: 2);
+      for (var i = 0; i < 5; i++) {
+        events.emit('event', {});
+      }
+      expect(() => events.watch(after: 1), throwsStateError);
+    },
+  );
 }

@@ -4,14 +4,16 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:path/path.dart' as p;
 import '../component/configer.dart';
-import '../core/result.dart';
-import '../service/app_events.dart';
-import '../service/automation_jobs.dart';
+import '../foundation/result.dart';
+import '../foundation/app_events.dart';
+import '../modules/automation/automation.dart';
 import '../service/file_preview_image_service.dart';
 import '../service/local_http_api_service.dart';
-import '../service/preview_activity.dart';
-import '../service/version_operations.dart';
+import '../modules/preview/preview.dart';
+import '../modules/versions/versions.dart';
+import 'version_dto.dart';
 import 'automation_routes.dart';
+import 'api_protocol.dart';
 import 'local_http_api_contract.dart';
 
 typedef ApiAction = FutureOr<Object?> Function(Map<String, dynamic> body);
@@ -19,21 +21,25 @@ typedef ApiAction = FutureOr<Object?> Function(Map<String, dynamic> body);
 class ExtendedAutomationApi {
   ExtendedAutomationApi({
     required this.service,
+    required this.events,
+    required this.preview,
+    required this.jobs,
+    required this.images,
     required this.config,
     required this.openPreview,
     required this.closePreview,
     required this.diagnostics,
-  }) : jobs = AutomationJobs(AppEvents.instance),
-       versions = VersionOperations(AppEvents.instance);
+  }) : versions = service.versions;
   final LocalHttpApiService service;
   final Configer config;
   final Future<void> Function(String path) openPreview;
   final Future<void> Function() closePreview;
   final Map<String, dynamic> Function() diagnostics;
   final AutomationJobs jobs;
-  final VersionOperations versions;
-  final images = FilePreviewImageService();
-  final events = AppEvents.instance;
+  final VersionCommands versions;
+  final FilePreviewImageService images;
+  final AppEvents events;
+  final PreviewActivity preview;
 
   Object? unwrap(Result<Map<String, dynamic>, String> result) {
     if (result.isErr) throw ApiFailure(422, 'OPERATION_FAILED', result.msg);
@@ -42,7 +48,7 @@ class ExtendedAutomationApi {
 
   Map<String, ApiAction> get actions => {
     'backup': (body) async => unwrap(
-      await service.createBackup(path(body), label: body['label'] as String?),
+      await service.createVersion(path(body), label: body['label'] as String?),
     ),
     'monitor': (body) async =>
         unwrap(await service.createMonitorTask(path(body))),
@@ -52,10 +58,18 @@ class ExtendedAutomationApi {
         expiresInMinutes: body['expiresInMinutes'] as int? ?? 30,
       ),
     ),
-    'restore': (body) =>
-        versions.restore(path(body), targetPath: body['targetPath'] as String?),
-    'compare': (body) =>
-        versions.compare(path(body, 'leftPath'), path(body, 'rightPath')),
+    'restore': (body) async => restoreDto(
+      await versions.restore(
+        path(body),
+        targetPath: body['targetPath'] as String?,
+      ),
+    ),
+    'compare': (body) async => comparisonDto(
+      await service.comparator.compare(
+        path(body, 'leftPath'),
+        path(body, 'rightPath'),
+      ),
+    ),
   };
 
   String path(Map<String, dynamic> body, [String field = 'path']) {
@@ -210,7 +224,7 @@ class ExtendedAutomationApi {
       'GET',
       '/previews/current',
       'Read interactive preview state',
-      (request, params) => PreviewActivity.instance.snapshot,
+      (request, params) => preview.snapshot,
     ),
     route(
       'POST',
@@ -222,7 +236,7 @@ class ExtendedAutomationApi {
           throw FileSystemException('File not found', filePath);
         }
         await openPreview(filePath);
-        return PreviewActivity.instance.snapshot;
+        return preview.snapshot;
       },
       fields: [field('path', 'string', 'Absolute file path', required: true)],
     ),
@@ -231,7 +245,7 @@ class ExtendedAutomationApi {
       params,
     ) async {
       await closePreview();
-      return PreviewActivity.instance.snapshot;
+      return preview.snapshot;
     }),
     route(
       'POST',
@@ -239,9 +253,11 @@ class ExtendedAutomationApi {
       'Restore a version with a backup of current contents',
       (request, params) async {
         final body = await apiBody(request);
-        return versions.restore(
-          filePathFromId(params['id']!),
-          targetPath: body['targetPath'] as String?,
+        return restoreDto(
+          await versions.restore(
+            filePathFromId(params['id']!),
+            targetPath: body['targetPath'] as String?,
+          ),
         );
       },
       fields: [
@@ -263,10 +279,17 @@ class ExtendedAutomationApi {
             'label is required; use an empty string to clear it',
           );
         }
-        return versions.renameLabel(
-          filePathFromId(params['id']!),
+        final source = filePathFromId(params['id']!);
+        final target = await versions.renameLabel(
+          source,
           body['label'] as String?,
         );
+        return {
+          'id': fileId(target),
+          'path': target,
+          'previousPath': source,
+          'label': body['label'],
+        };
       },
       fields: [
         field(
@@ -283,9 +306,11 @@ class ExtendedAutomationApi {
       'Compare file hashes and UTF-8 text',
       (request, params) async {
         final body = await apiBody(request);
-        return versions.compare(
-          path(body, 'leftPath'),
-          path(body, 'rightPath'),
+        return comparisonDto(
+          await service.comparator.compare(
+            path(body, 'leftPath'),
+            path(body, 'rightPath'),
+          ),
         );
       },
       fields: [
@@ -410,7 +435,7 @@ class ExtendedAutomationApi {
             )
             .map((event) => event.toJson())
             .toList(),
-        'preview': PreviewActivity.instance.snapshot,
+        'preview': preview.snapshot,
       },
     ),
     LocalHttpApiRoute(
@@ -418,18 +443,23 @@ class ExtendedAutomationApi {
       pathTemplate: '/events',
       summary: 'Subscribe to server-sent events',
       description:
-          'SSE with Last-Event-ID replay of the latest 256 events. An expired cursor returns 409. IDs reset on application restart.',
+          'SSE with Last-Event-ID replay of the latest 256 events. An expired cursor returns 409. Cursors include a session ID and expire on application restart.',
       tags: const ['automation'],
       responseContentType: 'text/event-stream',
       handler: apiGuard((request, params, start) async {
         final raw = request.headers.value('Last-Event-ID');
-        final after = raw == null ? null : int.tryParse(raw);
+        final parts = raw?.split(':');
+        final after = parts == null || parts.length != 2
+            ? null
+            : int.tryParse(parts.last);
         if (raw != null && after == null) {
-          throw const FormatException('Last-Event-ID must be an integer');
+          throw const FormatException(
+            'Last-Event-ID must be sessionId:sequence',
+          );
         }
         late Stream<AppEvent> stream;
         try {
-          stream = events.watch(after: after);
+          stream = events.watch(after: after, session: parts?.first);
         } catch (error) {
           throw ApiFailure(409, 'EVENT_CURSOR_EXPIRED', error.toString());
         }
@@ -468,7 +498,7 @@ class ExtendedAutomationApi {
 
         final subscription = stream.listen(
           (event) => send(
-            'id: ${event.id}\nevent: ${event.type}\ndata: ${jsonEncode(event.toJson())}\n\n',
+            'id: ${event.sessionId}:${event.id}\nevent: ${event.type}\ndata: ${jsonEncode(event.toJson())}\n\n',
           ),
         );
         final heartbeat = Timer.periodic(

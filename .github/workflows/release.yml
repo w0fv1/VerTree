@@ -94,6 +94,16 @@ jobs:
         shell: pwsh
         run: flutter pub get
 
+      - name: Verify architecture and Dart tests
+        shell: pwsh
+        run: |
+          dart run tools/check_architecture.dart
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          flutter analyze
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          flutter test
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Install Inno Setup
         shell: pwsh
         run: choco install innosetup -y --no-progress
@@ -126,6 +136,18 @@ jobs:
           $mode = "${{ github.event.inputs.build_mode }}"
           if ([string]::IsNullOrWhiteSpace($mode)) { $mode = "Release" }
           pwsh -NoProfile -ExecutionPolicy Bypass -File windows/build.ps1 -BuildMode $mode
+
+      - name: Verify MSI installation and uninstall
+        shell: pwsh
+        run: ./windows/installer/Test-Msi.ps1 -Path "windows/vertree-windows-x64-${{ needs.meta.outputs.version }}.msi" -InstallOnCI
+
+      - name: Upload MSI test logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: vertree-msi-test-logs
+          path: ${{ runner.temp }}/vertree-msi-test/*.log
+          if-no-files-found: ignore
 
       - name: Build Windows MSIX artifact
         shell: pwsh
@@ -324,7 +346,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --dir release-artifacts
 
-          find release-artifacts -type f -print0 | while IFS= read -r -d '' file; do
+          find release-artifacts -type f -name 'vertree-*' -print0 | while IFS= read -r -d '' file; do
             cp "$file" "release-assets/$(basename "$file")"
           done
 

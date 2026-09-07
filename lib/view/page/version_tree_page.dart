@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/core/file_version_tree.dart';
-import 'package:vertree/core/result.dart';
-import 'package:vertree/core/tree_builder.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/versions/file_version_tree.dart';
+import 'package:vertree/modules/versions/versions.dart';
+import 'package:vertree/foundation/result.dart';
+import 'package:vertree/adapters/ui/versions/tree_builder.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/component/app_bar.dart';
 import 'package:vertree/view/component/app_page_background.dart';
 import 'package:vertree/view/component/loading.dart';
@@ -31,14 +32,16 @@ class FileTreePage extends StatefulWidget {
 }
 
 class _FileTreePageState extends State<FileTreePage> {
+  late final DesktopDependencies _desktop;
+
   late String path = widget.path;
   late FileNode focusNode;
   FileNode? rootNode;
   bool isLoading = true;
 
   String _formatVersionSummary(FileVersion version) {
-    return "${appLocale.getText(LocaleKey.fileleafBranchLabel)} ${version.branchPath} · "
-        "${appLocale.getText(LocaleKey.fileleafRevisionLabel)} ${version.revisionNumber}";
+    return "${_desktop.appLocale.getText(LocaleKey.fileleafBranchLabel)} ${version.branchPath} · "
+        "${_desktop.appLocale.getText(LocaleKey.fileleafRevisionLabel)} ${version.revisionNumber}";
   }
 
   int _countNodes(FileNode node) {
@@ -148,7 +151,7 @@ class _FileTreePageState extends State<FileTreePage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
-            "${root.mate.name} ${appLocale.getText(LocaleKey.vertreeOverviewTitle)}",
+            "${root.mate.name} ${_desktop.appLocale.getText(LocaleKey.vertreeOverviewTitle)}",
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w800,
             ),
@@ -170,25 +173,31 @@ class _FileTreePageState extends State<FileTreePage> {
               _buildStatChip(
                 context,
                 icon: Icons.my_location_rounded,
-                label: appLocale.getText(LocaleKey.vertreeFocusVersion),
+                label: _desktop.appLocale.getText(
+                  LocaleKey.vertreeFocusVersion,
+                ),
                 value: _formatVersionSummary(focusNode.mate.version),
               ),
               _buildStatChip(
                 context,
                 icon: Icons.update_rounded,
-                label: appLocale.getText(LocaleKey.vertreeLatestVersion),
+                label: _desktop.appLocale.getText(
+                  LocaleKey.vertreeLatestVersion,
+                ),
                 value: _formatVersionSummary(latestNode.mate.version),
               ),
               _buildStatChip(
                 context,
                 icon: Icons.hub_outlined,
-                label: appLocale.getText(LocaleKey.vertreeTotalNodes),
+                label: _desktop.appLocale.getText(LocaleKey.vertreeTotalNodes),
                 value: _countNodes(root).toString(),
               ),
               _buildStatChip(
                 context,
                 icon: Icons.call_split_rounded,
-                label: appLocale.getText(LocaleKey.vertreeTotalBranches),
+                label: _desktop.appLocale.getText(
+                  LocaleKey.vertreeTotalBranches,
+                ),
                 value: _countBranchNodes(root).toString(),
               ),
             ],
@@ -251,7 +260,9 @@ class _FileTreePageState extends State<FileTreePage> {
                 child: Padding(
                   padding: const EdgeInsets.all(6),
                   child: IconButton.filledTonal(
-                    tooltip: appLocale.getText(LocaleKey.vertreeOverviewTitle),
+                    tooltip: _desktop.appLocale.getText(
+                      LocaleKey.vertreeOverviewTitle,
+                    ),
                     icon: const Icon(Icons.info_outline_rounded),
                     onPressed: () {
                       _showOverviewDialog(context, root);
@@ -267,7 +278,7 @@ class _FileTreePageState extends State<FileTreePage> {
   }
 
   Future<void> _syncWindowState() async {
-    final fileTreeWindowsStatus = configer.get(
+    final fileTreeWindowsStatus = _desktop.configer.get(
       "fileTreeWindowsStatus",
       "fullscreen",
     );
@@ -285,21 +296,25 @@ class _FileTreePageState extends State<FileTreePage> {
 
   @override
   void initState() {
+    _desktop = DesktopScope.read(context);
     focusNode = FileNode(path);
 
     super.initState();
     _syncWindowState();
 
     Future.wait([
-      buildTree(path),
+      buildTree(path, _desktop.catalog),
       Future.delayed(Duration(milliseconds: 200)),
     ]).then((results) {
+      if (!mounted) return;
       Result<FileNode, String> buildTreeResult = results[0];
       if (buildTreeResult.isErr) {
         showToast(buildTreeResult.msg);
-        isLoading = false;
+        setState(() => isLoading = false);
         return;
       }
+      final diagnostics = buildTreeResult.unwrap().diagnostics;
+      if (diagnostics.isNotEmpty) showToast(diagnostics.join("\n"));
       setState(() {
         rootNode = buildTreeResult.unwrap();
         isLoading = false;
@@ -317,7 +332,7 @@ class _FileTreePageState extends State<FileTreePage> {
             themedLogoImage(context: context, width: 18, height: 18),
             const SizedBox(width: 8),
             Text(
-              appLocale.getText(LocaleKey.vertreeFileTreeTitle).tr([
+              _desktop.appLocale.getText(LocaleKey.vertreeFileTreeTitle).tr([
                 rootNode?.mate.name ?? "",
                 rootNode?.mate.extension ?? "",
               ]),
@@ -325,16 +340,16 @@ class _FileTreePageState extends State<FileTreePage> {
           ],
         ),
         onMinimize: () {
-          logger.info('Window minimized');
+          _desktop.logger.info('Window minimized');
         },
         onMaximize: () {
-          configer.set("fileTreeWindowsStatus", "fullscreen");
+          _desktop.configer.set("fileTreeWindowsStatus", "fullscreen");
         },
         onRestore: () {
-          configer.set("fileTreeWindowsStatus", "windowed");
+          _desktop.configer.set("fileTreeWindowsStatus", "windowed");
         },
         onClose: () {
-          logger.info('Window closed');
+          _desktop.logger.info('Window closed');
         },
       ),
       body: AppPageBackground(

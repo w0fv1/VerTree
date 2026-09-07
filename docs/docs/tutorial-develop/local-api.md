@@ -50,15 +50,17 @@ Invoke-RestMethod -Uri "$apiBase/monitor-tasks" -Headers $apiHeaders -NoProxy
 | --- | --- | --- |
 | 状态 | `GET /health`、`GET /ping` | 运行状态与最小探活 |
 | 监控 | `GET/POST /monitor-tasks`、`PATCH/DELETE /monitor-tasks/{id}` | 列表、添加、切换与移除任务 |
-| 监控备份 | `GET /monitor-tasks/{id}/backups` | 查询任务备份 |
-| 手动备份 | `GET/POST /backups` | 查询与创建版本备份 |
-| 版本文件与树 | `GET /version-files`、`GET /version-trees` | 检查文件关系 |
+| 监控备份 | `GET /monitor-tasks/{id}/snapshots`、`GET /snapshots` | 查询任务备份 |
+| 手动备份 | `GET/POST /versions` | 查询与创建版本备份 |
+| 版本文件与树 | `GET /versions`、`GET /version-trees` | 检查文件关系 |
 | 界面 | `POST /ui/navigation`、`/ui/window-state`、`/ui/theme-mode` | 页面、窗口、主题控制 |
 | 画布与截图 | `POST /ui/file-tree/viewport`、`/ui/screenshot` | 适配版本树与导出界面 |
 | 分享 | `GET/POST /file-shares`、`GET/DELETE /file-shares/{token}` | 创建、查询、撤销临时分享 |
 | 退出 | `POST /app/quit` | 退出应用进程 |
 
 表中路径均相对于 `/api/v1`。请求字段、响应结构和限制以运行实例的 OpenAPI 为准；其中 `verification-writes` 是会修改文件的测试接口，仅对专用样例使用。
+
+任务 ID 是 UUID，PATCH 使用 `enabled`。版本树返回 `entries`、`parents` 和 `diagnostics`，不包含 UI 布局对象。JSON 请求最多 1 MiB，错误响应使用 `success: false`、`code`、`message`。旧 `/backups`、`/version-files` 和任务 `/backups` 不再注册。
 
 ## 开发控制器
 
@@ -74,7 +76,7 @@ python dev_server.py --bootstrap --device windows
 python dev_server.py --bootstrap --device windows --app-arg --no-announcement
 ```
 
-控制器脚本实现位于 `dev_control_server.py`。它只可靠管理自己启动的 Flutter 子进程，不应接管用户在其他终端运行的进程。
+控制器脚本实现位于 `dev_server.py`。它只可靠管理自己启动的 Flutter 子进程，不应接管用户在其他终端运行的进程。
 
 | 方法与路径 | 行为 |
 | --- | --- |

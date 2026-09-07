@@ -29,14 +29,16 @@
       <Directory Id="ProgramFiles64Folder">
         <Directory Id="INSTALLDIR" Name="Vertree" />
       </Directory>
-      <Directory Id="CommonProgramsFolder">
+      <!-- ALLUSERS=1 selects the shared shell folders. Common*Folder is not
+           a Windows Installer directory property and resolves to TARGETDIR. -->
+      <Directory Id="ProgramMenuFolder">
         <Directory Id="ProgramMenuDir" Name="Vertree" />
       </Directory>
-      <Directory Id="CommonDesktopFolder" />
+      <Directory Id="DesktopFolder" />
     </Directory>
 
     <DirectoryRef Id="ProgramMenuDir">
-      <Component Id="StartMenuShortcuts" Guid="{3B8A22E3-4E1E-47C0-A5D1-C523A8353831}">
+      <Component Id="StartMenuShortcuts" Guid="{BA54BA4A-BE7F-45CD-B967-1F374A597720}">
         <Shortcut
           Id="StartMenuShortcut"
           Name="Vertree"
@@ -49,7 +51,7 @@
         </Shortcut>
         <RemoveFolder Id="ProgramMenuDirCleanup" On="uninstall" />
         <RegistryValue
-          Root="HKLM"
+          Root="HKCU"
           Key="Software\Vertree"
           Name="InstalledVersion"
           Type="string"
@@ -58,11 +60,11 @@
       </Component>
     </DirectoryRef>
 
-    <DirectoryRef Id="CommonDesktopFolder">
-      <Component Id="DesktopShortcutComponent" Guid="{A9E1B322-1C20-4B7C-84CB-8F8665C97A15}">
+    <DirectoryRef Id="DesktopFolder">
+      <Component Id="DesktopShortcutComponent" Guid="{B1D46893-750D-4CC8-A9C1-8E09CE0B9483}">
         <Shortcut
           Id="DesktopShortcut"
-          Directory="CommonDesktopFolder"
+          Directory="DesktopFolder"
           Name="Vertree"
           Description="Launch Vertree"
           Target="[INSTALLDIR]vertree.exe"
@@ -72,7 +74,7 @@
           <ShortcutProperty Key="System.AppUserModel.ID" Value="dev.w0fv1.vertree.desktop" />
         </Shortcut>
         <RegistryValue
-          Root="HKLM"
+          Root="HKCU"
           Key="Software\Vertree"
           Name="DesktopShortcut"
           Type="string"

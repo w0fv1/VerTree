@@ -5,8 +5,8 @@
 <meta name="generator" content="Docusaurus v3.10.0">
 <title data-rh="true">备份、监控与版本树 | Vertree维树</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://vertree.w0fv1.dev/img/docusaurus-social-card.jpg"><meta data-rh="true" name="twitter:image" content="https://vertree.w0fv1.dev/img/docusaurus-social-card.jpg"><meta data-rh="true" property="og:url" content="https://vertree.w0fv1.dev/docs/tutorial-usage/usage"><meta data-rh="true" property="og:locale" content="zh"><meta data-rh="true" name="docusaurus_locale" content="zh"><meta data-rh="true" name="docsearch:language" content="zh"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="备份、监控与版本树 | Vertree维树"><meta data-rh="true" name="description" content="第一次使用：保留一个阶段版本"><meta data-rh="true" property="og:description" content="第一次使用：保留一个阶段版本"><link data-rh="true" rel="icon" href="/logo.ico"><link data-rh="true" rel="canonical" href="https://vertree.w0fv1.dev/docs/tutorial-usage/usage"><link data-rh="true" rel="alternate" href="https://vertree.w0fv1.dev/docs/tutorial-usage/usage" hreflang="zh"><link data-rh="true" rel="alternate" href="https://vertree.w0fv1.dev/docs/tutorial-usage/usage" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"使用指南","item":"https://vertree.w0fv1.dev/docs/category/tutorial---使用"},{"@type":"ListItem","position":2,"name":"备份、监控与版本树","item":"https://vertree.w0fv1.dev/docs/tutorial-usage/usage"}]}</script><link rel="alternate" type="application/rss+xml" href="/blog/rss.xml" title="Vertree维树 RSS Feed">
 <link rel="alternate" type="application/atom+xml" href="/blog/atom.xml" title="Vertree维树 Atom Feed"><link rel="stylesheet" href="/assets/css/styles.4f49b59c.css">
-<script src="/assets/js/runtime~main.f87c20f4.js" defer="defer"></script>
-<script src="/assets/js/main.f8bd4f9e.js" defer="defer"></script>
+<script src="/assets/js/runtime~main.86c40e93.js" defer="defer"></script>
+<script src="/assets/js/main.d18e0b5c.js" defer="defer"></script>
 </head>
 <body>
 <svg style="display: none;"><defs>
@@ -31,7 +31,7 @@
 <p>先预览旧版本，确认它是想要的起点，再从该节点创建备份或分支，然后编辑新生成的文件。这样旧版本仍作为原有记录保留。</p>
 <p>当“下一个版本号”已被占用时，普通备份会自动生成一个分支，不覆盖已有文件。新建备份和修改文件内容是两个动作：Vertree 负责复制，实际编辑仍在原软件中进行。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="自动监控">自动监控<a href="#自动监控" class="hash-link" aria-label="自动监控的直接链接" title="自动监控的直接链接" translate="no">​</a></h2>
-<p>对持续编辑的文件选择“监控文件”，也可以在监控页添加任务。任务会监听文件变化，在符合备份间隔时复制文件到旁边的 <code>*_bak</code> 目录。</p>
+<p>对持续编辑的文件选择“监控文件”，也可以在监控页添加任务。任务会监听文件变化，在符合备份间隔时创建自动快照，保存在文件旁边的 <code>.vertree/snapshots</code> 下，每个任务使用独立目录。旧版本的 <code>*_bak</code> 目录不会自动导入或删除。</p>
 <table><thead><tr><th>设置</th><th>含义</th><th>默认值</th></tr></thead><tbody><tr><td>监控备份间隔</td><td>两次自动备份之间的最小间隔，不是无变化时也定期复制</td><td>5 分钟</td></tr><tr><td>最大备份数</td><td>每个监控任务保留的自动备份数量，超出后删除较旧备份</td><td>50 个</td></tr></tbody></table>
 <p>自动监控不会保证每次按保存键都产生一个备份。交付前或重要修改前，建议额外做一次手动备份。</p>
 <p>监控页支持添加任务、暂停或恢复、移除任务、打开备份目录、清理备份及清理无效任务。删除监控任务与清理磁盘备份是不同操作，执行前注意对应动作说明。</p>

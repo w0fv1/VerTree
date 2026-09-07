@@ -7,16 +7,34 @@ import 'package:nativeapi/nativeapi.dart' as nativeapi;
 import 'package:tray_manager/tray_manager.dart' as lean_tray;
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/main.dart';
 import 'package:vertree/platform/platform_integration.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
 import 'package:window_manager/window_manager.dart';
 
 class TrayManager with lean_tray.TrayListener {
-  TrayManager._internal();
-  static final TrayManager _instance = TrayManager._internal();
-  factory TrayManager() => _instance;
+  TrayManager({
+    required this.appLocale,
+    required this.onLog,
+    required this.showMainWindow,
+    required this.toggleMainWindowVisibility,
+    required this.quitApplication,
+    required this.backup,
+    required this.expressBackup,
+    required this.monit,
+    required this.share,
+    required this.viewtree,
+  });
+  final AppLocale appLocale;
+  final void Function(String) onLog;
+  final Future<void> Function({Widget? page, bool animate}) showMainWindow;
+  final Future<void> Function({Widget? page}) toggleMainWindowVisibility;
+  final Future<void> Function() quitApplication;
+  final FutureOr<void> Function(String) backup,
+      expressBackup,
+      monit,
+      share,
+      viewtree;
 
   bool _initialized = false;
   bool _eventsBound = false;
@@ -375,7 +393,7 @@ class TrayManager with lean_tray.TrayListener {
   }
 
   Future<void> _pickFileAndRun(
-    void Function(String path) action, {
+    FutureOr<void> Function(String path) action, {
     bool bringToFront = false,
   }) async {
     if (bringToFront) {
@@ -386,7 +404,7 @@ class TrayManager with lean_tray.TrayListener {
     if (filePath == null || filePath.isEmpty) {
       return;
     }
-    action(filePath);
+    await action(filePath);
   }
 
   Future<void> refreshTray({bool forceRebuild = false}) async {

@@ -6,7 +6,7 @@ import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/service/app_announcement_service.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/platform/platform_integration.dart';
 import 'package:vertree/view/component/app_bar.dart';
 import 'package:vertree/view/component/app_page_background.dart';
@@ -32,6 +32,8 @@ class BrandPage extends StatefulWidget {
 }
 
 class _BrandPageState extends State<BrandPage> with WindowListener {
+  late final DesktopDependencies _desktop;
+
   static const String _expressMenuPromptedKey =
       'expressBackupContextMenuPrompted';
   Timer? _setupTimer;
@@ -46,21 +48,21 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   }
 
   Future<void> _loadAnnouncementIfNeeded() async {
-    if (_announcementLoaded || suppressAnnouncementDialogs) {
+    if (_announcementLoaded || _desktop.suppressAnnouncementDialogs) {
       return;
     }
     _announcementLoaded = true;
-    _pendingAnnouncement = await appAnnouncementService
+    _pendingAnnouncement = await _desktop.appAnnouncementService
         .fetchActiveAnnouncement();
   }
 
   Future<void> _tryShowAnnouncement() async {
     final announcement = _pendingAnnouncement;
     if (!mounted ||
-        suppressAnnouncementDialogs ||
+        _desktop.suppressAnnouncementDialogs ||
         announcement == null ||
         _announcementDialogOpen ||
-        appAnnouncementService.hasShownInSession(announcement.uuid)) {
+        _desktop.appAnnouncementService.hasShownInSession(announcement.uuid)) {
       return;
     }
 
@@ -70,7 +72,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
     }
 
     _announcementDialogOpen = true;
-    appAnnouncementService.markShownInSession(announcement.uuid);
+    _desktop.appAnnouncementService.markShownInSession(announcement.uuid);
     final action = await showDialog<_AnnouncementDialogAction>(
       context: context,
       builder: (dialogContext) {
@@ -103,7 +105,9 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appLocale.getText(LocaleKey.brandAnnouncementTitle),
+                        _desktop.appLocale.getText(
+                          LocaleKey.brandAnnouncementTitle,
+                        ),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
@@ -126,7 +130,9 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
               onPressed: () => Navigator.of(
                 dialogContext,
               ).pop(_AnnouncementDialogAction.close),
-              child: Text(appLocale.getText(LocaleKey.brandAnnouncementClose)),
+              child: Text(
+                _desktop.appLocale.getText(LocaleKey.brandAnnouncementClose),
+              ),
             ),
             if (announcement.linkUri != null)
               FilledButton(
@@ -140,14 +146,18 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                     ).pop(_AnnouncementDialogAction.close);
                   }
                 },
-                child: Text(appLocale.getText(LocaleKey.brandAnnouncementGo)),
+                child: Text(
+                  _desktop.appLocale.getText(LocaleKey.brandAnnouncementGo),
+                ),
               ),
             FilledButton.tonal(
               onPressed: () => Navigator.of(
                 dialogContext,
               ).pop(_AnnouncementDialogAction.dismissForever),
               child: Text(
-                appLocale.getText(LocaleKey.brandAnnouncementDontShowAgain),
+                _desktop.appLocale.getText(
+                  LocaleKey.brandAnnouncementDontShowAgain,
+                ),
               ),
             ),
           ],
@@ -156,7 +166,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
     );
 
     if (action == _AnnouncementDialogAction.dismissForever) {
-      appAnnouncementService.dismissAnnouncement(announcement.uuid);
+      _desktop.appAnnouncementService.dismissAnnouncement(announcement.uuid);
     }
 
     _pendingAnnouncement = null;
@@ -173,11 +183,13 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
         return true;
       }
     } catch (e) {
-      logger.error('Failed to open announcement link $uri: $e');
+      _desktop.logger.error('Failed to open announcement link $uri: $e');
     }
 
     if (mounted) {
-      showToast(appLocale.getText(LocaleKey.brandAnnouncementOpenFailed));
+      showToast(
+        _desktop.appLocale.getText(LocaleKey.brandAnnouncementOpenFailed),
+      );
     }
     return false;
   }
@@ -193,7 +205,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
           children: [
             themedLogoImage(context: context, width: 18, height: 18),
             const SizedBox(width: 8),
-            Text(appLocale.getText(LocaleKey.brandTitle)),
+            Text(_desktop.appLocale.getText(LocaleKey.brandTitle)),
           ],
         ),
         goHome: false,
@@ -221,7 +233,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        appLocale.getText(LocaleKey.brandTitle),
+                        _desktop.appLocale.getText(LocaleKey.brandTitle),
                         style: theme.textTheme.headlineSmall?.copyWith(
                           fontWeight: FontWeight.w800,
                         ),
@@ -230,7 +242,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                       ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 440),
                         child: Text(
-                          appLocale.getText(LocaleKey.brandSlogan),
+                          _desktop.appLocale.getText(LocaleKey.brandSlogan),
                           textAlign: TextAlign.center,
                           style: theme.textTheme.bodyLarge?.copyWith(
                             color: scheme.onSurfaceVariant,
@@ -245,28 +257,34 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                         children: [
                           FilledButton.tonalIcon(
                             onPressed: () async {
-                              go(MonitPage());
+                              _desktop.go(MonitPage());
                             },
                             icon: const Icon(Icons.monitor_heart_rounded),
                             label: Text(
-                              appLocale.getText(LocaleKey.brandMonitorPage),
+                              _desktop.appLocale.getText(
+                                LocaleKey.brandMonitorPage,
+                              ),
                             ),
                           ),
                           FilledButton.tonalIcon(
                             onPressed: () async {
-                              go(SettingPage());
+                              _desktop.go(SettingPage());
                             },
                             icon: const Icon(Icons.settings_rounded),
                             label: Text(
-                              appLocale.getText(LocaleKey.brandSettingPage),
+                              _desktop.appLocale.getText(
+                                LocaleKey.brandSettingPage,
+                              ),
                             ),
                           ),
                           OutlinedButton.icon(
                             onPressed: () async {
-                              await quitApplication();
+                              await _desktop.quitApplication();
                             },
                             icon: const Icon(Icons.exit_to_app_rounded),
-                            label: Text(appLocale.getText(LocaleKey.brandExit)),
+                            label: Text(
+                              _desktop.appLocale.getText(LocaleKey.brandExit),
+                            ),
                           ),
                         ],
                       ),
@@ -284,18 +302,18 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   Future<void> setup() async {
     if (!mounted) return;
 
-    bool isSetupDone = configer.get<bool>('isSetupDone', false);
+    bool isSetupDone = _desktop.configer.get<bool>('isSetupDone', false);
     final shouldForceInitialSetupDialog = widget.forceShowInitialSetupDialog;
     if (isSetupDone && !shouldForceInitialSetupDialog) {
       if (PlatformIntegration.isWindows) {
-        final alreadyPrompted = configer.get<bool>(
+        final alreadyPrompted = _desktop.configer.get<bool>(
           _expressMenuPromptedKey,
           false,
         );
         final expressExists =
             await PlatformIntegration.checkExpressBackupKeyExists();
         if (!alreadyPrompted && !expressExists) {
-          configer.set<bool>(_expressMenuPromptedKey, true);
+          _desktop.configer.set<bool>(_expressMenuPromptedKey, true);
 
           Future.delayed(const Duration(milliseconds: 300), () async {
             if (!mounted) return;
@@ -304,16 +322,20 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
               builder: (dialogContext) {
                 return AlertDialog(
                   title: Text(
-                    appLocale.getText(LocaleKey.brandExpressMenuPromptTitle),
+                    _desktop.appLocale.getText(
+                      LocaleKey.brandExpressMenuPromptTitle,
+                    ),
                   ),
                   content: Text(
-                    appLocale.getText(LocaleKey.brandExpressMenuPromptContent),
+                    _desktop.appLocale.getText(
+                      LocaleKey.brandExpressMenuPromptContent,
+                    ),
                   ),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(false),
                       child: Text(
-                        appLocale.getText(
+                        _desktop.appLocale.getText(
                           LocaleKey.brandExpressMenuPromptLater,
                         ),
                       ),
@@ -321,7 +343,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                     TextButton(
                       onPressed: () => Navigator.of(dialogContext).pop(true),
                       child: Text(
-                        appLocale.getText(
+                        _desktop.appLocale.getText(
                           LocaleKey.brandExpressMenuPromptEnable,
                         ),
                       ),
@@ -345,18 +367,18 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          title: Text(appLocale.getText(LocaleKey.brandInitTitle)),
-          content: Text(appLocale.getText(LocaleKey.brandInitContent)),
+          title: Text(_desktop.appLocale.getText(LocaleKey.brandInitTitle)),
+          content: Text(_desktop.appLocale.getText(LocaleKey.brandInitContent)),
           actions: [
             TextButton(
               onPressed: () =>
                   Navigator.of(dialogContext, rootNavigator: true).pop(false),
-              child: Text(appLocale.getText(LocaleKey.brandCancel)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.brandCancel)),
             ),
             TextButton(
               onPressed: () =>
                   Navigator.of(dialogContext, rootNavigator: true).pop(true),
-              child: Text(appLocale.getText(LocaleKey.brandConfirm)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.brandConfirm)),
             ),
           ],
         );
@@ -367,23 +389,24 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
       final allSuccess = await PlatformIntegration.applyInitialSetup();
       if (allSuccess) {
         await showWindowsNotification(
-          appLocale.getText(LocaleKey.brandInitDoneTitle),
-          appLocale.getText(LocaleKey.brandInitDoneBody),
+          _desktop.appLocale.getText(LocaleKey.brandInitDoneTitle),
+          _desktop.appLocale.getText(LocaleKey.brandInitDoneBody),
         );
-        configer.set<bool>('isSetupDone', true);
+        _desktop.configer.set<bool>('isSetupDone', true);
       } else {
-        logger.error("初始化未全部成功，请在设置页面重试并完成授权");
+        _desktop.logger.error("初始化未全部成功，请在设置页面重试并完成授权");
         await showWindowsNotification(
           "Vertree",
-          appLocale.getText(LocaleKey.brandSetupPartialFailedBody),
+          _desktop.appLocale.getText(LocaleKey.brandSetupPartialFailedBody),
         );
-        configer.set<bool>('isSetupDone', false);
+        _desktop.configer.set<bool>('isSetupDone', false);
       }
     }
   }
 
   @override
   void initState() {
+    _desktop = DesktopScope.read(context);
     super.initState();
     windowManager.addListener(this);
     _setupTimer = Timer(widget.initialSetupDialogDelay, () {

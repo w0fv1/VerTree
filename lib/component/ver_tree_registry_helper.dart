@@ -4,13 +4,22 @@ import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/elevated_task.dart';
 import 'package:vertree/component/file_utils.dart';
 import 'package:vertree/component/i18n_lang.dart';
-import 'package:vertree/main.dart';
+import 'configer.dart';
+import 'app_logger.dart';
 import 'package:vertree/platform/windows_menu_model.dart';
 import 'package:vertree/utils/windows_package_identity.dart';
 import 'package:vertree/utils/windows_registry_util.dart';
 import 'package:vertree/utils/windows_shell_notify.dart';
 
 class VerTreeRegistryService {
+  VerTreeRegistryService({
+    required this.configer,
+    required this.appLocale,
+    required this.logger,
+  });
+  final Configer configer;
+  final AppLocale appLocale;
+  final AppLogger logger;
   static const legacyMenuCollapsedConfigKey = 'legacyMenuCollapsed';
   static const _selectionKey = 'windowsLegacyMenuActions';
   static const appName = 'VerTree';
@@ -18,12 +27,12 @@ class VerTreeRegistryService {
       r'Software\Microsoft\Windows\CurrentVersion\Run';
   static const win11HandlerName = 'Vertree';
   static const win11HandlerClsid = '{BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E}';
-  static String get _autoStartCommand => buildWindowsLaunchCommand(
+  String get _autoStartCommand => buildWindowsLaunchCommand(
     Platform.resolvedExecutable,
     arguments: const [startupLaunchArg],
   );
 
-  static Set<WindowsMenuAction> _selection() {
+  Set<WindowsMenuAction> _selection() {
     final saved = configer.toJson()[_selectionKey];
     if (saved is List) {
       return WindowsMenuAction.values
@@ -40,7 +49,7 @@ class VerTreeRegistryService {
     );
   }
 
-  static bool _registered(String key) =>
+  bool _registered(String key) =>
       RegistryHelper.checkRegistryMenuExistsByKey(key) ||
       RegistryHelper.checkRegistryMenuExistsByKeyAtPath(
         '${RegistryHelper.currentUserClassesShellPath}\\${WindowsMenuPlan.rootKey}\\shell',
@@ -52,20 +61,20 @@ class VerTreeRegistryService {
         key,
       );
 
-  static bool checkLegacyMenuRootExists() =>
+  bool checkLegacyMenuRootExists() =>
       RegistryHelper.checkRegistryMenuExistsByKey(WindowsMenuPlan.rootKey) ||
       RegistryHelper.checkMachineRegistryMenuExistsByKey(
         WindowsMenuPlan.rootKey,
       );
 
-  static bool get _collapsed =>
+  bool get _collapsed =>
       configer.toJson()[legacyMenuCollapsedConfigKey] as bool? ??
       checkLegacyMenuRootExists();
 
-  static bool isActionEnabled(WindowsMenuAction action) =>
+  bool isActionEnabled(WindowsMenuAction action) =>
       _selection().contains(action);
 
-  static bool setActionEnabled(WindowsMenuAction action, bool enabled) {
+  bool setActionEnabled(WindowsMenuAction action, bool enabled) {
     final selected = _selection();
     if (enabled) {
       selected.add(action);
@@ -75,45 +84,41 @@ class VerTreeRegistryService {
     return _apply(selected, collapsed: _collapsed);
   }
 
-  static bool applyLegacyMenus(bool enabled) =>
+  bool applyLegacyMenus(bool enabled) =>
       applyLegacyMenusWithLayout(enabled, collapsed: _collapsed);
 
-  static bool applyLegacyMenusWithLayout(
-    bool enabled, {
-    required bool collapsed,
-  }) => _apply(
-    enabled ? WindowsMenuAction.values.toSet() : {},
-    collapsed: collapsed,
-  );
+  bool applyLegacyMenusWithLayout(bool enabled, {required bool collapsed}) =>
+      _apply(
+        enabled ? WindowsMenuAction.values.toSet() : {},
+        collapsed: collapsed,
+      );
 
-  static bool setLegacyMenuLayout(bool collapsed) =>
+  bool setLegacyMenuLayout(bool collapsed) =>
       _apply(_selection(), collapsed: collapsed);
 
-  static bool migrateLegacyMenuLayoutConfig() {
+  bool migrateLegacyMenuLayoutConfig() {
     if (!configer.toJson().containsKey(legacyMenuCollapsedConfigKey)) {
       configer.set(legacyMenuCollapsedConfigKey, checkLegacyMenuRootExists());
     }
     return true;
   }
 
-  static void reAddContextMenu() {
+  void reAddContextMenu() {
     if (!_apply(_selection(), collapsed: _collapsed, cleanMachine: false)) {
       logger.error('同步右键菜单失败');
     }
   }
 
-  static String _title(WindowsMenuAction action) => appLocale.getText(
-    switch (action) {
-      WindowsMenuAction.preview => LocaleKey.registryPreviewKeyName,
-      WindowsMenuAction.backup => LocaleKey.registryBackupKeyName,
-      WindowsMenuAction.expressBackup => LocaleKey.registryExpressBackupKeyName,
-      WindowsMenuAction.monitor => LocaleKey.registryMonitorKeyName,
-      WindowsMenuAction.share => LocaleKey.registryShareKeyName,
-      WindowsMenuAction.viewTree => LocaleKey.registryViewTreeKeyName,
-    },
-  );
+  String _title(WindowsMenuAction action) => appLocale.getText(switch (action) {
+    WindowsMenuAction.preview => LocaleKey.registryPreviewKeyName,
+    WindowsMenuAction.backup => LocaleKey.registryBackupKeyName,
+    WindowsMenuAction.expressBackup => LocaleKey.registryExpressBackupKeyName,
+    WindowsMenuAction.monitor => LocaleKey.registryMonitorKeyName,
+    WindowsMenuAction.share => LocaleKey.registryShareKeyName,
+    WindowsMenuAction.viewTree => LocaleKey.registryViewTreeKeyName,
+  });
 
-  static bool _apply(
+  bool _apply(
     Set<WindowsMenuAction> selected, {
     required bool collapsed,
     bool cleanMachine = true,
@@ -160,7 +165,7 @@ class VerTreeRegistryService {
     return true;
   }
 
-  static bool _cleanMachineMenus() {
+  bool _cleanMachineMenus() {
     final keys = WindowsMenuPlan.topLevelKeys
         .where(RegistryHelper.checkMachineRegistryMenuExistsByKey)
         .toList();
@@ -171,13 +176,13 @@ class VerTreeRegistryService {
     );
   }
 
-  static bool applyInitialSetup() {
+  bool applyInitialSetup() {
     final menus = applyLegacyMenusWithLayout(true, collapsed: _collapsed);
     final autoStart = enableAutoStart();
     return menus && autoStart;
   }
 
-  static bool addWin11ContextMenuHandler({bool allowElevation = true}) {
+  bool addWin11ContextMenuHandler({bool allowElevation = true}) {
     if (RegistryHelper.checkWin11ContextMenuHandler(
       win11HandlerName,
       win11HandlerClsid,
@@ -208,18 +213,18 @@ class VerTreeRegistryService {
     return true;
   }
 
-  static bool removeWin11ContextMenuHandler({bool allowElevation = true}) {
+  bool removeWin11ContextMenuHandler({bool allowElevation = true}) {
     // Package identity is managed by the installer; the shell extension reads this flag.
     configer.set('win11MenuEnabled', false);
     WindowsShellNotify.associationsChanged();
     return true;
   }
 
-  static bool checkWin11ContextMenuHandler() =>
+  bool checkWin11ContextMenuHandler() =>
       WindowsPackageIdentity.isPackagedOrRegistered();
-  static String _win11PackagingDir() =>
+  String _win11PackagingDir() =>
       path.join(FileUtils.appDirPath(), 'win11_packaging');
-  static bool _retryWithElevation({
+  bool _retryWithElevation({
     required String actionName,
     required bool success,
     required bool allowElevation,
@@ -245,7 +250,7 @@ class VerTreeRegistryService {
     return elevatedSuccess;
   }
 
-  static bool enableAutoStart({bool allowElevation = true}) {
+  bool enableAutoStart({bool allowElevation = true}) {
     bool success = RegistryHelper.enableAutoStart(
       runRegistryPath,
       appName,
@@ -265,7 +270,7 @@ class VerTreeRegistryService {
     return success;
   }
 
-  static bool disableAutoStart({bool allowElevation = true}) {
+  bool disableAutoStart({bool allowElevation = true}) {
     if (!isAutoStartEnabled()) {
       return true;
     }
@@ -280,11 +285,11 @@ class VerTreeRegistryService {
     return success;
   }
 
-  static bool isAutoStartEnabled() {
+  bool isAutoStartEnabled() {
     return RegistryHelper.isAutoStartEnabled(runRegistryPath, appName);
   }
 
-  static bool _runWin11PackagingScript(
+  bool _runWin11PackagingScript(
     String scriptName, {
     List<String> arguments = const [],
   }) {

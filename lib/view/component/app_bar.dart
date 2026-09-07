@@ -1,7 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -40,10 +40,13 @@ class VAppBar extends StatefulWidget implements PreferredSizeWidget {
 }
 
 class _VAppBarState extends State<VAppBar> with WindowListener {
+  late final DesktopDependencies _desktop;
+
   bool isExpanded = false;
 
   @override
   void initState() {
+    _desktop = DesktopScope.read(context);
     super.initState();
     windowManager.addListener(this);
     _syncWindowState();
@@ -115,7 +118,8 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
 
   Widget _buildMacLayout() {
     const double trafficLightInset = 72;
-    final bool showThemeToggle = currentThemeSetting != AppThemeSetting.system;
+    final bool showThemeToggle =
+        _desktop.currentThemeSetting != AppThemeSetting.system;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final IconData themeIcon = isDark
         ? Icons.light_mode_rounded
@@ -126,7 +130,7 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
         const SizedBox(width: trafficLightInset),
         if (widget.goHome) ...[
           _buildAppBarButton(Icons.home_rounded, () async {
-            go(BrandPage());
+            _desktop.go(BrandPage());
           }),
           const SizedBox(width: 4),
         ],
@@ -143,7 +147,7 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
         ),
         if (showThemeToggle)
           _buildAppBarButton(themeIcon, () {
-            toggleLightDarkTheme();
+            _desktop.toggleLightDarkTheme();
           }),
         const SizedBox(width: 8),
       ],
@@ -151,7 +155,8 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
   }
 
   Widget _buildDefaultLayout() {
-    final bool showThemeToggle = currentThemeSetting != AppThemeSetting.system;
+    final bool showThemeToggle =
+        _desktop.currentThemeSetting != AppThemeSetting.system;
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
     final IconData themeIcon = isDark
         ? Icons.light_mode_rounded
@@ -191,7 +196,7 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
       children: [
         if (widget.goHome) ...[
           _buildAppBarButton(Icons.home_rounded, () async {
-            go(BrandPage());
+            _desktop.go(BrandPage());
           }),
           const SizedBox(width: 6),
         ],
@@ -208,7 +213,7 @@ class _VAppBarState extends State<VAppBar> with WindowListener {
         ),
         if (showThemeToggle)
           _buildAppBarButton(themeIcon, () {
-            toggleLightDarkTheme();
+            _desktop.toggleLightDarkTheme();
           }),
         if (showThemeToggle) const SizedBox(width: 8),
         windowButtons,

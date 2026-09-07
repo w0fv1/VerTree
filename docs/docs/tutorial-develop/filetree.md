@@ -2,117 +2,36 @@
 sidebar_position: 2
 ---
 
-# Vertree 版本树设计解析
+# 版本规则、版本图与显示模型
 
-Vertree 的版本树核心围绕四个对象展开：
+版本模块位于 `lib/modules/versions`。文件命名、查询和修改规则统一由模块提供，UI 的布局模型位于 `lib/adapters/ui/versions`。
 
-- `FileVersion`：版本号解析、比较、分支计算
-- `FileMeta`：文件名、标签、扩展名、版本与文件属性
-- `FileNode`：树节点、备份与分支行为
-- `buildTree()`：从同目录文件集合构建版本树
+## 文件名与版本号
 
-## 文件名规则
+文件名格式为 `<name>[#label].<version>.<ext>`，例如 `story.0.1.txt`、`story#baseline.0.1.txt`、`story#optionA.0.1-1.0.txt`。未标版本号的普通文件默认视为 0.0。
 
-Vertree 当前支持的版本化文件名格式为：
+`VersionName` 解析命名和校验标签，`FileVersion` 处理不可变的版本段、比较和分支关系。两个值对象都不执行文件 I/O。标签禁止路径分隔符、保留字符、控制字符和会造成命名歧义的字符。
 
-```text
-<name>[#label].<version>.<ext>
-```
+## 统一命令
 
-例如：
+`VersionCommands.create` 提供 next、branch 和 auto 模式。auto 在后继版本已占用时选择新的分支；分配和发布使用共享写入协调器，UI、HTTP、CLI 和托盘调用相同规则。
 
-- `story.0.0.txt`
-- `story#baseline.0.1.txt`
-- `story#optionA.0.1-1.0.txt`
+`renameLabel` 返回新的文件路径；UI 更新显示引用后，后续备份继续使用新路径。改名不能覆盖已有文件。
 
-其中：
+`restore` 在覆盖已有目标前创建 before-restore 版本，并检查目标是否在操作过程中变化。
 
-- `name`：逻辑文件名
-- `label`：可选备注
-- `version`：树状版本号
-- `ext`：原始扩展名
+## 查询与异常数据
 
-## FileVersion
+`VersionCatalog` 扫描同目录同族文件，返回 `VersionGraph` 的 entries、parents 和 diagnostics。重复版本或缺失父节点会显式报告，完整 entries 保留异常文件。
 
-`FileVersion` 内部把版本号拆成多个 `Segment(branch, version)`。
+HTTP 的 `/api/v1/version-trees` 直接映射版本图，不引用 Flutter 布局对象。
 
-例子：
+## UI 投影
 
-```text
-0.0
-0.1
-0.1-1.0
-0.1-1.1
-```
+`buildTree` 将版本图投影为 `FileNode`。节点维护显示关系，分支布局数据从关系推导；`FileMeta` 提供不可变路径与属性。节点和元数据不再提供复制、改名或备份方法。
 
-核心规则：
+版本图不完整时，页面显示诊断，已有可连接部分仍可查看。API 的完整 entries 可用于排查未连入显示树的文件。
 
-- 同一分支上的下一个版本：`nextVersion()`
-- 从当前版本派生一个新分支：`branchVersion(branchIndex)`
-- 比较两个版本大小：`compareTo`
-- 判断是否为直接子版本：`isChild`
-- 判断是否为直接分支：`isDirectBranch`
+## 验证
 
-## FileMeta
-
-`FileMeta` 负责把文件路径拆成这些信息：
-
-- `fullName`
-- `name`
-- `label`
-- `version`
-- `extension`
-- `fullPath`
-- `fileSize`
-- `creationTime`
-- `lastModifiedTime`
-
-它还提供：
-
-- `isSupportedTreeFilePath()`：判断文件名是否符合版本树命名规则
-- `renameFile()`：在保留版本信息的前提下重命名标签
-
-## FileNode
-
-`FileNode` 代表一个具体版本的文件节点。
-
-结构上它可能拥有：
-
-- 一个 `child`：同分支的下一个版本
-- 多个 `branches`：从当前节点分出的分支
-
-关键方法：
-
-- `safeBackup([label])`
-- `backup([label])`
-- `branch([label])`
-- `push(FileNode node)`
-- `toTreeString()`
-
-### safeBackup 的行为
-
-`safeBackup()` 会先尝试走主线下一个版本：
-
-- 如果下一个版本号没有冲突，就创建正常备份
-- 如果版本号已经被占用，就自动创建一个新分支
-
-这让 UI 和 CLI 在“只想留一个新版本”时不需要手动决定到底该生成 child 还是 branch。
-
-## buildTree()
-
-`buildTree(String selectedFileNodePath)` 的流程是：
-
-1. 检查目标文件是否存在
-2. 检查文件名是否符合版本树规则
-3. 扫描同目录下所有同名同扩展名、且可解析版本号的文件
-4. 选取最小版本作为根节点
-5. 按版本号排序后逐个 `push` 到树中
-
-它不依赖数据库，完全基于当前文件系统状态重建树结构。
-
-## 当前实现特点
-
-- 版本树是“文件系统真相”的直接投影
-- 标签直接体现在文件名里，不需要额外索引服务
-- 备份与分支都通过复制文件完成
-- 根节点、主线和分支的关系可以在没有应用进程时依然被人工理解
+测试覆盖版本号规则、标准样例树、无关文件过滤、缺失文件、并发创建、重命名后继续备份和同名目标保护。结构变动需运行 `dart run tools/check_architecture.dart`，禁止业务模块反向依赖 UI。

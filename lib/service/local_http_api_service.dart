@@ -1,14 +1,12 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:vertree/component/configer.dart';
-import 'package:vertree/core/file_version_tree.dart';
-import 'package:vertree/core/monit_manager.dart';
-import 'package:vertree/core/result.dart';
-import 'package:vertree/core/tree_builder.dart';
+import 'package:vertree/modules/monitoring/monitoring.dart';
+import 'package:vertree/foundation/result.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
-import 'package:vertree/service/version_operations.dart';
+import 'package:vertree/modules/versions/versions.dart';
+import 'package:vertree/api/version_dto.dart';
 
 typedef CurrentPortResolver = int? Function();
 typedef UiStateResolver = Map<String, dynamic> Function();
@@ -51,6 +49,9 @@ typedef AppQuitHandler = Future<void> Function();
 class LocalHttpApiService {
   LocalHttpApiService({
     required this.configer,
+    required this.versions,
+    required this.comparator,
+    required this.catalog,
     required this.monitManager,
     required this.lanFileShareServer,
     required this.currentVersion,
@@ -66,6 +67,9 @@ class LocalHttpApiService {
   });
 
   final Configer configer;
+  final VersionCommands versions;
+  final VersionComparator comparator;
+  final VersionCatalog catalog;
   final MonitManager monitManager;
   final LanFileShareServer lanFileShareServer;
   final String currentVersion;
@@ -185,21 +189,28 @@ class LocalHttpApiService {
     await quitAppHandler();
   }
 
-  Map<String, dynamic> listMonitorTasks() {
-    final tasks = monitManager.monitFileTasks.map(_monitorTaskToMap).toList();
+  Future<Map<String, dynamic>> listMonitorTasks() async {
+    final tasks = await Future.wait(
+      monitManager.monitFileTasks.map(_monitorTaskToMap),
+    );
     return {
       'items': tasks,
       'count': tasks.length,
-      'runningCount': tasks.where((task) => task['isRunning'] == true).length,
+      'enabledCount': tasks.where((task) => task['enabled'] == true).length,
+      'runningCount': tasks
+          .where((task) => task['runtimeStatus'] == 'running')
+          .length,
     };
   }
 
-  Result<Map<String, dynamic>, String> getMonitorTask(String taskId) {
+  Future<Result<Map<String, dynamic>, String>> getMonitorTask(
+    String taskId,
+  ) async {
     final task = _findTaskById(taskId);
     if (task == null) {
       return Result.eMsg('Monitor task not found: $taskId');
     }
-    return Result.ok(_monitorTaskToMap(task));
+    return Result.ok(await _monitorTaskToMap(task));
   }
 
   Future<Result<Map<String, dynamic>, String>> createMonitorTask(
@@ -211,26 +222,26 @@ class LocalHttpApiService {
       return Result.eMsg(result.msg);
     }
 
-    return Result.ok(_monitorTaskToMap(result.unwrap()));
+    return Result.ok(await _monitorTaskToMap(result.unwrap()));
   }
 
   Future<Result<Map<String, dynamic>, String>> updateMonitorTask(
     String taskId, {
-    required bool isRunning,
+    required bool enabled,
   }) async {
     final task = _findTaskById(taskId);
     if (task == null) {
       return Result.eMsg('Monitor task not found: $taskId');
     }
 
-    if (task.isRunning != isRunning) {
-      final result = await monitManager.toggleFileMonitTaskStatus(task);
+    if (task.enabled != enabled) {
+      final result = await monitManager.setEnabled(task, enabled);
       if (result.isErr) {
         return Result.eMsg(result.msg);
       }
     }
 
-    return Result.ok(_monitorTaskToMap(task));
+    return Result.ok(await _monitorTaskToMap(task));
   }
 
   Future<Result<Map<String, dynamic>, String>> deleteMonitorTask(
@@ -241,75 +252,60 @@ class LocalHttpApiService {
       return Result.eMsg('Monitor task not found: $taskId');
     }
 
-    final snapshot = _monitorTaskToMap(task);
+    final snapshot = await _monitorTaskToMap(task);
     await monitManager.removeFileMonitTask(task.filePath);
     return Result.ok(snapshot);
   }
 
-  Future<Result<Map<String, dynamic>, String>> createBackup(
+  Future<Result<Map<String, dynamic>, String>> createVersion(
     String filePath, {
     String? label,
   }) async {
     final normalizedPath = _normalizePath(filePath);
-    final file = File(normalizedPath);
-    if (!file.existsSync()) {
-      return Result.eMsg('File does not exist: $normalizedPath');
-    }
-
-    final sourceNode = FileNode(normalizedPath);
-    final result = await sourceNode.safeBackup(label);
-    if (result.isErr) {
-      return Result.eMsg(result.msg);
-    }
-
-    final backupNode = result.unwrap();
-    final siblings = _listTreeFamilyFiles(sourceNode.mate.fullPath);
+    final backupPath = await versions.create(normalizedPath, label: label);
+    final siblings = await _listTreeFamilyFiles(normalizedPath);
 
     return Result.ok({
-      'source': _fileNodeSummary(sourceNode),
-      'backup': _fileNodeSummary(backupNode),
-      'backupDirectory': _deriveBackupDirectory(normalizedPath),
+      'source': await _versionEntrySummary(VersionEntry(normalizedPath)),
+      'backup': await _versionEntrySummary(VersionEntry(backupPath)),
+      'versionDirectory': p.dirname(normalizedPath),
       'treeFamilyFileCount': siblings.length,
       'treeFamilyFiles': siblings,
     });
   }
 
-  Result<Map<String, dynamic>, String> listBackups(String filePath) {
-    final normalizedPath = _normalizePath(filePath);
-    final file = File(normalizedPath);
-    if (!file.existsSync()) {
-      return Result.eMsg('File does not exist: $normalizedPath');
-    }
-
-    final backupDirPath = _deriveBackupDirectory(normalizedPath);
-    final backupDir = Directory(backupDirPath);
-    final backups = backupDir.existsSync()
-        ? backupDir.listSync().whereType<File>().map(_fileMetadata).toList()
-        : <Map<String, dynamic>>[];
-
-    backups.sort(
-      (a, b) => ((b['lastModifiedAt'] as String?) ?? '').compareTo(
-        ((a['lastModifiedAt'] as String?) ?? ''),
-      ),
-    );
-
+  Future<Result<Map<String, dynamic>, String>> listSnapshots(
+    String filePath,
+  ) async {
+    final normalized = _normalizePath(filePath);
+    final task = monitManager.taskForPath(normalized);
+    final snapshots = task == null
+        ? []
+        : await monitManager.listSnapshots(task);
+    final directory = task?.backupDirPath;
     return Result.ok({
-      'sourcePath': normalizedPath,
-      'backupDirPath': backupDirPath,
-      'backupDirExists': backupDir.existsSync(),
-      'count': backups.length,
-      'items': backups,
+      'sourcePath': normalized,
+      'backupDirPath': directory,
+      'backupDirExists':
+          directory != null && await Directory(directory).exists(),
+      'count': snapshots.length,
+      'items': [
+        for (final snapshot in snapshots)
+          {..._fileMetadata(File(snapshot.path)), 'snapshotId': snapshot.id},
+      ],
     });
   }
 
-  Result<Map<String, dynamic>, String> listVersionFiles(String filePath) {
+  Future<Result<Map<String, dynamic>, String>> listVersionFiles(
+    String filePath,
+  ) async {
     final normalizedPath = _normalizePath(filePath);
     final file = File(normalizedPath);
     if (!file.existsSync()) {
       return Result.eMsg('File does not exist: $normalizedPath');
     }
 
-    final items = _listTreeFamilyFiles(normalizedPath);
+    final items = await _listTreeFamilyFiles(normalizedPath);
     return Result.ok({
       'sourcePath': normalizedPath,
       'count': items.length,
@@ -317,12 +313,14 @@ class LocalHttpApiService {
     });
   }
 
-  Result<Map<String, dynamic>, String> listMonitorTaskBackups(String taskId) {
+  Future<Result<Map<String, dynamic>, String>> listMonitorTaskSnapshots(
+    String taskId,
+  ) async {
     final task = _findTaskById(taskId);
     if (task == null) {
       return Result.eMsg('Monitor task not found: $taskId');
     }
-    return listBackups(task.filePath);
+    return listSnapshots(task.filePath);
   }
 
   Future<Map<String, dynamic>> listLanFileShares() async {
@@ -364,12 +362,12 @@ class LocalHttpApiService {
     if (!file.existsSync()) {
       return Result.eMsg('File does not exist: ${task.filePath}');
     }
-    if (!task.isRunning || task.monitor == null) {
+    if (!task.enabled || task.monitor == null) {
       return Result.eMsg('Monitor task is not running: ${task.filePath}');
     }
 
-    final beforeTask = _monitorTaskToMap(task);
-    final beforeBackups = listBackups(task.filePath);
+    final beforeTask = await _monitorTaskToMap(task);
+    final beforeBackups = await listSnapshots(task.filePath);
     if (beforeBackups.isErr) {
       return Result.eMsg(beforeBackups.msg);
     }
@@ -378,8 +376,8 @@ class LocalHttpApiService {
     await file.writeAsString(marker, mode: FileMode.append, flush: true);
     await Future.delayed(Duration(milliseconds: waitMilliseconds));
 
-    final afterTask = _monitorTaskToMap(task);
-    final afterBackups = listBackups(task.filePath);
+    final afterTask = await _monitorTaskToMap(task);
+    final afterBackups = await listSnapshots(task.filePath);
     if (afterBackups.isErr) {
       return Result.eMsg(afterBackups.msg);
     }
@@ -408,64 +406,37 @@ class LocalHttpApiService {
     String filePath,
   ) async {
     final normalizedPath = _normalizePath(filePath);
-    final result = await buildTree(normalizedPath);
-    if (result.isErr) {
-      return Result.eMsg(result.msg);
-    }
-
-    final root = result.unwrap();
-    final summary = _summarizeTree(root);
+    final graph = await catalog.read(normalizedPath);
     return Result.ok({
       'sourcePath': normalizedPath,
-      'summary': summary,
-      'root': _treeNodeToMap(root),
+      'entries': await Future.wait(graph.entries.map(_versionEntrySummary)),
+      'parents': graph.parents,
+      'diagnostics': graph.diagnostics,
     });
   }
 
-  String encodeTaskId(String filePath) {
-    return base64Url.encode(utf8.encode(_normalizePath(filePath)));
-  }
-
-  String? decodeTaskId(String taskId) {
-    try {
-      return utf8.decode(base64Url.decode(taskId));
-    } catch (_) {
-      return null;
-    }
-  }
-
   FileMonitTask? _findTaskById(String taskId) {
-    final decodedPath = decodeTaskId(taskId);
-    if (decodedPath == null) {
-      return null;
-    }
-
-    final normalizedPath = _normalizePath(decodedPath);
     for (final task in monitManager.monitFileTasks) {
-      if (_normalizePath(task.filePath) == normalizedPath) {
-        return task;
-      }
+      if (task.id == taskId) return task;
     }
     return null;
   }
 
-  Map<String, dynamic> _monitorTaskToMap(FileMonitTask task) {
+  Future<Map<String, dynamic>> _monitorTaskToMap(FileMonitTask task) async {
     final file = File(task.filePath);
-    final backupDirPath =
-        task.backupDirPath ?? _deriveBackupDirectory(task.filePath);
-    final backupDir = Directory(backupDirPath);
-    final recentBackups = backupDir.existsSync()
-        ? backupDir.listSync().whereType<File>().toList()
-        : <File>[];
-
-    recentBackups.sort(
-      (a, b) => b.lastModifiedSync().compareTo(a.lastModifiedSync()),
+    final backupDirPath = monitManager.snapshots.store.directoryFor(
+      task.filePath,
+      task.id,
     );
+    final backupDir = Directory(backupDirPath);
+    final recentBackups = (await monitManager.listSnapshots(
+      task,
+    )).map((snapshot) => File(snapshot.path)).toList();
 
     final monitor = task.monitor;
 
     return {
-      'id': encodeTaskId(task.filePath),
+      'id': task.id,
       'filePath': task.filePath,
       'fileName': p.basename(task.filePath),
       'fileExists': file.existsSync(),
@@ -477,8 +448,10 @@ class LocalHttpApiService {
       'backupDirExists': backupDir.existsSync(),
       'backupFileCount': recentBackups.length,
       'recentBackups': recentBackups.take(5).map(_fileMetadata).toList(),
-      'isRunning': task.isRunning,
+      'enabled': task.enabled,
       'monitorAttached': task.monitor != null,
+      'monitorId': task.id,
+      'runtimeStatus': task.runtimeStatus,
       'monitorRuntime': {
         'startedAt': monitor?.startedAt?.toIso8601String(),
         'lastObservedEventAt': monitor?.lastObservedEventAt?.toIso8601String(),
@@ -493,95 +466,27 @@ class LocalHttpApiService {
     };
   }
 
-  Map<String, dynamic> _fileNodeSummary(FileNode node) {
+  Future<Map<String, dynamic>> _versionEntrySummary(VersionEntry entry) async {
+    final stat = await File(entry.path).stat();
+    final name = entry.name;
     return {
-      'id': fileId(node.mate.fullPath),
-      'path': node.mate.fullPath,
-      'fullName': node.mate.fullName,
-      'name': node.mate.name,
-      'label': node.mate.label,
-      'extension': node.mate.extension,
-      'version': node.mate.version.toString(),
-      'branchPath': node.mate.version.branchPath,
-      'revisionNumber': node.mate.version.revisionNumber,
-      'fileSize': node.mate.fileSize,
-      'createdAt': node.mate.creationTime.toIso8601String(),
-      'lastModifiedAt': node.mate.lastModifiedTime.toIso8601String(),
+      'id': fileId(entry.path),
+      'path': entry.path,
+      'fullName': p.basename(entry.path),
+      'name': name.name,
+      'label': name.label,
+      'extension': name.extension,
+      'version': name.version.toString(),
+      'branchPath': name.version.branchPath,
+      'revisionNumber': name.version.revisionNumber,
+      'fileSize': stat.size,
+      'lastModifiedAt': stat.modified.toIso8601String(),
     };
   }
 
-  List<Map<String, dynamic>> _listTreeFamilyFiles(String filePath) {
-    final selectedMeta = FileMeta(filePath);
-    final directory = Directory(p.dirname(filePath));
-    if (!directory.existsSync()) {
-      return [];
-    }
-
-    final files = <Map<String, dynamic>>[];
-    for (final entity in directory.listSync()) {
-      if (entity is! File) {
-        continue;
-      }
-      if (!FileMeta.isSupportedTreeFilePath(entity.path)) {
-        continue;
-      }
-      final meta = FileMeta(entity.path);
-      if (meta.name == selectedMeta.name &&
-          meta.extension == selectedMeta.extension) {
-        files.add(_fileMetadata(entity));
-      }
-    }
-
-    files.sort(
-      (a, b) => ((a['name'] as String?) ?? '').compareTo(
-        (b['name'] as String?) ?? '',
-      ),
-    );
-    return files;
-  }
-
-  Map<String, dynamic> _treeNodeToMap(FileNode node) {
-    return {
-      'path': node.mate.fullPath,
-      'fullName': node.mate.fullName,
-      'name': node.mate.name,
-      'label': node.mate.label,
-      'extension': node.mate.extension,
-      'version': node.mate.version.toString(),
-      'child': node.child == null ? null : _treeNodeToMap(node.child!),
-      'branches': node.branches.map(_treeNodeToMap).toList(),
-    };
-  }
-
-  Map<String, dynamic> _summarizeTree(FileNode root) {
-    var totalNodes = 0;
-    var branchNodes = 0;
-    FileNode? latest;
-
-    void walk(FileNode node) {
-      totalNodes += 1;
-      latest =
-          latest == null ||
-              latest!.mate.version.compareTo(node.mate.version) < 0
-          ? node
-          : latest;
-      branchNodes += node.branches.length;
-      if (node.child != null) {
-        walk(node.child!);
-      }
-      for (final branch in node.branches) {
-        walk(branch);
-      }
-    }
-
-    walk(root);
-
-    return {
-      'rootVersion': root.mate.version.toString(),
-      'latestVersion': latest?.mate.version.toString(),
-      'totalNodes': totalNodes,
-      'branchNodes': branchNodes,
-    };
+  Future<List<Map<String, dynamic>>> _listTreeFamilyFiles(String path) async {
+    final graph = await catalog.read(path);
+    return Future.wait(graph.entries.map(_versionEntrySummary));
   }
 
   Map<String, dynamic> _fileMetadata(File file) {
@@ -594,13 +499,6 @@ class LocalHttpApiService {
       'createdAt': stat.changed.toIso8601String(),
       'lastModifiedAt': stat.modified.toIso8601String(),
     };
-  }
-
-  String _deriveBackupDirectory(String filePath) {
-    final normalizedPath = _normalizePath(filePath);
-    final directory = p.dirname(normalizedPath);
-    final fileName = p.basenameWithoutExtension(normalizedPath);
-    return p.join(directory, '${fileName}_bak');
   }
 
   String _normalizePath(String input) {

@@ -1,12 +1,13 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
 import 'package:vertree/component/i18n_lang.dart';
-import 'package:vertree/core/monit_manager.dart';
+import 'package:vertree/modules/monitoring/monitoring.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/component/app_bar.dart';
 import 'package:vertree/view/component/app_page_background.dart';
 import 'package:vertree/view/module/monit_task_card.dart';
@@ -19,7 +20,10 @@ class MonitPage extends StatefulWidget {
 }
 
 class _MonitPageState extends State<MonitPage> {
+  late final DesktopDependencies _desktop;
+
   List<FileMonitTask> _allMonitTasks = [];
+  StreamSubscription<int>? _taskSubscription;
 
   List<FileMonitTask> _filteredMonitTasks = [];
 
@@ -28,7 +32,16 @@ class _MonitPageState extends State<MonitPage> {
 
   @override
   void initState() {
-    _allMonitTasks = List.from(monitService.monitFileTasks);
+    _desktop = DesktopScope.read(context);
+    _taskSubscription = _desktop.monitService.changes.listen((_) {
+      if (!mounted) return;
+      setState(() {
+        _allMonitTasks = _desktop.monitService.monitFileTasks;
+        _filterTasks();
+        sortTasks();
+      });
+    });
+    _allMonitTasks = _desktop.monitService.monitFileTasks;
     _filteredMonitTasks = List.from(_allMonitTasks);
     sortTasks();
 
@@ -39,9 +52,9 @@ class _MonitPageState extends State<MonitPage> {
 
   void sortTasks() {
     _filteredMonitTasks.sort((a, b) {
-      if (a.isRunning && !b.isRunning) {
+      if (a.enabled && !b.enabled) {
         return -1;
-      } else if (!a.isRunning && b.isRunning) {
+      } else if (!a.enabled && b.enabled) {
         return 1;
       } else {
         return 0;
@@ -51,6 +64,7 @@ class _MonitPageState extends State<MonitPage> {
 
   @override
   void dispose() {
+    _taskSubscription?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     super.dispose();
@@ -85,30 +99,37 @@ class _MonitPageState extends State<MonitPage> {
     if (result != null && result.files.single.path != null) {
       String selectedFilePath = result.files.single.path!;
 
-      final taskResult = await monitService.addFileMonitTask(selectedFilePath);
+      final taskResult = await _desktop.monitService.addFileMonitTask(
+        selectedFilePath,
+      );
       taskResult.when(
         ok: (task) {
+          if (!mounted) return;
           setState(() {
-            _allMonitTasks.add(task);
+            _allMonitTasks = _desktop.monitService.monitFileTasks;
 
             _filterTasks();
             sortTasks();
           });
           if (mounted) {
             showToast(
-              appLocale.getText(LocaleKey.monitAddSuccess).tr([task.filePath]),
+              _desktop.appLocale.getText(LocaleKey.monitAddSuccess).tr([
+                task.filePath,
+              ]),
             );
           }
         },
         err: (error, msg) {
           if (mounted) {
-            showToast(appLocale.getText(LocaleKey.monitAddFail).tr([msg]));
+            showToast(
+              _desktop.appLocale.getText(LocaleKey.monitAddFail).tr([msg]),
+            );
           }
         },
       );
     } else {
       if (mounted) {
-        showToast(appLocale.getText(LocaleKey.monitFileNotSelected));
+        showToast(_desktop.appLocale.getText(LocaleKey.monitFileNotSelected));
       }
     }
   }
@@ -119,7 +140,7 @@ class _MonitPageState extends State<MonitPage> {
     if (selectedFilePath == null || selectedFilePath.isEmpty) {
       return;
     }
-    await openLanShareDialogForPath(selectedFilePath);
+    await _desktop.openLanShareDialogForPath(selectedFilePath);
   }
 
   Future<void> _removeTask(FileMonitTask task) async {
@@ -127,9 +148,11 @@ class _MonitPageState extends State<MonitPage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text(appLocale.getText(LocaleKey.monitDeleteDialogTitle)),
+          title: Text(
+            _desktop.appLocale.getText(LocaleKey.monitDeleteDialogTitle),
+          ),
           content: Text(
-            appLocale.getText(LocaleKey.monitDeleteDialogContent).tr([
+            _desktop.appLocale.getText(LocaleKey.monitDeleteDialogContent).tr([
               task.filePath,
             ]),
           ),
@@ -138,13 +161,13 @@ class _MonitPageState extends State<MonitPage> {
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
-              child: Text(appLocale.getText(LocaleKey.monitCancel)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.monitCancel)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(true);
               },
-              child: Text(appLocale.getText(LocaleKey.monitDelete)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.monitDelete)),
             ),
           ],
         );
@@ -152,32 +175,18 @@ class _MonitPageState extends State<MonitPage> {
     );
 
     if (confirmDelete == true) {
-      await monitService.removeFileMonitTask(task.filePath);
+      await _desktop.monitService.removeFileMonitTask(task.filePath);
+      if (!mounted) return;
       setState(() {
-        _allMonitTasks.removeWhere((t) => t.filePath == task.filePath);
+        _allMonitTasks = _desktop.monitService.monitFileTasks;
 
         _filterTasks();
       });
       showToast(
-        appLocale.getText(LocaleKey.monitDeleteSuccess).tr([task.filePath]),
+        _desktop.appLocale.getText(LocaleKey.monitDeleteSuccess).tr([
+          task.filePath,
+        ]),
       );
-
-      try {
-        final backupDir = Directory(task.backupDirPath!);
-        if (await backupDir.exists()) {
-          await backupDir.delete(recursive: true);
-        }
-      } catch (e) {
-        logger.error(
-          "Error deleting backup directory ${task.backupDirPath}: $e",
-        );
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Error deleting backup: ${e.toString()}")),
-          );
-        }
-      }
     }
   }
 
@@ -194,7 +203,7 @@ class _MonitPageState extends State<MonitPage> {
     if (invalidTasks.isEmpty) {
       if (mounted) {
         showToast(
-          appLocale.getText(
+          _desktop.appLocale.getText(
             LocaleKey.monitCleanInvalidTaskDialogNoInvalidTasks,
           ),
         );
@@ -207,19 +216,24 @@ class _MonitPageState extends State<MonitPage> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            appLocale.getText(LocaleKey.monitCleanInvalidTasksDialogTitle),
+            _desktop.appLocale.getText(
+              LocaleKey.monitCleanInvalidTasksDialogTitle,
+            ),
           ),
           content: SingleChildScrollView(
             child: ListBody(
               children: invalidTasks.map((task) {
                 return Text(
-                  appLocale.getText(LocaleKey.monitInvalidTaskDialogItem).tr([
-                    task.filePath,
-                    task.backupDirPath ??
-                        appLocale.getText(
-                          LocaleKey.monitCleanInvalidTaskDialogBackupDirNotSet,
-                        ),
-                  ]),
+                  _desktop.appLocale
+                      .getText(LocaleKey.monitInvalidTaskDialogItem)
+                      .tr([
+                        task.filePath,
+                        task.backupDirPath ??
+                            _desktop.appLocale.getText(
+                              LocaleKey
+                                  .monitCleanInvalidTaskDialogBackupDirNotSet,
+                            ),
+                      ]),
                 );
               }).toList(),
             ),
@@ -229,13 +243,13 @@ class _MonitPageState extends State<MonitPage> {
               onPressed: () {
                 Navigator.of(context).pop(false);
               },
-              child: Text(appLocale.getText(LocaleKey.monitCancel)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.monitCancel)),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(true);
               },
-              child: Text(appLocale.getText(LocaleKey.monitDelete)),
+              child: Text(_desktop.appLocale.getText(LocaleKey.monitDelete)),
             ),
           ],
         );
@@ -244,34 +258,20 @@ class _MonitPageState extends State<MonitPage> {
 
     if (confirmDelete == true) {
       for (var task in invalidTasks) {
-        await monitService.removeFileMonitTask(task.filePath);
-
-        try {
-          final backupDir = Directory(task.backupDirPath!);
-          if (await backupDir.exists()) {
-            await backupDir.delete(recursive: true);
-          }
-        } catch (e) {
-          logger.error(
-            "Error deleting backup directory ${task.backupDirPath}: $e",
-          );
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Error deleting backup: ${e.toString()}")),
-            );
-          }
-        }
+        await _desktop.monitService.removeFileMonitTask(task.filePath);
       }
 
+      if (!mounted) return;
       setState(() {
-        _allMonitTasks.removeWhere((task) => invalidTasks.contains(task));
+        _allMonitTasks = _desktop.monitService.monitFileTasks;
         _filterTasks();
       });
 
       if (mounted) {
         showToast(
-          appLocale.getText(LocaleKey.monitCleanInvalidTaskDialogCleaned),
+          _desktop.appLocale.getText(
+            LocaleKey.monitCleanInvalidTaskDialogCleaned,
+          ),
         );
       }
     }
@@ -288,7 +288,7 @@ class _MonitPageState extends State<MonitPage> {
           children: [
             const Icon(Icons.monitor_heart_rounded, size: 18),
             const SizedBox(width: 8),
-            Text(appLocale.getText(LocaleKey.monitTitle)),
+            Text(_desktop.appLocale.getText(LocaleKey.monitTitle)),
           ],
         ),
       ),
@@ -301,7 +301,9 @@ class _MonitPageState extends State<MonitPage> {
                 cursor: SystemMouseCursors.text,
                 child: SearchBar(
                   controller: _searchController,
-                  hintText: appLocale.getText(LocaleKey.monitSearchHint),
+                  hintText: _desktop.appLocale.getText(
+                    LocaleKey.monitSearchHint,
+                  ),
                   leading: const Icon(Icons.search_rounded),
                   trailing: [
                     if (_searchQuery.isNotEmpty)
@@ -331,8 +333,12 @@ class _MonitPageState extends State<MonitPage> {
                           const SizedBox(height: 12),
                           Text(
                             _searchQuery.isEmpty
-                                ? appLocale.getText(LocaleKey.monitEmpty)
-                                : appLocale.getText(LocaleKey.monitNoResults),
+                                ? _desktop.appLocale.getText(
+                                    LocaleKey.monitEmpty,
+                                  )
+                                : _desktop.appLocale.getText(
+                                    LocaleKey.monitNoResults,
+                                  ),
                             style: theme.textTheme.titleMedium,
                             textAlign: TextAlign.center,
                           ),
@@ -361,14 +367,16 @@ class _MonitPageState extends State<MonitPage> {
           if (_allMonitTasks.isNotEmpty) ...[
             FloatingActionButton.small(
               heroTag: 'clean_invalid_tasks',
-              tooltip: appLocale.getText(LocaleKey.monitCleanInvalidAction),
+              tooltip: _desktop.appLocale.getText(
+                LocaleKey.monitCleanInvalidAction,
+              ),
               onPressed: _cleanInvalidTask,
               child: const Icon(Icons.cleaning_services_rounded, size: 18),
             ),
             const SizedBox(height: 10),
             FloatingActionButton.small(
               heroTag: 'share_file',
-              tooltip: appLocale.getText(LocaleKey.fileleafMenuShare),
+              tooltip: _desktop.appLocale.getText(LocaleKey.fileleafMenuShare),
               onPressed: _shareFile,
               child: shareActionImage(size: 18),
             ),
@@ -376,10 +384,12 @@ class _MonitPageState extends State<MonitPage> {
           ],
           FloatingActionButton.extended(
             heroTag: 'add_monitor_task',
-            tooltip: appLocale.getText(LocaleKey.monitAddTaskAction),
+            tooltip: _desktop.appLocale.getText(LocaleKey.monitAddTaskAction),
             onPressed: _addNewTask,
             icon: const Icon(Icons.add),
-            label: Text(appLocale.getText(LocaleKey.monitAddTaskAction)),
+            label: Text(
+              _desktop.appLocale.getText(LocaleKey.monitAddTaskAction),
+            ),
           ),
         ],
       ),

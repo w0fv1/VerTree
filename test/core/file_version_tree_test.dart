@@ -2,9 +2,24 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-import 'package:vertree/core/file_version_tree.dart';
+import 'package:vertree/adapters/ui/versions/file_version_tree.dart';
+import 'package:vertree/adapters/ui/versions/version_actions.dart';
+import 'package:vertree/modules/versions/versions.dart';
+import 'package:vertree/file_access/file_access.dart';
+import 'package:vertree/file_access/infrastructure/local_file_access.dart';
+import 'package:vertree/foundation/app_events.dart';
 
 void main() {
+  late VersionActions operations;
+  setUp(
+    () => operations = VersionActions(
+      VersionCommands(
+        files: LocalFileAccess(),
+        writes: FileMutationCoordinator(),
+        emit: AppEvents().emit,
+      ),
+    ),
+  );
   group('FileVersion', () {
     test('parses, serializes and compares versions', () {
       final version = FileVersion('0.1-2.3');
@@ -96,11 +111,12 @@ void main() {
     test('defaults missing version to 0.0 and can rename label', () async {
       final file = await _writeFile(tempDir, 'storyboard#draft.txt', 'draft');
 
-      final meta = FileMeta(file.path);
+      var meta = FileMeta(file.path);
       expect(meta.version.toString(), '0.0');
       expect(meta.label, 'draft');
 
-      await meta.renameFile('approved');
+      final renamed = await operations.renameLabel(meta.fullPath, 'approved');
+      meta = FileMeta(renamed);
 
       expect(meta.label, 'approved');
       expect(meta.fullName, 'storyboard#approved.0.0.txt');
@@ -259,7 +275,11 @@ void main() {
       final rootFile = await _writeFile(tempDir, 'storyboard.0.0.txt', 'root');
       final root = FileNode(rootFile.path);
 
-      final backupResult = await root.backup('baseline');
+      final backupResult = await operations.create(
+        root.mate.fullPath,
+        label: 'baseline',
+        mode: VersionCreationMode.next,
+      );
       expect(backupResult.isOk, isTrue);
       expect(
         backupResult.unwrap().mate.fullName,
@@ -272,10 +292,17 @@ void main() {
         isTrue,
       );
 
-      final secondBackup = await root.backup();
+      final secondBackup = await operations.create(
+        root.mate.fullPath,
+        mode: VersionCreationMode.next,
+      );
       expect(secondBackup.isErr, isTrue);
 
-      final branchResult = await root.branch('hotfix');
+      final branchResult = await operations.create(
+        root.mate.fullPath,
+        label: 'hotfix',
+        mode: VersionCreationMode.branch,
+      );
       expect(branchResult.isOk, isTrue);
       expect(
         branchResult.unwrap().mate.fullName,
@@ -290,7 +317,10 @@ void main() {
       await _writeFile(tempDir, 'spec.0.1.txt', 'next');
       final separateRoot = FileNode(separateRootFile.path);
 
-      final safeBackupResult = await separateRoot.safeBackup('branch');
+      final safeBackupResult = await operations.create(
+        separateRoot.mate.fullPath,
+        label: 'branch',
+      );
       expect(safeBackupResult.isOk, isTrue);
       expect(safeBackupResult.unwrap().mate.version.toString(), '0.0-0.0');
       expect(
@@ -307,9 +337,17 @@ void main() {
       );
       final hiddenNode = FileNode(hiddenFile.path);
 
-      final backupResult = await hiddenNode.backup();
-      final branchResult = await hiddenNode.branch();
-      final safeBackupResult = await hiddenNode.safeBackup();
+      final backupResult = await operations.create(
+        hiddenNode.mate.fullPath,
+        mode: VersionCreationMode.next,
+      );
+      final branchResult = await operations.create(
+        hiddenNode.mate.fullPath,
+        mode: VersionCreationMode.branch,
+      );
+      final safeBackupResult = await operations.create(
+        hiddenNode.mate.fullPath,
+      );
 
       expect(backupResult.isErr, isTrue);
       expect(branchResult.isErr, isTrue);

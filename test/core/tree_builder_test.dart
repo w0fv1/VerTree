@@ -2,7 +2,12 @@ import 'dart:io';
 
 import 'package:path/path.dart' as path;
 import 'package:test/test.dart';
-import 'package:vertree/core/tree_builder.dart';
+import 'package:vertree/adapters/ui/versions/tree_builder.dart';
+import 'package:vertree/modules/versions/versions.dart';
+import 'package:vertree/file_access/file_access.dart';
+import 'package:vertree/file_access/infrastructure/local_file_access.dart';
+
+final catalog = VersionCatalog(LocalFileAccess(), FileMutationCoordinator());
 
 void main() {
   group('buildTree', () {
@@ -36,7 +41,7 @@ void main() {
         'storyboard#hotfix.0.1-1.0.txt',
       );
 
-      final result = await buildTree(selectedPath);
+      final result = await buildTreeForTest(selectedPath);
 
       expect(result.isOk, isTrue);
       final root = result.unwrap();
@@ -70,7 +75,7 @@ void main() {
         'storyboard.0.0.txt',
       );
 
-      final result = await buildTree(selectedPath);
+      final result = await buildTreeForTest(selectedPath);
 
       expect(result.isOk, isTrue);
       final tree = result.unwrap().toTreeString();
@@ -82,12 +87,12 @@ void main() {
     });
 
     test('returns an error when the selected file does not exist', () async {
-      final result = await buildTree(
+      final result = await buildTreeForTest(
         path.join(tempDir.path, 'storyboard', 'missing.0.0.txt'),
       );
 
       expect(result.isErr, isTrue);
-      expect(result.msg, contains('文件路径不存在'));
+      expect(result.msg, contains('NOT_FOUND'));
     });
 
     test(
@@ -100,7 +105,7 @@ void main() {
         );
         await File(hiddenPath).writeAsString('hidden root');
 
-        final result = await buildTree(hiddenPath);
+        final result = await buildTreeForTest(hiddenPath);
 
         expect(result.isErr, isTrue);
         expect(result.msg, contains('当前文件命名不支持版本树'));
@@ -121,3 +126,5 @@ Future<void> _copyDirectory(Directory source, Directory destination) async {
     }
   }
 }
+
+Future<dynamic> buildTreeForTest(String path) => buildTree(path, catalog);

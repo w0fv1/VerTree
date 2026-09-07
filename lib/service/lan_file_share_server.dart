@@ -1,15 +1,16 @@
 import 'dart:async';
-import 'app_events.dart';
+import '../foundation/app_events.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:path/path.dart' as p;
-import 'package:vertree/core/result.dart';
+import 'package:vertree/foundation/result.dart';
 import 'package:vertree/service/lan_share_payload_codec.dart';
 
 class LanFileShareServer {
   LanFileShareServer({
+    required this.events,
     this.sharePageBaseUrl = defaultSharePageBaseUrl,
     Future<List<String>> Function()? addressResolver,
     Future<String?> Function()? wifiNameResolver,
@@ -18,25 +19,21 @@ class LanFileShareServer {
   }) : _addressResolver = addressResolver ?? _discoverLanIpv4Addresses,
        _wifiNameResolver = wifiNameResolver ?? _discoverWifiName,
        _onLogInfo = onLogInfo,
-       _onLogError = onLogError {
-    _cleanupTimer = Timer.periodic(
-      const Duration(minutes: 1),
-      (_) => _purgeExpiredShares(),
-    );
-  }
+       _onLogError = onLogError;
 
   static const int defaultPort = 31424;
   static const int maxPortSearchSpan = 100;
   static const int defaultExpiryMinutes = 30;
   static const String defaultSharePageBaseUrl = 'https://vertree.w0fv1.dev/f';
 
+  final AppEvents events;
   final String sharePageBaseUrl;
   final Future<List<String>> Function() _addressResolver;
   final Future<String?> Function() _wifiNameResolver;
   final void Function(String message)? _onLogInfo;
   final void Function(String message)? _onLogError;
 
-  late final Timer _cleanupTimer;
+  Timer? _cleanupTimer;
   final Map<String, _LanFileShareEntry> _sharesByToken =
       <String, _LanFileShareEntry>{};
   final Map<String, _LanFileShareEntry> _sharesByKey =
@@ -81,6 +78,10 @@ class LanFileShareServer {
           InternetAddress.anyIPv4,
           candidate,
         );
+        _cleanupTimer ??= Timer.periodic(
+          const Duration(minutes: 1),
+          (_) => _purgeExpiredShares(),
+        );
         _server = server;
         _port = candidate;
         unawaited(_listen(server));
@@ -100,6 +101,8 @@ class LanFileShareServer {
   }
 
   Future<void> stop() async {
+    _cleanupTimer?.cancel();
+    _cleanupTimer = null;
     final server = _server;
     _server = null;
     _port = null;
@@ -110,7 +113,7 @@ class LanFileShareServer {
   }
 
   Future<void> dispose() async {
-    _cleanupTimer.cancel();
+    _cleanupTimer?.cancel();
     await stop();
   }
 
@@ -151,7 +154,11 @@ class LanFileShareServer {
     );
     _sharesByToken[entry.token] = entry;
     _sharesByKey[entry.shareKey] = entry;
-    AppEvents.instance.emit('share.created', {'token': entry.token, 'path': entry.filePath, 'expiresAt': entry.expiresAt.toIso8601String()});
+    events.emit('share.created', {
+      'token': entry.token,
+      'path': entry.filePath,
+      'expiresAt': entry.expiresAt.toIso8601String(),
+    });
 
     return Result.ok(_shareToMap(entry, lanIps, wifiName: wifiName));
   }
@@ -189,7 +196,10 @@ class LanFileShareServer {
       return Result.eMsg('LAN file share not found: $token');
     }
     _removeShare(entry);
-    AppEvents.instance.emit('share.revoked', {'token': entry.token, 'path': entry.filePath});
+    events.emit('share.revoked', {
+      'token': entry.token,
+      'path': entry.filePath,
+    });
     return Result.ok({
       'shareRef': token,
       'token': entry.token,
@@ -508,7 +518,10 @@ class LanFileShareServer {
         .toList(growable: false);
     for (final entry in expiredEntries) {
       _removeShare(entry);
-      AppEvents.instance.emit('share.expired', {'token': entry.token, 'path': entry.filePath});
+      events.emit('share.expired', {
+        'token': entry.token,
+        'path': entry.filePath,
+      });
     }
   }
 

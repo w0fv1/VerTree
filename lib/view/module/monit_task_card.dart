@@ -1,12 +1,10 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:vertree/component/i18n_lang.dart';
-import 'package:vertree/core/monit_manager.dart';
+import 'package:vertree/modules/monitoring/monitoring.dart';
 import 'package:vertree/component/file_utils.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/component/themed_assets.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 
 class MonitTaskCard extends StatefulWidget {
   final FileMonitTask task;
@@ -23,21 +21,29 @@ class MonitTaskCard extends StatefulWidget {
 }
 
 class _MonitTaskCardState extends State<MonitTaskCard> {
+  late final DesktopDependencies _desktop;
+  @override
+  void initState() {
+    super.initState();
+    _desktop = DesktopScope.read(context);
+  }
+
   late FileMonitTask task = widget.task;
 
   Future<void> _toggleTask() async {
-    final result = await monitService.toggleFileMonitTaskStatus(task);
+    final result = await _desktop.monitService.toggleFileMonitTaskStatus(task);
+    if (!mounted) return;
     result.when(
       ok: (updatedTask) {
         setState(() {
           task = updatedTask;
         });
-        final status = updatedTask.isRunning
-            ? appLocale.getText(LocaleKey.monitcardStatusEnabled)
-            : appLocale.getText(LocaleKey.monitcardStatusDisabled);
+        final status = updatedTask.enabled
+            ? _desktop.appLocale.getText(LocaleKey.monitcardStatusEnabled)
+            : _desktop.appLocale.getText(LocaleKey.monitcardStatusDisabled);
         showToast(
-          appLocale.getText(LocaleKey.monitcardMonitorStatus).tr([
-            task.file.path,
+          _desktop.appLocale.getText(LocaleKey.monitcardMonitorStatus).tr([
+            task.filePath,
             status,
           ]),
         );
@@ -61,16 +67,20 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
         context: context,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Text(appLocale.getText(LocaleKey.monitcardCleanDialogTitle)),
+            title: Text(
+              _desktop.appLocale.getText(LocaleKey.monitcardCleanDialogTitle),
+            ),
             content: Text(
-              appLocale.getText(LocaleKey.monitcardCleanDialogContent).tr([
-                task.backupDirPath!,
-              ]),
+              _desktop.appLocale
+                  .getText(LocaleKey.monitcardCleanDialogContent)
+                  .tr([task.backupDirPath!]),
             ),
             actions: <Widget>[
               TextButton(
                 child: Text(
-                  appLocale.getText(LocaleKey.monitcardCleanDialogCancel),
+                  _desktop.appLocale.getText(
+                    LocaleKey.monitcardCleanDialogCancel,
+                  ),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop(false);
@@ -78,7 +88,9 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
               ),
               TextButton(
                 child: Text(
-                  appLocale.getText(LocaleKey.monitcardCleanDialogConfirm),
+                  _desktop.appLocale.getText(
+                    LocaleKey.monitcardCleanDialogConfirm,
+                  ),
                 ),
                 onPressed: () {
                   Navigator.of(context).pop(true);
@@ -87,30 +99,23 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
             ],
           );
         },
-      ).then((confirmed) {
+      ).then((confirmed) async {
         if (confirmed != null && confirmed) {
           try {
-            final directory = Directory(task.backupDirPath!);
-            final files = directory.listSync();
-
-            for (final file in files) {
-              if (file is File) {
-                file.deleteSync();
-              }
-            }
+            await _desktop.monitService.clearSnapshots(task);
             showToast(
-              appLocale.getText(LocaleKey.monitcardCleanSuccess).tr([
+              _desktop.appLocale.getText(LocaleKey.monitcardCleanSuccess).tr([
                 task.backupDirPath!,
               ]),
             );
           } catch (e) {
             showToast(
-              appLocale.getText(LocaleKey.monitcardCleanFail).tr([
+              _desktop.appLocale.getText(LocaleKey.monitcardCleanFail).tr([
                 task.backupDirPath!,
                 e.toString(),
               ]),
             );
-            logger.error('删除备份文件夹中的文件时发生错误: $e');
+            _desktop.logger.error('删除备份文件夹中的文件时发生错误: $e');
           }
         }
       });
@@ -121,7 +126,13 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
-    final statusColor = task.isRunning ? Colors.green.shade700 : scheme.outline;
+    final running = task.runtimeStatus == 'running';
+    final degraded = task.runtimeStatus == 'degraded';
+    final statusColor = degraded
+        ? scheme.error
+        : running
+        ? Colors.green.shade700
+        : scheme.outline;
 
     return MouseRegion(
       cursor: SystemMouseCursors.basic,
@@ -137,9 +148,17 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
                   Icon(Icons.circle, color: statusColor, size: 12),
                   const SizedBox(width: 8),
                   Text(
-                    task.isRunning
-                        ? appLocale.getText(LocaleKey.monitcardStatusRunning)
-                        : appLocale.getText(LocaleKey.monitcardStatusStopped),
+                    degraded
+                        ? _desktop.appLocale.getText(
+                            LocaleKey.monitcardStatusDegraded,
+                          )
+                        : running
+                        ? _desktop.appLocale.getText(
+                            LocaleKey.monitcardStatusRunning,
+                          )
+                        : _desktop.appLocale.getText(
+                            LocaleKey.monitcardStatusStopped,
+                          ),
                     style: theme.textTheme.labelLarge?.copyWith(
                       color: statusColor,
                       fontWeight: FontWeight.w700,
@@ -147,9 +166,11 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
                   ),
                   const Spacer(),
                   Tooltip(
-                    message: appLocale.getText(LocaleKey.monitcardPause),
+                    message: _desktop.appLocale.getText(
+                      LocaleKey.monitcardPause,
+                    ),
                     child: Switch(
-                      value: task.isRunning,
+                      value: task.enabled,
                       onChanged: (_) => _toggleTask(),
                     ),
                   ),
@@ -165,9 +186,9 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
               const SizedBox(height: 6),
               if (task.backupDirPath != null)
                 Text(
-                  appLocale.getText(LocaleKey.monitcardBackupFolder).tr([
-                    task.backupDirPath!,
-                  ]),
+                  _desktop.appLocale
+                      .getText(LocaleKey.monitcardBackupFolder)
+                      .tr([task.backupDirPath!]),
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -178,14 +199,17 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
                 runSpacing: 10,
                 children: [
                   Tooltip(
-                    message: appLocale.getText(LocaleKey.fileleafMenuShare),
+                    message: _desktop.appLocale.getText(
+                      LocaleKey.fileleafMenuShare,
+                    ),
                     child: IconButton.filledTonal(
-                      onPressed: () => openLanShareDialogForPath(task.filePath),
+                      onPressed: () =>
+                          _desktop.openLanShareDialogForPath(task.filePath),
                       icon: shareActionImage(size: 20),
                     ),
                   ),
                   Tooltip(
-                    message: appLocale.getText(
+                    message: _desktop.appLocale.getText(
                       LocaleKey.monitcardOpenBackupFolder,
                     ),
                     child: IconButton.filledTonal(
@@ -194,7 +218,9 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
                     ),
                   ),
                   Tooltip(
-                    message: appLocale.getText(LocaleKey.monitcardClean),
+                    message: _desktop.appLocale.getText(
+                      LocaleKey.monitcardClean,
+                    ),
                     child: IconButton.filledTonal(
                       onPressed: _cleanBackupFolder,
                       icon: const Icon(
@@ -204,7 +230,9 @@ class _MonitTaskCardState extends State<MonitTaskCard> {
                     ),
                   ),
                   Tooltip(
-                    message: appLocale.getText(LocaleKey.monitcardDelete),
+                    message: _desktop.appLocale.getText(
+                      LocaleKey.monitcardDelete,
+                    ),
                     child: IconButton.filled(
                       onPressed: () {
                         widget.removeTask(task);

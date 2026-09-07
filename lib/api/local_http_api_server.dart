@@ -3,11 +3,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:vertree/api/local_http_api_contract.dart';
+import 'api_protocol.dart';
 import 'package:vertree/api/local_http_api_documentation.dart';
 import 'package:vertree/api/local_http_api_security.dart';
-import 'package:vertree/main.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
 import 'package:vertree/service/local_http_api_service.dart';
+
+void _ignoreLog(String message) {}
 
 class LocalHttpApiServer {
   LocalHttpApiServer({
@@ -19,8 +21,8 @@ class LocalHttpApiServer {
     void Function(String message)? onLogError,
   }) : _routes = [],
        _security = LocalHttpApiSecurity.fromOptionalAccessToken(accessToken),
-       _onLogInfo = onLogInfo ?? logger.info,
-       _onLogError = onLogError ?? logger.error {
+       _onLogInfo = onLogInfo ?? _ignoreLog,
+       _onLogError = onLogError ?? _ignoreLog {
     _routes.addAll(_buildRoutes());
     _routes.addAll(additionalRoutes);
   }
@@ -48,7 +50,8 @@ class LocalHttpApiServer {
 
   Future<void> syncWithConfig() async {
     final enabled =
-        forceEnabled || configer.get<bool>('localHttpApiEnabled', false);
+        forceEnabled ||
+        apiService.configer.get<bool>('localHttpApiEnabled', false);
     if (enabled) {
       await start();
     } else {
@@ -161,10 +164,11 @@ class LocalHttpApiServer {
       await _dispatch(request, route, startedAt);
     } catch (e) {
       _onLogError('Local HTTP API request failed: $e');
+      final failure = apiFailure(e);
       await _writeJson(
         request,
-        statusCode: HttpStatus.internalServerError,
-        body: _errorBody(request, 'INTERNAL_ERROR', e.toString(), startedAt),
+        statusCode: failure.status,
+        body: _errorBody(request, failure.code, failure.message, startedAt),
       );
     }
   }
@@ -535,7 +539,7 @@ class LocalHttpApiServer {
           LocalHttpApiField(
             name: 'id',
             type: 'string',
-            description: 'base64url-encoded normalized file path.',
+            description: 'Monitor task UUID returned by task creation.',
             required: true,
           ),
         ],
@@ -552,7 +556,7 @@ class LocalHttpApiServer {
           LocalHttpApiField(
             name: 'id',
             type: 'string',
-            description: 'base64url-encoded normalized file path.',
+            description: 'Monitor task UUID returned by task creation.',
             required: true,
           ),
         ],
@@ -560,7 +564,7 @@ class LocalHttpApiServer {
           description: 'The desired running state for the task.',
           fields: [
             LocalHttpApiField(
-              name: 'isRunning',
+              name: 'enabled',
               type: 'boolean',
               description:
                   'Whether the task should be running after the update.',
@@ -581,7 +585,7 @@ class LocalHttpApiServer {
           LocalHttpApiField(
             name: 'id',
             type: 'string',
-            description: 'base64url-encoded normalized file path.',
+            description: 'Monitor task UUID returned by task creation.',
             required: true,
           ),
         ],
@@ -589,8 +593,8 @@ class LocalHttpApiServer {
       ),
       LocalHttpApiRoute(
         method: 'POST',
-        pathTemplate: '/backups',
-        summary: 'Create one backup',
+        pathTemplate: '/versions',
+        summary: 'Create one manual version',
         description:
             'Runs a backup for the given file path and returns detailed result data.',
         tags: const ['backup'],
@@ -614,14 +618,14 @@ class LocalHttpApiServer {
             ),
           ],
         ),
-        handler: _handleCreateBackup,
+        handler: _handleCreateVersion,
       ),
       LocalHttpApiRoute(
         method: 'GET',
-        pathTemplate: '/backups',
-        summary: 'List backups for one file',
+        pathTemplate: '/snapshots',
+        summary: 'List automatic snapshots for one file',
         description:
-            'Lists files in the derived backup directory for the given source file path.',
+            'Lists committed manifest-owned snapshots for the monitored source file.',
         tags: const ['backup'],
         queryParameters: const [
           LocalHttpApiField(
@@ -632,11 +636,11 @@ class LocalHttpApiServer {
             example: r'D:\project\storyboard.0.1.txt',
           ),
         ],
-        handler: _handleListBackups,
+        handler: _handleListSnapshots,
       ),
       LocalHttpApiRoute(
         method: 'GET',
-        pathTemplate: '/version-files',
+        pathTemplate: '/versions',
         summary: 'List version-managed files',
         description:
             'Lists all version-tree sibling files that belong to the same logical document.',
@@ -744,20 +748,20 @@ class LocalHttpApiServer {
       ),
       LocalHttpApiRoute(
         method: 'GET',
-        pathTemplate: '/monitor-tasks/{id}/backups',
+        pathTemplate: '/monitor-tasks/{id}/snapshots',
         summary: 'List monitor backups for one task',
         description:
-            'Lists timestamped files from the monitor backup directory for a specific monitor task.',
+            'Lists committed snapshots owned by the monitor task UUID.',
         tags: const ['monitoring'],
         pathParameters: const [
           LocalHttpApiField(
             name: 'id',
             type: 'string',
-            description: 'base64url-encoded normalized file path.',
+            description: 'Monitor task UUID returned by task creation.',
             required: true,
           ),
         ],
-        handler: _handleListMonitorTaskBackups,
+        handler: _handleListMonitorTaskSnapshots,
       ),
       LocalHttpApiRoute(
         method: 'POST',
@@ -770,7 +774,7 @@ class LocalHttpApiServer {
           LocalHttpApiField(
             name: 'id',
             type: 'string',
-            description: 'base64url-encoded normalized file path.',
+            description: 'Monitor task UUID returned by task creation.',
             required: true,
           ),
         ],
@@ -897,7 +901,7 @@ class LocalHttpApiServer {
   ) async {
     await _writeSuccess(
       request,
-      data: apiService.listMonitorTasks(),
+      data: await apiService.listMonitorTasks(),
       startedAt: startedAt,
     );
   }
@@ -1060,7 +1064,7 @@ class LocalHttpApiServer {
     Map<String, String> pathParameters,
     DateTime startedAt,
   ) async {
-    final result = apiService.getMonitorTask(pathParameters['id']!);
+    final result = await apiService.getMonitorTask(pathParameters['id']!);
     await _writeResult(request, result, startedAt);
   }
 
@@ -1070,15 +1074,15 @@ class LocalHttpApiServer {
     DateTime startedAt,
   ) async {
     final body = await _readJsonBody(request);
-    final isRunning = _requiredBoolField(body, 'isRunning');
-    if (isRunning == null) {
+    final enabled = _requiredBoolField(body, 'enabled');
+    if (enabled == null) {
       await _writeJson(
         request,
         statusCode: HttpStatus.badRequest,
         body: _errorBody(
           request,
           'BAD_REQUEST',
-          'Field "isRunning" must be a boolean.',
+          'Field "enabled" must be a boolean.',
           startedAt,
         ),
       );
@@ -1087,7 +1091,7 @@ class LocalHttpApiServer {
 
     final result = await apiService.updateMonitorTask(
       pathParameters['id']!,
-      isRunning: isRunning,
+      enabled: enabled,
     );
     await _writeResult(request, result, startedAt);
   }
@@ -1101,7 +1105,7 @@ class LocalHttpApiServer {
     await _writeResult(request, result, startedAt);
   }
 
-  Future<void> _handleCreateBackup(
+  Future<void> _handleCreateVersion(
     HttpRequest request,
     Map<String, String> pathParameters,
     DateTime startedAt,
@@ -1123,7 +1127,7 @@ class LocalHttpApiServer {
     }
 
     final label = body['label']?.toString();
-    final result = await apiService.createBackup(filePath, label: label);
+    final result = await apiService.createVersion(filePath, label: label);
     await _writeResult(
       request,
       result,
@@ -1132,7 +1136,7 @@ class LocalHttpApiServer {
     );
   }
 
-  Future<void> _handleListBackups(
+  Future<void> _handleListSnapshots(
     HttpRequest request,
     Map<String, String> pathParameters,
     DateTime startedAt,
@@ -1152,7 +1156,7 @@ class LocalHttpApiServer {
       return;
     }
 
-    final result = apiService.listBackups(filePath);
+    final result = await apiService.listSnapshots(filePath);
     await _writeResult(request, result, startedAt);
   }
 
@@ -1176,7 +1180,7 @@ class LocalHttpApiServer {
       return;
     }
 
-    final result = apiService.listVersionFiles(filePath);
+    final result = await apiService.listVersionFiles(filePath);
     await _writeResult(request, result, startedAt);
   }
 
@@ -1269,12 +1273,14 @@ class LocalHttpApiServer {
     await _writeResult(request, result, startedAt);
   }
 
-  Future<void> _handleListMonitorTaskBackups(
+  Future<void> _handleListMonitorTaskSnapshots(
     HttpRequest request,
     Map<String, String> pathParameters,
     DateTime startedAt,
   ) async {
-    final result = apiService.listMonitorTaskBackups(pathParameters['id']!);
+    final result = await apiService.listMonitorTaskSnapshots(
+      pathParameters['id']!,
+    );
     await _writeResult(request, result, startedAt);
   }
 
@@ -1384,21 +1390,8 @@ class LocalHttpApiServer {
     return value;
   }
 
-  Future<Map<String, dynamic>> _readJsonBody(HttpRequest request) async {
-    final raw = await utf8.decoder.bind(request).join();
-    if (raw.trim().isEmpty) {
-      return {};
-    }
-
-    final decoded = jsonDecode(raw);
-    if (decoded is Map<String, dynamic>) {
-      return decoded;
-    }
-    if (decoded is Map) {
-      return decoded.map((key, value) => MapEntry(key.toString(), value));
-    }
-    throw const FormatException('JSON body must be an object.');
-  }
+  Future<Map<String, dynamic>> _readJsonBody(HttpRequest request) =>
+      apiBody(request);
 
   Future<void> _writeResult(
     HttpRequest request,
@@ -1409,8 +1402,8 @@ class LocalHttpApiServer {
     if (result.isErr) {
       await _writeJson(
         request,
-        statusCode: HttpStatus.badRequest,
-        body: _errorBody(request, 'BAD_REQUEST', result.msg, startedAt),
+        statusCode: HttpStatus.unprocessableEntity,
+        body: _errorBody(request, 'OPERATION_FAILED', result.msg, startedAt),
       );
       return;
     }
@@ -1429,17 +1422,7 @@ class LocalHttpApiServer {
     required DateTime startedAt,
     int statusCode = HttpStatus.ok,
   }) async {
-    await _writeJson(
-      request,
-      statusCode: statusCode,
-      body: {
-        'success': true,
-        'code': 'OK',
-        'message': 'ok',
-        'data': data,
-        'debug': _debugBlock(request, startedAt),
-      },
-    );
+    await apiJson(request, data, status: statusCode);
   }
 
   Map<String, dynamic> _errorBody(
@@ -1447,29 +1430,7 @@ class LocalHttpApiServer {
     String code,
     String message,
     DateTime startedAt,
-  ) {
-    return {
-      'success': false,
-      'code': code,
-      'message': message,
-      'data': null,
-      'debug': _debugBlock(request, startedAt),
-    };
-  }
-
-  Map<String, dynamic> _debugBlock(HttpRequest? request, DateTime startedAt) {
-    final finishedAt = DateTime.now();
-    return {
-      'requestedAt': startedAt.toIso8601String(),
-      'respondedAt': finishedAt.toIso8601String(),
-      'durationMs': finishedAt.difference(startedAt).inMilliseconds,
-      'method': request?.method,
-      'path': request?.uri.path,
-      'query': request?.uri.queryParameters,
-      'serverPort': _port,
-      'remoteAddress': request?.connectionInfo?.remoteAddress.address,
-    };
-  }
+  ) => failureBody(code, message);
 
   Future<void> _writeJson(
     HttpRequest request, {

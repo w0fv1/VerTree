@@ -2,108 +2,36 @@
 sidebar_position: 3
 ---
 
-# Vertree 文件监控设计解析
+# 文件监控与自动快照
 
-Vertree 的监控能力由三个核心对象组成：
+监控模块只负责任务和调度，快照模块负责复制、提交、查询和清理。两者通过注入协作，构造函数不启动监听。
 
-- `Monitor`：负责单个文件的文件系统监听与自动备份
-- `MonitManager`：负责保存、恢复和切换多个监控任务
-- `FileMonitTask`：监控任务的数据模型
+## 任务与状态
 
-## Monitor 的工作方式
+`MonitManager` 从 `settings.json` 的 `monitorTasks` 读取任务。配置要求 `_schemaVersion: 1`，任务使用持久 UUID；`enabled` 表示用户期望，`runtimeStatus` 表示实际状态。启动、停止和失败互相区分。
 
-`Monitor` 会监听目标文件所在目录的文件系统事件，并只在事件路径命中目标文件时继续处理。
+任务列表只读，页面订阅 revision 变化。移除任务会停止监听并归档身份，快照继续保留；重新添加相同路径会复用归档身份。不读取旧 config.json 或 monitFiles。
 
-核心行为：
+## 调度
 
-- 使用 `file.parent.watch(events: FileSystemEvent.all)` 建立监听
-- 记录运行时状态：
-  - `startedAt`
-  - `lastObservedEventAt`
-  - `lastBackupTime`
-  - `lastBackupPath`
-  - `lastError`
-  - `observedEventCount`
-  - `createdBackupCount`
-- 通过 `_isHandlingFileChange` 防止重入
+监听目标文件所在目录，只处理目标路径事件。150 毫秒合并事件；最小备份间隔从上次成功快照计算。复制期间发生的新变化会安排后续复制。失败保留待处理状态，两秒后重试，不推进成功时间。监听异常会尝试重新建立监听。
 
-## 自动备份策略
+`monitorRate` 默认 5 分钟，`monitorMaxSize` 默认 50。时钟、监听器和快照操作可注入，调度测试采用模拟时钟。
 
-备份目录规则：
+## 快照归属与保留
 
-- 与源文件同目录
-- 目录名为 `<basename>_bak`
+新目录为 `<源目录>/.vertree/snapshots/<任务 UUID>`，内容文件以快照 UUID 命名，JSON 清单作为提交标记。清单记录任务、源路径、内容文件、时间和大小。
 
-备份文件名规则：
+提交成功后，按创建时间只清理本任务验证通过的旧快照，至少保留一份。清理失败独立报告；损坏清单、未知文件与旧 `_bak` 目录不参与读取或删除。清理按钮也只删除已识别的本任务快照。
 
-- `<原文件名>_<ISO时间戳>.bak<原扩展名>`
+手动版本和自动快照使用同一个写入协调器，按源目录串行处理相互冲突的操作。退出时取消监听和定时器，等待正在进行的复制完成。
 
-例如：
+## HTTP 接口
 
-```text
-story.0.1.txt_2026-03-22T11-35-10.123.bak.txt
-```
+- `GET/POST /api/v1/monitor-tasks`
+- `PATCH/DELETE /api/v1/monitor-tasks/{id}`，其中 id 是任务 UUID
+- `GET /api/v1/monitor-tasks/{id}/snapshots`
+- `GET /api/v1/snapshots?path=...`
+- `POST /api/v1/monitor-tasks/{id}/verification-writes`，仅用于专用测试文件
 
-## 频率控制与清理
-
-监控不会对每一次保存都立即无限制落盘，而是受配置控制：
-
-- `monitorRate`：最小备份间隔，默认 `5` 分钟
-- `monitorMaxSize`：每个监控任务最多保留的备份数量，默认 `50`
-
-当备份数量超过上限时，`Monitor` 会按最后修改时间从旧到新删除多余备份。
-
-## MonitManager 的职责
-
-`MonitManager` 是运行时监控任务的持有者。
-
-它负责：
-
-- 从 `config.json` 读取 `monitFiles`
-- 在启动时恢复 `isRunning == true` 的任务
-- 添加新任务
-- 删除任务
-- 切换任务运行状态
-- 统一保存任务列表
-
-关键方法：
-
-- `addFileMonitTask(String path)`
-- `removeFileMonitTask(String path)`
-- `toggleFileMonitTaskStatus(FileMonitTask task)`
-- `startAll()`
-
-## FileMonitTask 的职责
-
-`FileMonitTask` 用来描述一个持久化的监控任务，核心字段包括：
-
-- `filePath`
-- `backupDirPath`
-- `isRunning`
-- `fileExists`
-- `monitor`
-
-它同时提供：
-
-- `toJson()`：持久化到配置
-- `fromJson()`：从配置恢复
-
-## 与本机 HTTP API 的关系
-
-本机 HTTP API 会直接复用这些运行时对象：
-
-- `GET /api/v1/monitor-tasks`
-- `POST /api/v1/monitor-tasks`
-- `PATCH /api/v1/monitor-tasks/{id}`
-- `DELETE /api/v1/monitor-tasks/{id}`
-- `GET /api/v1/monitor-tasks/{id}/backups`
-- `POST /api/v1/monitor-tasks/{id}/verification-writes`
-
-这意味着监控模块不仅服务 UI，也服务本地自动化和测试验证。
-
-## 当前实现特点
-
-- 备份逻辑简单直接，以文件复制为核心
-- 配置恢复优先保证“可继续工作”，而不是引入复杂调度器
-- 运行时元数据比较完整，便于设置页和 API 直接观测任务状态
-- 目前以单文件监听为单位，不是目录级批处理系统
+手动版本通过 `GET/POST /api/v1/versions` 操作，与自动快照分开。旧 backups 路由不保留。

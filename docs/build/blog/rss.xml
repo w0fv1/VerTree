@@ -4,10 +4,44 @@
         <title>Vertree维树 Blog</title>
         <link>https://vertree.w0fv1.dev/blog</link>
         <description>Vertree维树 Blog</description>
-        <lastBuildDate>Mon, 07 Sep 2026 00:00:00 GMT</lastBuildDate>
+        <lastBuildDate>Tue, 08 Sep 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh</language>
+        <item>
+            <title><![CDATA[Vertree 2.0.0：版本、快照与监控架构升级]]></title>
+            <link>https://vertree.w0fv1.dev/blog/2-0-0-architecture</link>
+            <guid>https://vertree.w0fv1.dev/blog/2-0-0-architecture</guid>
+            <pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[本次为不兼容升级：重组版本、快照和监控架构，并修正 Windows MSI 安装包。]]></description>
+            <content:encoded><![CDATA[<p>本次为不兼容升级：重组版本、快照和监控架构，并修正 Windows MSI 安装包。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="升级前请注意">升级前请注意<a href="https://vertree.w0fv1.dev/blog/2-0-0-architecture#%E5%8D%87%E7%BA%A7%E5%89%8D%E8%AF%B7%E6%B3%A8%E6%84%8F" class="hash-link" aria-label="升级前请注意的直接链接" title="升级前请注意的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">使用新的 settings.json 配置和 monitorTasks 任务格式，不读取或迁移旧 config.json。升级后请重新设置偏好并添加监控任务。</li>
+<li class="">自动快照保存在源目录的 <code>.vertree/snapshots/&lt;任务 UUID&gt;</code> 中，通过清单确认归属。旧 *_bak 文件保持原样，但不会自动导入或显示在新快照列表中。</li>
+<li class="">手动版本仍是普通文件，继续按文件名识别版本关系。</li>
+<li class="">本机 API 删除 /backups、/version-files 和任务 /backups 路由。手动版本统一使用 GET/POST /api/v1/versions；自动快照使用 GET /api/v1/snapshots 和任务 /snapshots。任务使用 UUID 和 enabled；版本树返回 entries、parents、diagnostics。</li>
+<li class="">SSE 游标改为 sessionId:序号，进程重启后重新查询状态并订阅。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="可靠性与架构">可靠性与架构<a href="https://vertree.w0fv1.dev/blog/2-0-0-architecture#%E5%8F%AF%E9%9D%A0%E6%80%A7%E4%B8%8E%E6%9E%B6%E6%9E%84" class="hash-link" aria-label="可靠性与架构的直接链接" title="可靠性与架构的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">UI、CLI、托盘和 HTTP 共用版本命令，集中处理创建、分支、标签、恢复和同名冲突。</li>
+<li class="">手动版本与自动快照共享写入协调；新文件暂存后发布，不覆盖同名目标。</li>
+<li class="">快照成功提交后才执行保留清理，只删除已验证归属的快照，保留未知文件。</li>
+<li class="">监控失败不推进成功时间；复制期间的后续变化继续处理。监听与复制故障独立记录和重试，页面实时同步任务变化。</li>
+<li class="">启动失败回收资源，退出等待正在进行的写入；设置读取无写入副作用。</li>
+<li class="">新增模块依赖检查与 CI，禁止反向依赖、跨模块内部引用及循环依赖，无历史白名单。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="windows-msi-修复">Windows MSI 修复<a href="https://vertree.w0fv1.dev/blog/2-0-0-architecture#windows-msi-%E4%BF%AE%E5%A4%8D" class="hash-link" aria-label="Windows MSI 修复的直接链接" title="Windows MSI 修复的直接链接" translate="no">​</a></h2>
+<ul>
+<li class="">修正公共桌面和开始菜单目录，避免快捷方式被安装到 C:\ 根目录。</li>
+<li class="">修正快捷方式组件 KeyPath，保留 WiX ICE 校验。</li>
+<li class="">发布前检查 MSI 目录，并在 Windows CI 中执行安装、快捷方式目标检查和卸载，失败阻止发布并保留日志。</li>
+</ul>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="验证与边界">验证与边界<a href="https://vertree.w0fv1.dev/blog/2-0-0-architecture#%E9%AA%8C%E8%AF%81%E4%B8%8E%E8%BE%B9%E7%95%8C" class="hash-link" aria-label="验证与边界的直接链接" title="验证与边界的直接链接" translate="no">​</a></h2>
+<p>本地通过 98 项 Flutter 测试、静态分析、架构检查、Windows Debug 构建与文档构建。正式安装产物由 GitHub Actions 构建和校验。</p>
+<p>当前未实现跨进程文件事务日志；内部协调不能阻止其他编辑器并发修改文件。macOS/Linux 原生文件发布行为仍需持续补充对应平台的运行测试。</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Vertree 1.1.0：从版本树直接预览文件]]></title>
             <link>https://vertree.w0fv1.dev/blog/1-1-0-file-preview</link>
@@ -43,6 +77,24 @@
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="公共-logo">公共 Logo<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E5%85%AC%E5%85%B1-logo" class="hash-link" aria-label="公共 Logo的直接链接" title="公共 Logo的直接链接" translate="no">​</a></h2>
 <p>Logo 以公共目录中的 PNG 和 ICO 为源。官网直接读取公共文件，macOS 和 Windows 包身份所需的不同尺寸由脚本生成，减少重复维护。</p>
 <p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.1.4" target="_blank" rel="noopener noreferrer" class="">下载 1.1.4</a>。Windows 用户退出旧版后覆盖安装即可，文件预览功能保持可用。</p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[Vertree 1.2.0：文件预览图与本机自动化 API]]></title>
+            <link>https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api</link>
+            <guid>https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api</guid>
+            <pubDate>Mon, 07 Sep 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[Vertree 1.2.0 新增文件预览图 API：传入本机文件绝对路径，后台直接返回 PNG。预览图通过 Office-Viewer 的共享渲染模块生成，不弹窗，也不替换当前预览。]]></description>
+            <content:encoded><![CDATA[<p>Vertree 1.2.0 新增文件预览图 API：传入本机文件绝对路径，后台直接返回 PNG。预览图通过 Office-Viewer 的共享渲染模块生成，不弹窗，也不替换当前预览。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="文件预览图">文件预览图<a href="https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api#%E6%96%87%E4%BB%B6%E9%A2%84%E8%A7%88%E5%9B%BE" class="hash-link" aria-label="文件预览图的直接链接" title="文件预览图的直接链接" translate="no">​</a></h2>
+<p><code>POST /api/v1/preview-images</code> 支持宽高、PDF/PPT 页码、工作表和视频时间点。未知扩展名按内容检测文本，未知二进制和音频等无可视内容的文件明确返回不支持。</p>
+<p>Word 与连续文本目前导出首屏；Windows 使用 WebView2，macOS 使用 WKWebView，Linux 后台生成需要安装 Chromium 或 Google Chrome。</p>
+<p>Office-Viewer 增加共享导出函数和桌面导出入口。两边的支持格式来自同一个 registry，构建时生成能力清单。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="自动化接口">自动化接口<a href="https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api#%E8%87%AA%E5%8A%A8%E5%8C%96%E6%8E%A5%E5%8F%A3" class="hash-link" aria-label="自动化接口的直接链接" title="自动化接口的直接链接" translate="no">​</a></h2>
+<p>新增预览控制与状态、格式能力、版本恢复与备注修改、文件比较、设置读写、批处理、异步任务、SSE 实时事件和运行诊断。版本恢复前保留当前文件备份，同时修复连续备份可能复用分支编号、覆盖旧备份的问题。</p>
+<p>异步取消在安全边界生效；SSE 可回放最近 256 条事件。API 仅监听本机，业务请求需要 Bearer Token。</p>
+<p>完整用法见<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-develop/local-api">本机 API 文档</a>。仓库中的 <code>tools/start_preview_demo.cmd</code> 可启动本地预览测试页。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="下载">下载<a href="https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api#%E4%B8%8B%E8%BD%BD" class="hash-link" aria-label="下载的直接链接" title="下载的直接链接" translate="no">​</a></h2>
+<p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.2.0" target="_blank" rel="noopener noreferrer" class="">前往 V1.2.0 发布页</a>。Windows 常规安装请选择 <code>vertree-windows-x64-1.2.0-setup.exe</code>，先退出旧版或本地测试程序，再覆盖安装。</p>]]></content:encoded>
         </item>
         <item>
             <title><![CDATA[Welcome]]></title>

@@ -1,136 +1,126 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/modules/settings/settings.dart';
 
+/// File-backed settings adapter. Reads are side-effect free; writes are queued.
 class Configer {
-  static const String _configFileName = "config.json";
+  Configer({
+    Future<Directory> Function()? directoryResolver,
+    void Function(String)? onLogError,
+  }) : _directoryResolver = directoryResolver ?? getApplicationSupportDirectory,
+       _onLogError = onLogError;
+  final Future<Directory> Function() _directoryResolver;
+  final void Function(String)? _onLogError;
   late String configFilePath;
-
   Map<String, dynamic> _config = {};
   Future<void> _pendingSave = Future.value();
-
-  Configer();
+  Object? _saveError;
+  bool _initialized = false;
+  final _changes = StreamController<Map<String, dynamic>>.broadcast();
+  Stream<Map<String, dynamic>> get changes => _changes.stream;
 
   Future<void> init() async {
-    Directory dir = await getApplicationSupportDirectory();
-    final configFile = File('${dir.path}/$_configFileName');
-
-    configFilePath = configFile.path;
-
-    if (await configFile.exists()) {
+    if (_initialized) return;
+    final directory = await _directoryResolver();
+    await directory.create(recursive: true);
+    configFilePath = '${directory.path}/settings.json';
+    final file = File(configFilePath);
+    if (await file.exists()) {
       try {
-        String content = await configFile.readAsString();
-        final decoded = jsonDecode(content);
-        if (decoded is Map<String, dynamic>) {
-          _config = decoded;
-        } else if (decoded is Map) {
-          _config = decoded.map(
-            (key, value) => MapEntry(key.toString(), value),
-          );
-        } else {
-          _config = {};
-          await _saveConfig();
+        _config = _decode(await file.readAsString());
+      } catch (error) {
+        _onLogError?.call('Cannot read settings: $error');
+        await file.copy(
+          '$configFilePath.corrupt-${DateTime.now().microsecondsSinceEpoch}',
+        );
+        final backup = File('$configFilePath.previous');
+        if (await backup.exists()) {
+          _config = _decode(await backup.readAsString());
         }
-      } catch (e) {
-        logger.error("Error reading config file: $e");
-        _config = {};
-        await _saveConfig();
       }
-    } else {
-      await _saveConfig();
     }
+    _initialized = true;
   }
 
-  T _setAndReturnDefault<T>(String key, T defaultValue) {
-    set<T>(key, defaultValue);
-    return defaultValue;
-  }
-
-  bool? _tryParseBool(dynamic value) {
-    if (value is bool) return value;
-    if (value is num) return value != 0;
-    if (value is String) {
-      final v = value.trim().toLowerCase();
-      if (v == 'true' || v == '1' || v == 'yes' || v == 'y') return true;
-      if (v == 'false' || v == '0' || v == 'no' || v == 'n') return false;
+  Map<String, dynamic> _decode(String content) {
+    final decoded = jsonDecode(content);
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Settings must be an object');
     }
-    return null;
-  }
-
-  int? _tryParseInt(dynamic value) {
-    if (value is int) return value;
-    if (value is double) return value.toInt();
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value.trim());
-    return null;
-  }
-
-  double? _tryParseDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value.trim());
-    return null;
+    final schema = decoded['_schemaVersion'];
+    if (schema != 1) throw const FormatException('Unsupported settings schema');
+    return decoded;
   }
 
   T get<T>(String key, T defaultValue) {
-    if (!_config.containsKey(key)) {
-      return _setAndReturnDefault<T>(key, defaultValue);
-    }
-
+    final fallback = AppSettings.defaults[key] is T
+        ? AppSettings.defaults[key] as T
+        : defaultValue;
     final value = _config[key];
-
-    if (value is T) {
-      return value;
-    }
-
+    if (value == null) return fallback;
+    if (value is! T) return fallback;
     try {
-      if (defaultValue is bool) {
-        final parsed = _tryParseBool(value);
-        if (parsed != null) return _setAndReturnDefault<T>(key, parsed as T);
-      } else if (defaultValue is int) {
-        final parsed = _tryParseInt(value);
-        if (parsed != null) return _setAndReturnDefault<T>(key, parsed as T);
-      } else if (defaultValue is double) {
-        final parsed = _tryParseDouble(value);
-        if (parsed != null) return _setAndReturnDefault<T>(key, parsed as T);
-      } else if (defaultValue is String) {
-        final str = value?.toString();
-        if (str != null) return _setAndReturnDefault<T>(key, str as T);
-      }
-    } catch (e) {
-      logger.error("Config key '$key' type mismatch: $e");
+      AppSettings.validate(key, value);
+    } catch (_) {
+      return fallback;
     }
-
-    return _setAndReturnDefault<T>(key, defaultValue);
+    if (value is List || value is Map) {
+      return jsonDecode(jsonEncode(value)) as T;
+    }
+    return value;
   }
 
   T set<T>(String key, T value) {
-    _config[key] = value;
-    _saveConfig();
-    return get(key, value);
+    if (!_initialized) {
+      throw StateError('Settings must be initialized before writing');
+    }
+    AppSettings.validate(key, value);
+    _config[key] = jsonDecode(jsonEncode(value));
+    _config['_schemaVersion'] = 1;
+    final snapshot = toJson();
+    _pendingSave = _pendingSave.then((_) async {
+      try {
+        await _writeConfig(snapshot);
+        _saveError = null;
+      } catch (error) {
+        _saveError = error;
+        _onLogError?.call('Cannot save settings: $error');
+      }
+    });
+    _changes.add(snapshot);
+    return value;
   }
 
-  Future<void> _saveConfig() {
-    _pendingSave = _pendingSave.then(
-      (_) => _writeConfig(),
-      onError: (Object _) => _writeConfig(),
+  Future<void> flush() async {
+    await _pendingSave;
+    if (_saveError != null) throw _saveError!;
+  }
+
+  Future<void> _writeConfig(Map<String, dynamic> snapshot) async {
+    final file = File(configFilePath);
+    final staged = File('$configFilePath.tmp');
+    await staged.writeAsString(
+      const JsonEncoder.withIndent('  ').convert(snapshot),
+      flush: true,
     );
-    return _pendingSave;
+    if (await file.exists()) {
+      // Only a valid current file may replace the recovery copy.
+      try {
+        _decode(await file.readAsString());
+        await file.copy('$configFilePath.previous');
+      } on FormatException {
+        /* Preserve a known-good recovery copy. */
+      }
+    }
+    await staged.rename(file.path);
   }
 
-  Future<void> flush() => _pendingSave;
-
-  Future<void> _writeConfig() async {
-    final dir = await getApplicationSupportDirectory();
-    final configFile = File('${dir.path}/$_configFileName');
-
-    final encoder = JsonEncoder.withIndent("  ");
-    final formattedJson = encoder.convert(_config);
-
-    await configFile.writeAsString(formattedJson);
+  Map<String, dynamic> toJson() =>
+      jsonDecode(jsonEncode(_config)) as Map<String, dynamic>;
+  Future<void> dispose() async {
+    await flush();
+    await _changes.close();
   }
-
-  Map<String, dynamic> toJson() => _config;
 }

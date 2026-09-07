@@ -1,11 +1,9 @@
 import 'dart:io';
 
-import 'package:vertree/app_runtime.dart';
+import 'package:vertree/app/desktop_app.dart';
 import 'package:vertree/platform/bootstrap/linux_bootstrap.dart';
 import 'package:vertree/platform/bootstrap/macos_bootstrap.dart';
 import 'package:vertree/platform/bootstrap/windows_bootstrap.dart';
-
-export 'app_runtime.dart';
 
 Future<void> main(List<String> args) async {
   if (Platform.isWindows) {

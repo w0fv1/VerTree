@@ -1,6 +1,6 @@
 import 'dart:io';
 import 'package:path/path.dart' as p;
-import 'package:vertree/main.dart';
+import 'dart:developer' as developer;
 
 class FileUtils {
   static String appDirPath() {
@@ -19,7 +19,7 @@ class FileUtils {
       String normalizedPath = _normalizePath(folderPath);
 
       if (!Directory(normalizedPath).existsSync()) {
-        logger.error("文件夹不存在: $normalizedPath");
+        developer.log("文件夹不存在: $normalizedPath");
         return;
       }
 
@@ -31,7 +31,7 @@ class FileUtils {
         Process.run('xdg-open', [normalizedPath]);
       }
     } catch (e) {
-      logger.error("打开文件夹失败: $e");
+      developer.log("打开文件夹失败: $e");
     }
   }
 
@@ -40,7 +40,7 @@ class FileUtils {
       String normalizedPath = _normalizePath(filePath);
 
       if (!File(normalizedPath).existsSync()) {
-        logger.error("文件不存在: $normalizedPath");
+        developer.log("文件不存在: $normalizedPath");
         return;
       }
 
@@ -52,7 +52,7 @@ class FileUtils {
         Process.run('xdg-open', [normalizedPath]);
       }
     } catch (e) {
-      logger.error("打开文件失败: $e");
+      developer.log("打开文件失败: $e");
     }
   }
 }

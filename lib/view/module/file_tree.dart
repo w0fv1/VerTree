@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/notifier.dart';
-import 'package:vertree/core/file_version_tree.dart';
-import 'package:vertree/core/result.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/versions/file_version_tree.dart';
+import 'package:vertree/foundation/result.dart';
+import 'package:vertree/modules/versions/versions.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/component/tree/canvas.dart';
 import 'package:vertree/view/component/tree/canvas_component.dart';
 import 'package:vertree/view/component/tree/canvas_manager.dart';
@@ -70,6 +71,13 @@ class FileTree extends StatefulWidget {
 }
 
 class _FileTreeState extends State<FileTree> {
+  late final DesktopDependencies _desktop;
+  @override
+  void initState() {
+    super.initState();
+    _desktop = DesktopScope.read(context);
+  }
+
   static const double _baseHorizontalGap = 54;
   static const double _baseVerticalGap = 42;
   static const double _rootLeftPadding = 48;
@@ -214,11 +222,15 @@ class _FileTreeState extends State<FileTree> {
       builder: (context) {
         String label = "";
         return AlertDialog(
-          title: Text(appLocale.getText(LocaleKey.filetreeInputLabelTitle)),
+          title: Text(
+            _desktop.appLocale.getText(LocaleKey.filetreeInputLabelTitle),
+          ),
           content: TextField(
             autofocus: true,
             decoration: InputDecoration(
-              hintText: appLocale.getText(LocaleKey.filetreeInputLabelHint),
+              hintText: _desktop.appLocale.getText(
+                LocaleKey.filetreeInputLabelHint,
+              ),
             ),
             onChanged: (value) {
               label = value;
@@ -227,11 +239,15 @@ class _FileTreeState extends State<FileTree> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(null),
-              child: Text(appLocale.getText(LocaleKey.filetreeInputCancel)),
+              child: Text(
+                _desktop.appLocale.getText(LocaleKey.filetreeInputCancel),
+              ),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(label),
-              child: Text(appLocale.getText(LocaleKey.filetreeInputConfirm)),
+              child: Text(
+                _desktop.appLocale.getText(LocaleKey.filetreeInputConfirm),
+              ),
             ),
           ],
         );
@@ -244,13 +260,35 @@ class _FileTreeState extends State<FileTree> {
   ) async {
     final label = await _askForLabel();
 
+    if (label == null || !mounted) return;
     final result = await action(label);
+    if (!mounted) return;
     if (result.isErr) {
       showToast(result.msg);
       return;
     }
 
     await _refreshTreeAnimated();
+  }
+
+  Future<Result<FileNode, String>> _createVersion(
+    FileNode parent,
+    String? label,
+    VersionCreationMode mode,
+  ) async {
+    final result = await _desktop.versionActions.create(
+      parent.mate.fullPath,
+      label: label,
+      mode: mode,
+    );
+    if (result.isOk) {
+      if (mode == VersionCreationMode.branch) {
+        parent.addBranch(result.unwrap());
+      } else {
+        parent.addChild(result.unwrap());
+      }
+    }
+    return result;
   }
 
   void sprout(
@@ -260,8 +298,8 @@ class _FileTreeState extends State<FileTree> {
   ) async {
     _runNodeMutation(
       (label) => parentNode.child == null
-          ? parentNode.backup(label)
-          : parentNode.branch(label),
+          ? _createVersion(parentNode, label, VersionCreationMode.next)
+          : _createVersion(parentNode, label, VersionCreationMode.branch),
     );
   }
 
@@ -271,10 +309,14 @@ class _FileTreeState extends State<FileTree> {
     GlobalKey<CanvasComponentState> parentKey,
   ) {
     if (parentNode.child != null) {
-      showToast(appLocale.getText(LocaleKey.filetreeBackupBlockedHasChild));
+      showToast(
+        _desktop.appLocale.getText(LocaleKey.filetreeBackupBlockedHasChild),
+      );
       return;
     }
-    _runNodeMutation((label) => parentNode.backup(label));
+    _runNodeMutation(
+      (label) => _createVersion(parentNode, label, VersionCreationMode.next),
+    );
   }
 
   void branchNode(
@@ -282,7 +324,9 @@ class _FileTreeState extends State<FileTree> {
     Offset parentPosition,
     GlobalKey<CanvasComponentState> parentKey,
   ) {
-    _runNodeMutation((label) => parentNode.branch(label));
+    _runNodeMutation(
+      (label) => _createVersion(parentNode, label, VersionCreationMode.branch),
+    );
   }
 
   GlobalKey<CanvasComponentState> addChild(
@@ -300,7 +344,7 @@ class _FileTreeState extends State<FileTree> {
     final isFocused =
         widget.focusNode != null &&
         widget.focusNode!.version.compareTo(child.version) == 0;
-    logger.info(
+    _desktop.logger.info(
       "isFocused: $isFocused, widget.focusNode version: ${widget.focusNode?.version}, child version: ${child.version}",
     );
 

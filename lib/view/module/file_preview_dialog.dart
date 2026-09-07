@@ -7,10 +7,9 @@ import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:vertree/component/file_utils.dart';
 import 'package:vertree/component/i18n_lang.dart';
-import 'package:vertree/main.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/service/file_preview_session.dart';
 import 'package:vertree/service/preview_webview_environment.dart';
-import 'package:vertree/service/preview_activity.dart';
 import 'package:vertree/view/module/preview_dialog_controller.dart';
 
 final _previewDialogs = PreviewDialogController();
@@ -18,14 +17,15 @@ final _previewDialogs = PreviewDialogController();
 Future<void> closeFilePreview() => _previewDialogs.close();
 
 Future<void> showFilePreview(BuildContext context, String path) async {
-  final id = PreviewActivity.instance.open(path);
+  final activity = DesktopScope.read(context).preview;
+  final id = activity.open(path);
   try {
     await _previewDialogs.show(
       context,
       builder: (_) => FilePreviewDialog(path: path, requestId: id),
     );
   } finally {
-    PreviewActivity.instance.close(id);
+    activity.close(id);
   }
 }
 
@@ -39,6 +39,8 @@ class FilePreviewDialog extends StatefulWidget {
 }
 
 class _FilePreviewDialogState extends State<FilePreviewDialog> {
+  late final DesktopDependencies _desktop;
+
   FilePreviewSession? _session;
   WebViewEnvironment? _environment;
   String? _error;
@@ -46,6 +48,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
 
   @override
   void initState() {
+    _desktop = DesktopScope.read(context);
     super.initState();
     unawaited(_initialize());
   }
@@ -63,14 +66,14 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
         return;
       }
       if (!Platform.isWindows && !Platform.isMacOS) {
-        PreviewActivity.instance.update(widget.requestId, 'awaiting-browser');
+        _desktop.preview.update(widget.requestId, 'awaiting-browser');
       }
       setState(() {
         _session = session;
         _environment = environment;
       });
     } catch (error) {
-      PreviewActivity.instance.update(
+      _desktop.preview.update(
         widget.requestId,
         'error',
         message: error.toString(),
@@ -115,12 +118,16 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                   ),
                   const SizedBox(width: 12),
                   IconButton(
-                    tooltip: appLocale.getText(LocaleKey.previewOpenSystem),
+                    tooltip: _desktop.appLocale.getText(
+                      LocaleKey.previewOpenSystem,
+                    ),
                     onPressed: () => FileUtils.openFile(widget.path),
                     icon: const Icon(Icons.open_in_new, size: 18),
                   ),
                   IconButton(
-                    tooltip: appLocale.getText(LocaleKey.fileleafPropertyClose),
+                    tooltip: _desktop.appLocale.getText(
+                      LocaleKey.fileleafPropertyClose,
+                    ),
                     onPressed: () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
                   ),
@@ -138,7 +145,11 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                           children: [
                             const Icon(Icons.error_outline, size: 36),
                             const SizedBox(height: 16),
-                            Text(appLocale.getText(LocaleKey.previewFailed)),
+                            Text(
+                              _desktop.appLocale.getText(
+                                LocaleKey.previewFailed,
+                              ),
+                            ),
                             const SizedBox(height: 8),
                             SelectableText(
                               _error!,
@@ -158,7 +169,9 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                           Padding(
                             padding: const EdgeInsets.all(24),
                             child: Text(
-                              appLocale.getText(LocaleKey.previewBrowserHint),
+                              _desktop.appLocale.getText(
+                                LocaleKey.previewBrowserHint,
+                              ),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -171,7 +184,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                                 )) {
                                   throw StateError('Cannot open browser');
                                 }
-                                PreviewActivity.instance.update(
+                                _desktop.preview.update(
                                   widget.requestId,
                                   'external-browser',
                                 );
@@ -183,7 +196,9 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                             },
                             icon: const Icon(Icons.open_in_browser),
                             label: Text(
-                              appLocale.getText(LocaleKey.previewOpenBrowser),
+                              _desktop.appLocale.getText(
+                                LocaleKey.previewOpenBrowser,
+                              ),
                             ),
                           ),
                         ],
@@ -207,7 +222,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                                       'error',
                                       'unsupported',
                                     ].contains(status)) {
-                                      PreviewActivity.instance.update(
+                                      _desktop.preview.update(
                                         widget.requestId,
                                         status as String,
                                         message: state['message'] as String?,
@@ -252,7 +267,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                             onReceivedError: (_, request, error) {
                               if (request.isForMainFrame == true && mounted) {
                                 setState(() => _error = error.description);
-                                PreviewActivity.instance.update(
+                                _desktop.preview.update(
                                   widget.requestId,
                                   'error',
                                   message: error.description,
@@ -264,7 +279,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                                 setState(
                                   () => _error = 'HTTP ${response.statusCode}',
                                 );
-                                PreviewActivity.instance.update(
+                                _desktop.preview.update(
                                   widget.requestId,
                                   'error',
                                   message: _error,

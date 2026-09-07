@@ -4,15 +4,14 @@ Vertree 是面向单文件的桌面版本管理工具：用版本树保留主线
 
 [English](README.en.md) · [使用文档](https://vertree.w0fv1.dev/docs/intro) · [下载正式版](https://github.com/w0fv1/VerTree/releases/latest) · [格式支持](docs/docs/tutorial-usage/preview.md) · [常见问题](docs/docs/tutorial-usage/troubleshooting.md)
 
-## 1.1.0
+## 2.0.0 更新
 
-- **本地文件预览**：从版本树、Windows 右键菜单或 `vertree preview <path>` 打开，不需要先开启监控。
-- **更多格式**：办公文档、PDF、图片、音视频、电子书、邮件、压缩包、Parquet、Java class 等；PPTX、PSD、XMind 提供可视化预览。
-- **取消固定 64 MiB 上限**：媒体、PDF 和 Parquet 可按需读取；其他格式仍受解析器、内存与临时磁盘空间限制。
-- **交互整理**：新预览关闭旧预览，未知格式仅识别文本或提示不支持，清理重复标题、多余说明和版本树外框。
-- **Windows 菜单整理**：统一传统菜单的注册、迁移、逐项选择与折叠布局；Win11 新菜单独立开关。
+- 统一版本命令与写入协调，明确版本、快照、监控和 UI 的职责。
+- 自动快照按任务 UUID 隔离，只清理归属验证通过的快照；监控失败重试并保留后续变化。
+- 修复 Windows MSI 快捷方式目录，并在发布前验证安装与卸载。
+- **不兼容升级**：使用新的 settings.json，旧配置与旧 *_bak 不自动导入；本机 API 改用 /versions 和 /snapshots。升级后请重新配置监控。
 
-[完整发布说明](https://github.com/w0fv1/VerTree/releases/tag/V1.1.0)
+[完整发布说明](https://github.com/w0fv1/VerTree/releases/tag/V2.0.0) · [架构与扩展规则](docs/architecture-evolution.md)
 
 ## 下载与开始使用
 

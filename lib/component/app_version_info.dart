@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
-import 'package:vertree/core/result.dart';
+import 'package:vertree/foundation/result.dart';
 
 class AppVersionInfo {
   final String currentVersion;

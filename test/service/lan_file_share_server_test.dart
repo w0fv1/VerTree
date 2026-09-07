@@ -1,3 +1,4 @@
+import 'package:vertree/foundation/app_events.dart';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -15,6 +16,7 @@ void main() {
       file = File('${tempDir.path}\\story.0.1.txt');
       await file.writeAsString('hello vertree');
       server = LanFileShareServer(
+        events: AppEvents(),
         sharePageBaseUrl: 'https://vertree.w0fv1.dev/f',
         addressResolver: () async => ['192.168.10.8', '10.0.0.6'],
         wifiNameResolver: () async => 'Office WiFi',

@@ -514,7 +514,7 @@ Write-Host "正在使用Inno Setup进行打包..."
 
 $wixBin = Resolve-WixBin -preferred $WixBin
 if ([string]::IsNullOrWhiteSpace($wixBin)) {
-    Write-Warning "未找到 WiX Toolset，跳过 MSI 打包。"
+    throw "WiX Toolset is required to build the MSI release artifact."
 } else {
     $heatExe = Join-Path $wixBin "heat.exe"
     $candleExe = Join-Path $wixBin "candle.exe"
@@ -526,7 +526,7 @@ if ([string]::IsNullOrWhiteSpace($wixBin)) {
     $msiPath = Join-Path $scriptDir "$msiBaseName.msi"
 
     if ((-not (Test-Path $heatExe)) -or (-not (Test-Path $candleExe)) -or (-not (Test-Path $lightExe))) {
-        Write-Warning "WiX Toolset 缺少 heat/candle/light，可执行文件不完整，跳过 MSI 打包。"
+        throw "WiX Toolset is incomplete: heat, candle and light are required."
     } else {
         New-Item -ItemType Directory -Force -Path $wixObjDir | Out-Null
         $resolvedProjectRoot = $projectRoot
@@ -602,7 +602,8 @@ if ([string]::IsNullOrWhiteSpace($wixBin)) {
             exit $LASTEXITCODE
         }
 
-        Write-Host "MSI 打包完成：" $msiPath
+        & (Join-Path $scriptDir 'installer\Test-Msi.ps1') -Path $msiPath
+        Write-Host "MSI 打包完成并通过目录校验：" $msiPath
     }
 }
 
