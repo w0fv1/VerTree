@@ -85,7 +85,11 @@ class LocalHttpApiDocumentation {
           '${route.successStatusCode}': {
             'description': route.successDescription,
             'content': {
-              route.responseContentType: {'schema': _successEnvelopeSchema()},
+              route.responseContentType: {
+                'schema': route.responseContentType == 'application/json'
+                    ? _successEnvelopeSchema()
+                    : {'type': 'string', 'format': 'binary'},
+              },
             },
           },
           '400': {

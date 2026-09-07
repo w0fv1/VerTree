@@ -10,19 +10,29 @@ import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/main.dart';
 import 'package:vertree/service/file_preview_session.dart';
 import 'package:vertree/service/preview_webview_environment.dart';
+import 'package:vertree/service/preview_activity.dart';
 import 'package:vertree/view/module/preview_dialog_controller.dart';
 
 final _previewDialogs = PreviewDialogController();
 
-Future<void> showFilePreview(BuildContext context, String path) =>
-    _previewDialogs.show(
+Future<void> closeFilePreview() => _previewDialogs.close();
+
+Future<void> showFilePreview(BuildContext context, String path) async {
+  final id = PreviewActivity.instance.open(path);
+  try {
+    await _previewDialogs.show(
       context,
-      builder: (_) => FilePreviewDialog(path: path),
+      builder: (_) => FilePreviewDialog(path: path, requestId: id),
     );
+  } finally {
+    PreviewActivity.instance.close(id);
+  }
+}
 
 class FilePreviewDialog extends StatefulWidget {
-  const FilePreviewDialog({super.key, required this.path});
+  const FilePreviewDialog({super.key, required this.path, this.requestId = 0});
   final String path;
+  final int requestId;
 
   @override
   State<FilePreviewDialog> createState() => _FilePreviewDialogState();
@@ -52,11 +62,19 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
         await session.close();
         return;
       }
+      if (!Platform.isWindows && !Platform.isMacOS) {
+        PreviewActivity.instance.update(widget.requestId, 'awaiting-browser');
+      }
       setState(() {
         _session = session;
         _environment = environment;
       });
     } catch (error) {
+      PreviewActivity.instance.update(
+        widget.requestId,
+        'error',
+        message: error.toString(),
+      );
       await session?.close();
       if (mounted) setState(() => _error = error.toString());
     }
@@ -153,6 +171,10 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                                 )) {
                                   throw StateError('Cannot open browser');
                                 }
+                                PreviewActivity.instance.update(
+                                  widget.requestId,
+                                  'external-browser',
+                                );
                               } catch (error) {
                                 if (mounted) {
                                   setState(() => _error = error.toString());
@@ -172,6 +194,29 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                         if (_pageLoading) const LinearProgressIndicator(),
                         Expanded(
                           child: InAppWebView(
+                            onWebViewCreated: (controller) {
+                              controller.addJavaScriptHandler(
+                                handlerName: 'previewState',
+                                callback: (args) {
+                                  if (args.isNotEmpty && args.first is Map) {
+                                    final state = args.first as Map;
+                                    final status = state['status'];
+                                    if ([
+                                      'ready',
+                                      'loading',
+                                      'error',
+                                      'unsupported',
+                                    ].contains(status)) {
+                                      PreviewActivity.instance.update(
+                                        widget.requestId,
+                                        status as String,
+                                        message: state['message'] as String?,
+                                      );
+                                    }
+                                  }
+                                },
+                              );
+                            },
                             webViewEnvironment: _environment,
                             initialUrlRequest: URLRequest(
                               url: WebUri(session.uri.toString()),
@@ -207,12 +252,22 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
                             onReceivedError: (_, request, error) {
                               if (request.isForMainFrame == true && mounted) {
                                 setState(() => _error = error.description);
+                                PreviewActivity.instance.update(
+                                  widget.requestId,
+                                  'error',
+                                  message: error.description,
+                                );
                               }
                             },
                             onReceivedHttpError: (_, request, response) {
                               if (request.isForMainFrame == true && mounted) {
                                 setState(
                                   () => _error = 'HTTP ${response.statusCode}',
+                                );
+                                PreviewActivity.instance.update(
+                                  widget.requestId,
+                                  'error',
+                                  message: _error,
                                 );
                               }
                             },

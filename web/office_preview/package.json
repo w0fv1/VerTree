@@ -18,6 +18,7 @@
     "exceljs": "^4.4.0",
     "fflate": "^0.8.3",
     "heic-to": "^1.5.2",
+    "html-to-image": "^1.11.13",
     "hyparquet": "^1.30.0",
     "hyparquet-compressors": "^1.1.1",
     "icojs": "^1.0.1",

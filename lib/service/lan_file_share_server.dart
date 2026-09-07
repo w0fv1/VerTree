@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'app_events.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -150,6 +151,7 @@ class LanFileShareServer {
     );
     _sharesByToken[entry.token] = entry;
     _sharesByKey[entry.shareKey] = entry;
+    AppEvents.instance.emit('share.created', {'token': entry.token, 'path': entry.filePath, 'expiresAt': entry.expiresAt.toIso8601String()});
 
     return Result.ok(_shareToMap(entry, lanIps, wifiName: wifiName));
   }
@@ -187,6 +189,7 @@ class LanFileShareServer {
       return Result.eMsg('LAN file share not found: $token');
     }
     _removeShare(entry);
+    AppEvents.instance.emit('share.revoked', {'token': entry.token, 'path': entry.filePath});
     return Result.ok({
       'shareRef': token,
       'token': entry.token,
@@ -505,6 +508,7 @@ class LanFileShareServer {
         .toList(growable: false);
     for (final entry in expiredEntries) {
       _removeShare(entry);
+      AppEvents.instance.emit('share.expired', {'token': entry.token, 'path': entry.filePath});
     }
   }
 

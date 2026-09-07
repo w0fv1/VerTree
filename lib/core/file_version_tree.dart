@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:vertree/service/app_events.dart';
 import 'dart:math';
 import 'package:path/path.dart' as path;
 import 'package:vertree/core/result.dart';
@@ -452,7 +453,8 @@ class FileNode {
           '${mate.name}${label != null ? "#$label" : ""}.${newVersion.toString()}.${mate.extension}';
       final dirPath = path.dirname(mate.fullPath);
       final newFilePath = path.join(dirPath, newFileName);
-      await originalFile.copy(newFilePath);
+      await _copyNewVersion(originalFile, newFilePath);
+      AppEvents.instance.emit('backup.created', {'path': mate.fullPath, 'backupPath': newFilePath, 'source': 'manual'});
       final newNode = FileNode(newFilePath);
       addChild(newNode);
       return Result.ok(newNode);
@@ -468,12 +470,17 @@ class FileNode {
     }
 
     try {
-      final branchedVersion = mate.version.branchVersion(branchIndex + 1);
+      var nextBranchIndex = branchIndex + 1;
+      var branchedVersion = mate.version.branchVersion(nextBranchIndex);
+      while (_hasVersionConflict(branchedVersion)) {
+        branchedVersion = mate.version.branchVersion(++nextBranchIndex);
+      }
       final newFileName =
           '${mate.name}${label != null ? "#$label" : ""}.${branchedVersion.toString()}.${mate.extension}';
       final dirPath = path.dirname(mate.fullPath);
       final newFilePath = path.join(dirPath, newFileName);
-      await originalFile.copy(newFilePath);
+      await _copyNewVersion(originalFile, newFilePath);
+      AppEvents.instance.emit('backup.created', {'path': mate.fullPath, 'backupPath': newFilePath, 'source': 'branch'});
       final newNode = FileNode(newFilePath);
       addBranch(newNode);
       return Result.ok(newNode);
@@ -494,12 +501,23 @@ class FileNode {
       }
 
       final meta = FileMeta(entity.path);
-      if (meta.name == mate.name && meta.version.compareTo(version) == 0) {
+      if (meta.name == mate.name && meta.extension == mate.extension && meta.version.compareTo(version) == 0) {
         return true;
       }
     }
 
     return false;
+  }
+
+  Future<void> _copyNewVersion(File source, String destination) async {
+    final target = File(destination);
+    await target.create(exclusive: true);
+    try {
+      await source.copy(destination);
+    } catch (_) {
+      await target.delete();
+      rethrow;
+    }
   }
 
   bool push(FileNode node) {

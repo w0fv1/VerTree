@@ -8,6 +8,7 @@ import 'package:vertree/core/monit_manager.dart';
 import 'package:vertree/core/result.dart';
 import 'package:vertree/core/tree_builder.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
+import 'package:vertree/service/version_operations.dart';
 
 typedef CurrentPortResolver = int? Function();
 typedef UiStateResolver = Map<String, dynamic> Function();
@@ -494,6 +495,7 @@ class LocalHttpApiService {
 
   Map<String, dynamic> _fileNodeSummary(FileNode node) {
     return {
+      'id': fileId(node.mate.fullPath),
       'path': node.mate.fullPath,
       'fullName': node.mate.fullName,
       'name': node.mate.name,
@@ -585,6 +587,7 @@ class LocalHttpApiService {
   Map<String, dynamic> _fileMetadata(File file) {
     final stat = file.statSync();
     return {
+      'id': fileId(file.path),
       'path': file.path,
       'name': p.basename(file.path),
       'size': stat.size,

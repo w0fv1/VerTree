@@ -105,3 +105,77 @@ python dev_server.py --bootstrap --device windows --local-docs
 本地分享页默认使用 `http://127.0.0.1:33030/f`，启动脚本会向应用注入对应地址。联调本机页面与在真实局域网设备下载是两个不同验证场景。
 
 截图使用 `python tools/update_doc_images.py`。它通过 API 调整页面、窗口与主题，再保存 PNG 到文档资源目录。使用 `.sample/file_version_tree` 中的标准样例，并在提交前检查画面、文本截断和是否含个人路径。
+
+## 文件预览图与自动化接口
+
+以下业务接口均需 Bearer Token；路径指运行 Vertree 的电脑上的绝对路径。
+
+| 方法与路径 | 功能 |
+| --- | --- |
+| `POST /preview-images` | 后台生成 PNG，直接返回 `image/png` 字节 |
+| `GET /preview-capabilities?path=...` | 上游格式清单、图片能力；可选路径检测未知格式是否为文本 |
+| `POST /previews` | 传 `path` 打开预览，并关闭上一个预览 |
+| `GET /previews/current` | 当前预览路径和 loading / ready / unsupported / error 状态 |
+| `DELETE /previews/current` | 关闭当前预览 |
+| `POST /versions/{id}/restore` | 恢复版本；可选 `targetPath` 另存 |
+| `PATCH /versions/{id}` | 传 `label` 改备注，空字符串清除备注 |
+| `POST /version-comparisons` | 传 `leftPath`、`rightPath` 比较 SHA-256 和文本差异 |
+| `GET /settings`、`PATCH /settings` | 查询、持久化设置 |
+| `POST /batch` | 顺序执行一组动作，逐项返回成功或失败 |
+| `GET /jobs`、`POST /jobs` | 查询或创建异步任务 |
+| `GET /jobs/{id}`、`DELETE /jobs/{id}` | 任务状态、进度、结果或请求取消 |
+| `GET /events` | SSE 实时事件 |
+| `GET /diagnostics` | 运行信息、预览状态、任务及近期预览/任务错误 |
+
+### 生成预览图
+
+```powershell
+$body = @{
+  path = 'C:\Documents\report.pdf'
+  width = 1200
+  height = 1600
+  page = 1
+} | ConvertTo-Json
+Invoke-WebRequest -Method Post -Uri "$apiBase/preview-images" `
+  -Headers $apiHeaders -ContentType 'application/json' -Body $body `
+  -OutFile './preview.png' -NoProxy
+```
+
+成功响应是 PNG 二进制，不是 JSON、Base64 或图片文件路径。失败响应为 JSON，包含 `success: false`、`code`、`message`。生成使用独立文件快照和后台渲染环境，不打开窗口，也不替换当前交互预览。
+
+- `width`、`height`：默认 1200 × 1600，各为 1–4096 的整数，输出固定像素尺寸。
+- `page`：从 1 开始；PDF 页、演示文稿页、工作表、电子书章节、XMind 画布；Parquet 每页 100 行。连续文本/Word 等导出首屏，不能按 Word 的打印页码选择。
+- `timeSeconds`：视频时间点，默认 0；其他类型仅接受 0。视频编码支持取决于浏览器引擎。
+- 图片、PDF、PPT、视频按比例适配画布；连续文档导出给定宽高内的内容。
+- 未知格式由 Office-Viewer 检测文本。未知二进制、音频等没有可视内容的文件返回 `UNSUPPORTED`，不会生成十六进制或文件元信息图片。
+- 越界页码 `PAGE_OUT_OF_RANGE`（422）；无效参数（400）；不存在文件（404）；正在生成另一张图片 `RENDER_BUSY`（409）；超时 `RENDER_TIMEOUT`（504）。渲染阶段默认 30 秒，加载与环境初始化另计。
+- Windows 使用 WebView2，macOS 使用 WKWebView；Linux 需要 PATH 中存在 Chromium / Google Chrome。能力接口的 `backgroundImageAvailable` 反映平台/依赖是否可用，实际文件仍可能解码失败。
+
+格式清单来自 Office-Viewer 的同一份 registry，构建时生成 `capabilities.json`。已声明扩展名返回 `support: declared`，不代表文件内容一定有效；未知扩展名会实际检测并返回 `supported`、`kind`。
+
+### 版本与设置
+
+版本查询返回的 `id` 为规范化绝对路径的 Base64URL 编码。更改备注会重命名文件，因此必须使用响应中的新 `id` 和 `path`。恢复默认写回同目录未带版本号的原文件；覆盖前先保留 `before-restore` 备份，响应包含 `backupPath`。另存目标的父目录须已存在；不允许把源文件恢复到自己。
+
+比较始终返回 SHA-256；两边均不超过 2 MiB、UTF-8 可解码且不含 NUL 时额外返回文本增删差异。其他文件返回哈希比较，不声称能做 Office 布局差异。
+
+设置支持 `monitorRateMinutes`（非负整数）、`monitorMaxBackups`（正整数）、`themeMode`（system/light/dark）、`launchToTray`（布尔）。PATCH 会完整校验参数后应用并保存。
+
+### 批处理、异步任务与事件
+
+```json
+{
+  "operations": [
+    { "action": "backup", "path": "C:\\Documents\\report.docx", "label": "checkpoint" },
+    { "action": "compare", "leftPath": "C:\\Documents\\a.txt", "rightPath": "C:\\Documents\\b.txt" }
+  ]
+}
+```
+
+上述 body 发往 `/batch`；增加 `"action": "batch"` 后也可以发往 `/jobs` 后台执行。单个异步任务的 body 为 `action` 加对应参数。支持动作：backup、monitor、share、restore、compare；每批 1–100 项，失败不会回滚先前完成项。share 支持 `expiresInMinutes`。
+
+创建任务返回 202 和任务 ID。进度 0–1；最多同时 4 个任务，保留最近 100 个记录，仅保存在本次进程内。取消为协作式：排队任务或批次下一项开始前停止；正在执行的单次复制/恢复会安全完成，该情况下最终状态可能仍是 succeeded，并保留 `cancelRequested: true`。
+
+Linux 的交互预览沿用外部浏览器，状态为 awaiting-browser / external-browser；无法读取外部标签页的加载完成状态。后台 PNG 接口不受交互窗口影响。
+
+SSE 使用相同 Bearer 认证，事件包括 preview.*、monitor.*、file.changed、backup.created、version.*、share.*、settings.updated 和 job.*。使用 HTTP 客户端流式读取，不要依赖不能设置 Authorization 的原生 EventSource。重连可传 `Last-Event-ID`，最多回放最近 256 条；游标过期返回 409，应重新查询状态后无游标连接。每 10 秒发送心跳；慢连接会断开，进程重启后事件 ID 重置。

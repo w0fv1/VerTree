@@ -75,3 +75,5 @@ app.*.map.json
 
 /windows/Vertree_Setup.exe
 /windows/Vertree_Setup.zip
+
+/windows/vertree-windows-*-setup.exe

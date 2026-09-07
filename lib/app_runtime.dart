@@ -13,6 +13,7 @@ import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/core/monit_manager.dart';
 import 'package:vertree/api/local_http_api_server.dart';
+import 'package:vertree/api/extended_automation_api.dart';
 import 'package:vertree/component/app_logger.dart';
 import 'package:vertree/component/configer.dart';
 import 'package:vertree/component/launch_counter.dart';
@@ -378,6 +379,10 @@ Future<void> _disposeBackgroundServicesForQuit() async {
     _safeShutdownLanFileShareServer(),
     _safeStopLocalHttpApiServer(),
     _safeHideTrayForQuit(),
+    configer.flush().timeout(
+      const Duration(milliseconds: 700),
+      onTimeout: () {},
+    ),
   ], eagerError: false);
 }
 
@@ -477,24 +482,51 @@ Future<void> runVertreeApp(
     onLogInfo: logger.info,
     onLogError: logger.error,
   );
+  final apiService = LocalHttpApiService(
+    configer: configer,
+    monitManager: monitService,
+    lanFileShareServer: lanFileShareServer,
+    currentVersion: appVersionInfo.currentVersion,
+    startedAt: DateTime.now(),
+    currentPortResolver: () => localHttpApiServer.port,
+    currentUiStateResolver: _currentUiState,
+    navigateUiHandler: navigateToPageForApi,
+    captureUiScreenshotHandler: captureCurrentAppScreenshot,
+    setWindowStateHandler: setWindowStateForApi,
+    setThemeModeHandler: setThemeModeForApi,
+    setFileTreeViewportHandler: setFileTreeViewportForApi,
+    quitAppHandler: quitApplication,
+  );
+  final automation = ExtendedAutomationApi(
+    service: apiService,
+    config: configer,
+    openPreview: (path) async {
+      await _waitForUiReady();
+      await showMainWindow(animate: false);
+      final context = navigatorKey.currentContext;
+      if (context == null || !context.mounted) throw StateError('UI_NOT_READY');
+      unawaited(showFilePreview(context, path));
+    },
+    closePreview: closeFilePreview,
+    diagnostics: () => {
+      'platform': Platform.operatingSystem,
+      'osVersion': Platform.operatingSystemVersion,
+      'runtime': apiService.health(),
+      'previewEngine': 'Office-Viewer',
+      'imageRendering': Platform.isWindows
+          ? 'WebView2'
+          : Platform.isMacOS
+          ? 'WKWebView'
+          : Platform.isLinux
+          ? 'Chromium (requires installed browser)'
+          : 'unavailable',
+    },
+  );
   localHttpApiServer = LocalHttpApiServer(
+    apiService: apiService,
+    additionalRoutes: automation.routes,
     accessToken: Platform.environment['VERTREE_LOCAL_API_TOKEN'],
     forceEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
-    apiService: LocalHttpApiService(
-      configer: configer,
-      monitManager: monitService,
-      lanFileShareServer: lanFileShareServer,
-      currentVersion: appVersionInfo.currentVersion,
-      startedAt: DateTime.now(),
-      currentPortResolver: () => localHttpApiServer.port,
-      currentUiStateResolver: _currentUiState,
-      navigateUiHandler: navigateToPageForApi,
-      captureUiScreenshotHandler: captureCurrentAppScreenshot,
-      setWindowStateHandler: setWindowStateForApi,
-      setThemeModeHandler: setThemeModeForApi,
-      setFileTreeViewportHandler: setFileTreeViewportForApi,
-      quitAppHandler: quitApplication,
-    ),
   );
   logger.info("启动参数: $args");
 

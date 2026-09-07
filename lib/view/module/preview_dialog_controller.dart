@@ -6,6 +6,15 @@ class PreviewDialogController {
   DialogRoute<void>? _route;
   int _request = 0;
 
+  Future<void> close() async {
+    ++_request;
+    final route = _route;
+    if (route == null) return;
+    if (route.isActive) route.navigator!.removeRoute(route);
+    await route.completed;
+    if (identical(_route, route)) _route = null;
+  }
+
   Future<void> show(
     BuildContext context, {
     required WidgetBuilder builder,

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Vertree · 文件预览图测试</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f4f6f1;color:#243126;font:16px/1.6 system-ui,"Segoe UI",sans-serif}main{max-width:1300px;margin:36px auto;padding:0 24px}h1{font-size:30px;margin:0}header p{color:#63715f;margin:6px 0 24px}.layout{display:grid;grid-template-columns:400px 1fr;gap:24px}.panel{background:white;border-radius:18px;padding:24px}label{display:block;font-size:14px;margin:14px 0 5px}input,select,button{font:inherit}input,select{width:100%;padding:9px 12px;border:1px solid #c9d2c5;border-radius:8px;background:white}input:focus,select:focus{outline:2px solid #649264}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}button,.download{border:0;border-radius:9px;padding:10px 18px;cursor:pointer;background:#2c663c;color:white;text-decoration:none;display:inline-block}button:disabled{opacity:.6;cursor:wait}#generate{width:100%;margin-top:20px}.secondary{background:#e9eee5;color:#334631;font-size:13px}#status{padding:12px 0;font-weight:600}.hint{font-size:13px;color:#667260}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:12px/1.6 ui-monospace,monospace;background:#f4f6f2;padding:12px;border-radius:8px}#result{display:block;width:100%;height:auto;border:1px solid #e4e7df}#result[hidden]{display:none}.result-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}h2{font-size:18px;margin:0}#error{color:#a0322a}footer{display:flex;justify-content:space-between;margin-top:24px;align-items:center;gap:20px}.download[hidden]{display:none}@media(max-width:850px){.layout{grid-template-columns:1fr}main{margin:20px auto}}
+</style>
+<main>
+<header><h1>文件 → 预览图</h1><p>本地调用 Vertree API，查看 Office-Viewer 生成的真实 PNG。默认已选择 PDF 示例。</p></header>
+<div class="layout">
+<section class="panel">
+<form id="form">
+<label for="sample">示例文件</label><select id="sample"></select>
+<label for="path">本机文件绝对路径</label><input id="path" required placeholder="C:\Documents\report.pdf">
+<div class="grid"><div><label for="width">宽度 / px</label><input id="width" type="number" min="1" max="4096" value="800" required></div><div><label for="height">高度 / px</label><input id="height" type="number" min="1" max="4096" value="1000" required></div></div>
+<div class="grid"><div><label for="page">页码 / 工作表</label><input id="page" type="number" min="1" value="1" required></div><div><label for="time">视频时间 / 秒</label><input id="time" type="number" min="0" step="0.1" value="0" required></div></div>
+<button id="generate">生成预览图</button>
+</form>
+<p class="hint">可以粘贴自己的文件路径。PDF/PPT 支持页码；Word、文本等导出首屏。未知二进制应显示“不支持”，不生成图片。</p>
+<details><summary>查看 API 请求</summary><pre id="request"></pre></details>
+<p class="hint" id="api"></p>
+</section>
+<section class="panel"><div class="result-head"><h2>返回结果</h2><a id="download" class="download" hidden download="preview.png">保存 PNG</a></div><div id="status" role="status">正在连接本地服务…</div><pre id="error" hidden></pre><img id="result" alt="文件内容的预览图" hidden></section>
+</div>
+<footer><span class="hint">测试服务只监听本机，生成图片不会打开或替换交互预览窗口。</span><button id="stop" class="secondary">结束测试</button></footer>
+</main>
+<script>
+const $=id=>document.getElementById(id);let objectUrl;
+async function render(event){event?.preventDefault();if(!$('form').reportValidity())return;
+ const body={path:$('path').value.trim().replace(/^"|"$/g,''),width:Number($('width').value),height:Number($('height').value),page:Number($('page').value),timeSeconds:Number($('time').value)};
+ $('request').textContent='POST /api/v1/preview-images\nContent-Type: application/json\nAuthorization: Bearer <由本地测试服务提供>\n\n'+JSON.stringify(body,null,2);
+ $('generate').disabled=true;$('status').textContent='正在生成…';$('error').hidden=true;$('result').hidden=true;$('download').hidden=true;const start=performance.now();
+ try{const response=await fetch('/render',{method:'POST',headers:{'Content-Type':'application/json','X-Preview-Demo':'1'},body:JSON.stringify(body)});
+  if(!response.ok){const text=await response.text();$('status').textContent='HTTP '+response.status+' · 未生成图片';$('error').textContent=text;$('error').hidden=false;return;}
+  const blob=await response.blob();if(objectUrl)URL.revokeObjectURL(objectUrl);objectUrl=URL.createObjectURL(blob);$('result').src=objectUrl;$('result').hidden=false;$('download').href=objectUrl;$('download').hidden=false;
+  $('status').textContent=`HTTP 200 · ${blob.type} · ${(blob.size/1024).toFixed(1)} KB · ${((performance.now()-start)/1000).toFixed(2)} 秒`;
+ }catch(error){$('status').textContent='请求失败';$('error').textContent=String(error);$('error').hidden=false;}finally{$('generate').disabled=false;}
+}
+$('form').addEventListener('submit',render);$('sample').addEventListener('change',()=>{$('path').value=$('sample').value;$('page').value=1;$('time').value=0;});
+$('stop').onclick=async()=>{await fetch('/stop',{method:'POST',headers:{'X-Preview-Demo':'1'}});$('status').textContent='测试已结束，测试应用已关闭。';$('generate').disabled=true;$('stop').disabled=true;};
+fetch('/state').then(r=>r.json()).then(state=>{for(const sample of state.samples){const option=new Option(sample.name,sample.path);$('sample').add(option);}$('path').value=state.samples[0].path;$('api').textContent='API：'+state.api;render();}).catch(error=>{$('status').textContent=String(error)});
+</script>
+</html>

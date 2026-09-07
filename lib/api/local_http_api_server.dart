@@ -14,6 +14,7 @@ class LocalHttpApiServer {
     required this.apiService,
     String? accessToken,
     this.forceEnabled = false,
+    List<LocalHttpApiRoute> additionalRoutes = const [],
     void Function(String message)? onLogInfo,
     void Function(String message)? onLogError,
   }) : _routes = [],
@@ -21,6 +22,7 @@ class LocalHttpApiServer {
        _onLogInfo = onLogInfo ?? logger.info,
        _onLogError = onLogError ?? logger.error {
     _routes.addAll(_buildRoutes());
+    _routes.addAll(additionalRoutes);
   }
 
   static const int defaultPort = 31414;

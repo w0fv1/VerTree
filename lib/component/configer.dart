@@ -8,6 +8,7 @@ class Configer {
   late String configFilePath;
 
   Map<String, dynamic> _config = {};
+  Future<void> _pendingSave = Future.value();
 
   Configer();
 
@@ -111,7 +112,17 @@ class Configer {
     return get(key, value);
   }
 
-  Future<void> _saveConfig() async {
+  Future<void> _saveConfig() {
+    _pendingSave = _pendingSave.then(
+      (_) => _writeConfig(),
+      onError: (Object _) => _writeConfig(),
+    );
+    return _pendingSave;
+  }
+
+  Future<void> flush() => _pendingSave;
+
+  Future<void> _writeConfig() async {
     final dir = await getApplicationSupportDirectory();
     final configFile = File('${dir.path}/$_configFileName');
 

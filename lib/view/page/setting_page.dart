@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:vertree/service/app_events.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -28,6 +29,7 @@ class SettingPage extends StatefulWidget {
 }
 
 class _SettingPageState extends State<SettingPage> {
+  StreamSubscription<AppEvent>? _settingsEvents;
   late final TextEditingController _monitorRateController;
   late final TextEditingController _monitorMaxSizeController;
   late final ScrollController _settingsScrollController;
@@ -137,10 +139,17 @@ class _SettingPageState extends State<SettingPage> {
     );
     _settingsScrollController = ScrollController();
     _loadPlatformState();
+    _settingsEvents = AppEvents.instance
+        .watch()
+        .where((event) => event.type == 'settings.updated')
+        .listen((_) {
+          if (mounted) unawaited(_loadPlatformState());
+        });
   }
 
   @override
   void dispose() {
+    _settingsEvents?.cancel();
     _monitorRateController.dispose();
     _monitorMaxSizeController.dispose();
     _settingsScrollController.dispose();

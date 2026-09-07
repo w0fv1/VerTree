@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:vertree/service/app_events.dart';
 import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:vertree/core/monit_manager.dart';
@@ -77,12 +78,17 @@ class Monitor {
       logger.debug("事件触发: ${event.type} -> ${event.path}");
       if (event.path == file.absolute.path) {
         _observedEventCount += 1;
+        AppEvents.instance.emit('file.changed', {
+          'path': filePath,
+          'eventType': event.type,
+        });
         _lastObservedEventAt = DateTime.now();
         _lastObservedEventPath = event.path;
         _handleFileChange(file, backupDir);
       }
     });
 
+    AppEvents.instance.emit('monitor.started', {'path': filePath});
     logger.info("Started monitoring: $filePath");
   }
 
@@ -144,16 +150,26 @@ class Monitor {
       file.copySync(backupPath);
       _lastBackupPath = backupPath;
       _createdBackupCount += 1;
+      AppEvents.instance.emit('backup.created', {
+        'path': filePath,
+        'backupPath': backupPath,
+        'source': 'monitor',
+      });
       _lastError = null;
       logger.info("Backup created: $backupPath");
     } catch (e) {
       _lastError = e.toString();
+      AppEvents.instance.emit('monitor.error', {
+        'path': filePath,
+        'message': _lastError,
+      });
       logger.error("Error creating backup: $e");
     }
   }
 
   void stop() {
     _subscription?.cancel();
+    AppEvents.instance.emit('monitor.stopped', {'path': filePath});
     logger.info("Stopped monitoring: $filePath");
   }
 }

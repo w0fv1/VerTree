@@ -12,6 +12,7 @@
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],
       "react-dom/*": ["./node_modules/@types/react-dom/*"],
+      "react-dom": ["./node_modules/@types/react-dom"],
       "papaparse": ["./node_modules/@types/papaparse"],
       "chai": ["./node_modules/@types/chai"],
       "heic-to/csp": ["./node_modules/heic-to/dist/csp/heic-to.d.ts"],
