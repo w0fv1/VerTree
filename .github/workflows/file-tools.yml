@@ -1,0 +1,46 @@
+name: Windows file tools
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  native-and-contracts:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: flutter pub get
+      - run: dart run tools/check_architecture.dart
+      - run: flutter analyze
+      - run: flutter test
+      - name: Build isolated native worker and fixture holder
+        run: |
+          cmake -S windows/file_tools -B build/file_tools_native -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/file_tools_native --config Release --parallel 2
+      - name: Native safety tests (new temporary fixtures only)
+        run: ctest --test-dir build/file_tools_native -C Release --output-on-failure
+      - name: Process/protocol integration (owned fixture process only)
+        run: python tools/test_windows_file_tools.py
+      - name: Explorer COM contract tests
+        run: |
+          cmake -S windows/context_menu/tests -B build/file_tools_menu_tests -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/file_tools_menu_tests --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./build/file_tools_menu_tests/Release/vertree_menu_tests.exe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: windows-file-tools-results
+          path: build/file_tools_dev/integration-results.json
+          if-no-files-found: warn

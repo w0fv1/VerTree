@@ -1,7 +1,8 @@
 import '../../../foundation/app_events.dart';
 
 class PreviewActivity {
-  PreviewActivity(this.events);
+  PreviewActivity(this.events, {this.isPathReserved});
+  final bool Function(String path)? isPathReserved;
   final AppEvents events;
   int _sequence = 0;
   Map<String, dynamic>? _current;
@@ -9,6 +10,9 @@ class PreviewActivity {
     'current': _current == null ? null : Map<String, dynamic>.from(_current!),
   };
   int open(String path) {
+    if (isPathReserved?.call(path) == true) {
+      throw StateError('PATH_BUSY: path is reserved for deletion');
+    }
     final id = ++_sequence;
     _current = {'id': id, 'path': path, 'status': 'loading'};
     events.emit('preview.loading', _current!);

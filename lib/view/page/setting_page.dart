@@ -1,4 +1,8 @@
 import 'dart:async';
+import '../component/context_menu_choices.dart';
+import '../component/settings_row.dart';
+import '../../platform/windows_menu_model.dart';
+import '../../platform/windows_registry_bridge.dart';
 import 'package:vertree/foundation/app_events.dart';
 
 import 'package:flutter/material.dart';
@@ -10,7 +14,6 @@ import 'package:vertree/component/app_version_info.dart';
 import 'package:vertree/component/file_utils.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/notifier.dart';
-import 'package:vertree/component/themed_assets.dart';
 import 'package:vertree/foundation/result.dart';
 import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/platform/linux_gnome_integration.dart';
@@ -35,6 +38,8 @@ class _SettingPageState extends State<SettingPage> {
   late final TextEditingController _monitorMaxSizeController;
   late final ScrollController _settingsScrollController;
 
+  bool fileUsageMenu = false;
+  bool fastDeleteMenu = false;
   bool previewFile = false;
   bool backupFile = false;
   bool expressBackupFile = false;
@@ -46,6 +51,9 @@ class _SettingPageState extends State<SettingPage> {
   bool legacyMenuEnabled = false;
   bool legacyMenuCollapsed = false;
   bool win11MenuEnabled = false;
+  Windows11MenuPreferences _win11Choices = Windows11MenuPreferences(
+    WindowsMenuAction.values,
+  );
   bool localHttpApiEnabled = false;
   bool _showLegacyMenuDetails = false;
   bool isLoading = false;
@@ -128,7 +136,9 @@ class _SettingPageState extends State<SettingPage> {
           expressBackupFile ||
           monitorFile ||
           shareFile ||
-          viewTreeFile;
+          viewTreeFile ||
+          fileUsageMenu ||
+          fastDeleteMenu;
     });
     await _showLinuxMenuToggleResult(success);
   }
@@ -165,7 +175,15 @@ class _SettingPageState extends State<SettingPage> {
   Future<void> _loadPlatformState() async {
     await PlatformIntegration.refreshLinuxCapabilityCache();
     if (PlatformIntegration.isWindows) {
-      await PlatformIntegration.migrateLegacyMenuLayoutConfig();
+      _win11Choices = Windows11MenuPreferences.fromConfig(
+        _desktop.configer.toJson(),
+      );
+      fileUsageMenu = await WindowsRegistryBridge.isActionEnabled(
+        WindowsMenuAction.fileUsage,
+      );
+      fastDeleteMenu = await WindowsRegistryBridge.isActionEnabled(
+        WindowsMenuAction.fastDelete,
+      );
     }
     if (PlatformIntegration.isLinuxGnome) {
       _gnomeFilesSupportInfo =
@@ -195,7 +213,9 @@ class _SettingPageState extends State<SettingPage> {
           expressBackupFile ||
           monitorFile ||
           shareFile ||
-          viewTreeFile;
+          viewTreeFile ||
+          fileUsageMenu ||
+          fastDeleteMenu;
       if (PlatformIntegration.isWindows) {
         final configuredWin11MenuEnabled = _desktop.configer.get(
           "win11MenuEnabled",
@@ -305,6 +325,8 @@ class _SettingPageState extends State<SettingPage> {
         return;
       }
 
+      await _desktop.configer.flush();
+      await WindowsRegistryBridge.notifyMenuPreferencesChanged();
       _desktop.logger.info('Win11 menu display updated: enabled=$value');
     } catch (e) {
       _desktop.logger.error('Win11 menu toggle failed: $e');
@@ -318,6 +340,78 @@ class _SettingPageState extends State<SettingPage> {
         setState(() => isLoading = false);
       }
       _desktop.logger.info('Win11 menu toggle end');
+    }
+  }
+
+  Future<void> _toggleWin11Action(
+    WindowsMenuAction action,
+    bool enabled,
+  ) async {
+    if (isLoading) return;
+    final previous = _win11Choices;
+    setState(() {
+      isLoading = true;
+      _win11Choices = previous.withAction(action, enabled);
+    });
+    try {
+      _desktop.configer.set(
+        Windows11MenuPreferences.selectionKey,
+        _win11Choices.toNames(),
+      );
+      await _desktop.configer.flush();
+      await WindowsRegistryBridge.notifyMenuPreferencesChanged();
+    } catch (error) {
+      _desktop.configer.set(
+        Windows11MenuPreferences.selectionKey,
+        previous.toNames(),
+      );
+      if (mounted) setState(() => _win11Choices = previous);
+      showToast(_desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed));
+      _desktop.logger.error('Win11 menu preference update failed: $error');
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Set<WindowsMenuAction> get _legacyMenuSelection => {
+    if (previewFile) WindowsMenuAction.preview,
+    if (fileUsageMenu) WindowsMenuAction.fileUsage,
+    if (fastDeleteMenu) WindowsMenuAction.fastDelete,
+    if (backupFile) WindowsMenuAction.backup,
+    if (expressBackupFile) WindowsMenuAction.expressBackup,
+    if (monitorFile) WindowsMenuAction.monitor,
+    if (shareFile) WindowsMenuAction.share,
+    if (viewTreeFile) WindowsMenuAction.viewTree,
+  };
+
+  // Keep legacy registration and modern preference persistence independent.
+  Future<void> _toggleLegacyAction(WindowsMenuAction action, bool value) =>
+      switch (action) {
+        WindowsMenuAction.preview => _togglePreviewFile(value),
+        WindowsMenuAction.fileUsage ||
+        WindowsMenuAction.fastDelete => _toggleFileToolMenu(action, value),
+        WindowsMenuAction.backup => _toggleBackupFile(value),
+        WindowsMenuAction.expressBackup => _toggleExpressBackupFile(value),
+        WindowsMenuAction.monitor => _toggleMonitorFile(value),
+        WindowsMenuAction.share => _toggleShareFile(value),
+        WindowsMenuAction.viewTree => _toggleViewTreeFile(value),
+      };
+
+  Future<void> _toggleFileToolMenu(
+    WindowsMenuAction action,
+    bool? value,
+  ) async {
+    if (value == null || !PlatformIntegration.isWindows) return;
+    setState(() => isLoading = true);
+    try {
+      if (!await WindowsRegistryBridge.setActionEnabled(action, value)) {
+        showToast(
+          _desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed),
+        );
+      }
+      await _loadPlatformState();
+    } finally {
+      if (mounted) setState(() => isLoading = false);
     }
   }
 
@@ -694,15 +788,13 @@ class _SettingPageState extends State<SettingPage> {
     required String title,
     required bool value,
     required ValueChanged<bool?>? onChanged,
-  }) {
-    return _buildSettingRow(
-      icon: icon,
-      leading: leading,
-      title: Text(title),
-      trailing: Switch(value: value, onChanged: onChanged),
-      onTap: onChanged == null ? null : () => onChanged(!value),
-    );
-  }
+  }) => SettingsSwitchTile(
+    icon: icon,
+    leading: leading,
+    title: title,
+    value: value,
+    onChanged: onChanged,
+  );
 
   Widget _buildSettingRow({
     IconData? icon,
@@ -712,83 +804,15 @@ class _SettingPageState extends State<SettingPage> {
     Widget? trailing,
     VoidCallback? onTap,
     bool topAlignLeading = false,
-  }) {
-    assert(icon != null || leading != null);
-    final scheme = Theme.of(context).colorScheme;
-    final content = Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        DefaultTextStyle(
-          style: Theme.of(context).textTheme.bodyLarge!,
-          child: title,
-        ),
-        if (supportingText != null) ...[
-          const SizedBox(height: 4),
-          DefaultTextStyle(
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium!.copyWith(color: scheme.onSurfaceVariant),
-            child: supportingText,
-          ),
-        ],
-      ],
-    );
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: MouseRegion(
-        cursor: onTap == null
-            ? SystemMouseCursors.basic
-            : SystemMouseCursors.click,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 56),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-              child: Row(
-                crossAxisAlignment: topAlignLeading || supportingText != null
-                    ? CrossAxisAlignment.start
-                    : CrossAxisAlignment.center,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(
-                      top: topAlignLeading || supportingText != null ? 2 : 0,
-                    ),
-                    child: SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: Center(child: leading ?? Icon(icon, size: 20)),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Padding(
-                      padding: EdgeInsets.only(
-                        top: topAlignLeading || supportingText != null ? 0 : 1,
-                      ),
-                      child: content,
-                    ),
-                  ),
-                  if (trailing != null) ...[
-                    const SizedBox(width: 12),
-                    Padding(
-                      padding: EdgeInsets.only(
-                        top: topAlignLeading || supportingText != null ? 0 : 0,
-                      ),
-                      child: trailing,
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+  }) => SettingsRow(
+    icon: icon,
+    leading: leading,
+    title: title,
+    supportingText: supportingText,
+    trailing: trailing,
+    onTap: onTap,
+    topAlignLeading: topAlignLeading,
+  );
 
   Widget _buildSubsectionCard({
     required IconData icon,
@@ -1112,11 +1136,30 @@ class _SettingPageState extends State<SettingPage> {
                           ),
                           children: [
                             if (PlatformIntegration.isWindows)
-                              _buildSwitchTile(
+                              _buildSubsectionCard(
                                 icon: Icons.apps_rounded,
-                                title: contextMenuGroupTitle,
-                                value: win11MenuEnabled,
-                                onChanged: _toggleWin11Menu,
+                                title: _desktop.appLocale.lang == Lang.en
+                                    ? 'Windows 11 context menu'
+                                    : _desktop.appLocale.lang == Lang.ja
+                                    ? 'Windows 11 コンテキストメニュー'
+                                    : 'Windows 11 右键菜单',
+                                children: [
+                                  _buildSwitchTile(
+                                    icon: Icons.toggle_on_rounded,
+                                    title: _desktop.appLocale.getText(
+                                      LocaleKey.settingContextMenuToggle,
+                                    ),
+                                    value: win11MenuEnabled,
+                                    onChanged: _toggleWin11Menu,
+                                  ),
+                                  ContextMenuChoices(
+                                    group: 'win11',
+                                    selected: _win11Choices.actions,
+                                    locale: _desktop.appLocale,
+                                    enabled: win11MenuEnabled && !isLoading,
+                                    onChanged: _toggleWin11Action,
+                                  ),
+                                ],
                               ),
                             if (PlatformIntegration.supportsContextMenus)
                               _buildSubsectionCard(
@@ -1167,59 +1210,22 @@ class _SettingPageState extends State<SettingPage> {
                                         ? CrossFadeState.showSecond
                                         : CrossFadeState.showFirst,
                                     firstChild: const SizedBox.shrink(),
-                                    secondChild: Column(
-                                      children: [
-                                        if (PlatformIntegration.isWindows)
-                                          _buildSwitchTile(
-                                            icon: Icons.preview_outlined,
-                                            title: _desktop.appLocale.getText(
-                                              LocaleKey.settingAddPreviewMenu,
-                                            ),
-                                            value: previewFile,
-                                            onChanged: _togglePreviewFile,
-                                          ),
-                                        _buildSwitchTile(
-                                          icon: Icons.save_outlined,
-                                          title: _desktop.appLocale.getText(
-                                            LocaleKey.settingAddBackupMenu,
-                                          ),
-                                          value: backupFile,
-                                          onChanged: _toggleBackupFile,
-                                        ),
-                                        _buildSwitchTile(
-                                          icon: Icons.flash_on_outlined,
-                                          title: _desktop.appLocale.getText(
-                                            LocaleKey
-                                                .settingAddExpressBackupMenu,
-                                          ),
-                                          value: expressBackupFile,
-                                          onChanged: _toggleExpressBackupFile,
-                                        ),
-                                        _buildSwitchTile(
-                                          icon: Icons.monitor_heart_outlined,
-                                          title: _desktop.appLocale.getText(
-                                            LocaleKey.settingAddMonitorMenu,
-                                          ),
-                                          value: monitorFile,
-                                          onChanged: _toggleMonitorFile,
-                                        ),
-                                        _buildSwitchTile(
-                                          leading: shareActionImage(size: 20),
-                                          title: _desktop.appLocale.getText(
-                                            LocaleKey.settingAddShareMenu,
-                                          ),
-                                          value: shareFile,
-                                          onChanged: _toggleShareFile,
-                                        ),
-                                        _buildSwitchTile(
-                                          icon: Icons.account_tree_outlined,
-                                          title: _desktop.appLocale.getText(
-                                            LocaleKey.settingAddViewtreeMenu,
-                                          ),
-                                          value: viewTreeFile,
-                                          onChanged: _toggleViewTreeFile,
-                                        ),
-                                      ],
+                                    secondChild: ContextMenuChoices(
+                                      group: 'legacy',
+                                      selected: _legacyMenuSelection,
+                                      locale: _desktop.appLocale,
+                                      enabled: !isLoading,
+                                      actions: PlatformIntegration.isWindows
+                                          ? ContextMenuChoices.legacyOrder
+                                          : ContextMenuChoices.legacyOrder
+                                                .where(
+                                                  (action) =>
+                                                      action !=
+                                                          WindowsMenuAction
+                                                              .preview &&
+                                                      !action.isFileTool,
+                                                ),
+                                      onChanged: _toggleLegacyAction,
                                     ),
                                   ),
                                 ],

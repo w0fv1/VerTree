@@ -16,6 +16,7 @@ import 'package:vertree/api/local_http_api_server.dart';
 import 'package:vertree/api/extended_automation_api.dart';
 import 'package:vertree/component/app_logger.dart';
 import 'package:vertree/component/configer.dart';
+import 'package:vertree/component/brand_slogans.dart';
 import 'package:vertree/component/launch_counter.dart';
 import 'package:vertree/component/notifier.dart';
 import 'package:vertree/adapters/ui/versions/file_version_tree.dart';
@@ -51,6 +52,13 @@ import '../foundation/app_events.dart';
 import '../modules/preview/preview.dart';
 import '../modules/automation/automation.dart';
 import '../service/file_preview_image_service.dart';
+import '../service/file_preview_session.dart';
+import '../file_access/file_access.dart';
+import 'file_tools_backend.dart';
+import '../adapters/ui/file_tools_controller.dart';
+import '../view/page/delete_page.dart';
+import '../view/page/file_locks_page.dart';
+import '../component/isolated_profile.dart';
 
 final logger = AppLogger(LogLevel.debug);
 const String configuredLanSharePageBaseUrl = String.fromEnvironment(
@@ -61,13 +69,23 @@ late void Function(Widget page) go;
 late MonitManager monitService;
 late LocalHttpApiServer localHttpApiServer;
 late LanFileShareServer lanFileShareServer;
-Configer configer = Configer();
+final _isolatedProfile = isolatedProfilePath;
+Configer configer = Configer(
+  directoryResolver: _isolatedProfile == null
+      ? null
+      : () async => Directory(_isolatedProfile!),
+);
 final appEvents = AppEvents();
-final previewActivity = PreviewActivity(appEvents);
+final previewActivity = PreviewActivity(
+  appEvents,
+  isPathReserved: (path) => backend.writes.isReserved(path),
+);
 final jobs = AutomationJobs(appEvents);
 final images = FilePreviewImageService();
 final backend = AppBackend(config: configer, events: appEvents);
 final versionActions = VersionActions(backend.versions);
+late final FileToolsBackend fileToolsBackend;
+late final FileToolsController fileTools;
 late final AppHost appHost;
 late final AppCommandHandler appCommandHandler;
 late final AppWindowController appWindowController;
@@ -116,6 +134,40 @@ Future<Result<Map<String, dynamic>, String>> setThemeModeForApi(
   themeController.update(AppThemeSetting.values.byName(normalized));
   await _waitForRenderedFrames(waitMilliseconds: 180);
   return Result.ok(_currentUiState());
+}
+
+Future<void> openFileTools(List<String> paths, String action) async {
+  await _waitForUiReady();
+  await showMainWindow(
+    page: action == 'scan'
+        ? FileLocksPage(key: UniqueKey(), paths: paths)
+        : DeletePage(
+            key: UniqueKey(),
+            paths: paths,
+            confirmOnOpen: action == 'delete',
+          ),
+    animate: false,
+  );
+}
+
+Future<void> releaseFileToolPresentations(List<String> paths) async {
+  final current = previewActivity.snapshot['current'] as Map<String, dynamic>?;
+  if (current != null) {
+    final previewPath = await backend.files.canonicalize(
+      current['path'] as String,
+    );
+    if (paths.any((path) => MutationScope.containsPath(path, previewPath))) {
+      await closeFilePreview();
+    }
+  }
+  await lanFileShareServer.releasePaths(paths);
+}
+
+Future<FilePreviewSession> openCoordinatedPreviewSession(String path) async {
+  final canonical = await backend.files.canonicalize(path);
+  return backend.writes.run([
+    MutationScope.file(canonical),
+  ], () => FilePreviewSession.open(canonical));
 }
 
 Future<void> showMainWindow({Widget? page, bool animate = true}) async {
@@ -214,6 +266,7 @@ Future<void> runVertreeApp(
     onShare: share,
     onViewTree: viewtree,
     onPreview: previewFile,
+    onFileTools: openFileTools,
     onNotify: showWindowsNotification,
     onLogInfo: logger.info,
     onLogError: logger.error,
@@ -241,8 +294,22 @@ Future<void> runVertreeApp(
   lanFileShareServer = LanFileShareServer(
     events: appEvents,
     sharePageBaseUrl: configuredLanSharePageBaseUrl,
+    isPathReserved: backend.writes.isReserved,
+    canonicalizePath: backend.files.canonicalize,
     onLogInfo: logger.info,
     onLogError: logger.error,
+  );
+  fileToolsBackend = FileToolsBackend(
+    writes: backend.writes,
+    monitors: monitService,
+    configurationDirectory: p.dirname(configer.configFilePath),
+    releasePresentations: releaseFileToolPresentations,
+  );
+  fileTools = FileToolsController(
+    deletion: fileToolsBackend.deletion,
+    locks: fileToolsBackend.locks,
+    jobs: jobs,
+    events: appEvents,
   );
   final apiService = LocalHttpApiService(
     configer: configer,
@@ -311,11 +378,19 @@ Future<void> runVertreeApp(
         start: () async {},
         stop: backend.writes.close,
       ),
-      HostedResource('jobs', start: () async {}, stop: automation.jobs.dispose),
       HostedResource(
         'monitors',
         start: monitService.startAll,
         stop: monitService.dispose,
+      ),
+      HostedResource('jobs', start: () async {}, stop: automation.jobs.dispose),
+      HostedResource(
+        'file-tools',
+        start: () async {},
+        stop: () async {
+          await fileTools.shutdown();
+          await fileToolsBackend.worker.dispose();
+        },
       ),
       HostedResource(
         'sharing',
@@ -336,7 +411,8 @@ Future<void> runVertreeApp(
 
   try {
     final bool isStartupLaunch = containsStartupLaunchArg(args);
-    suppressAnnouncementDialogs = containsNoAnnouncementLaunchArg(args);
+    suppressAnnouncementDialogs =
+        _isolatedProfile != null || containsNoAnnouncementLaunchArg(args);
     final bool launch2Tray = configer.get("launch2Tray", defaultLaunchToTray);
     final bool isSetupDone = configer.get<bool>('isSetupDone', false);
     final bool isGnomeWithoutTray =
@@ -366,7 +442,12 @@ Future<void> runVertreeApp(
       args: args,
       onSecondInstanceArgs: _handleSecondInstance,
     );
-    await PlatformIntegration.reAddContextMenu();
+    final brandSlogan = await BrandSloganSession.start(
+      configer,
+      onPersistenceError: (error) =>
+          logger.error('Cannot save homepage slogan selection: $error'),
+    );
+    if (_isolatedProfile == null) await PlatformIntegration.reAddContextMenu();
     await initLocalNotifier();
     try {
       await appHost.start();
@@ -425,6 +506,7 @@ Future<void> runVertreeApp(
           logger: logger,
           configer: configer,
           appLocale: appLocale,
+          brandSlogan: brandSlogan,
           monitService: monitService,
           catalog: backend.catalog,
           events: appEvents,
@@ -442,11 +524,16 @@ Future<void> runVertreeApp(
           updateThemeSetting: themeController.update,
           toggleLightDarkTheme: themeController.toggle,
           refreshTray: () => tray.refreshTray(forceRebuild: true),
+          fileTools: fileTools,
+          openFileTools: openFileTools,
+          openPreviewSession: openCoordinatedPreviewSession,
         ),
         child: const MainPage(),
       ),
     );
-    LaunchCounter.trackLaunchIfNeeded(configer: configer, logger: logger);
+    if (_isolatedProfile == null) {
+      LaunchCounter.trackLaunchIfNeeded(configer: configer, logger: logger);
+    }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       processArgs(args);
     });

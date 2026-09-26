@@ -1,4 +1,6 @@
 ---
+title: 开发与构建
+description: 从干净检出构建 Flutter 桌面、预览前端、Windows 文件工具与文档站。
 sidebar_position: 1
 ---
 
@@ -11,14 +13,14 @@ Vertree 是 Flutter 桌面应用。文件预览复用独立仓库 Office-Viewer 
 | 环境 | 要求 |
 | --- | --- |
 | 通用 | Git、Python 3、Node.js 24、Flutter stable（Dart 满足 `>=3.10.0 <4.0.0`） |
-| Windows | Visual Studio 2022 桌面 C++ 工具链、Windows SDK、CMake、PATH 中的 NuGet CLI；运行预览需要 WebView2 Runtime |
+| Windows | Flutter 支持的 Visual Studio 桌面 C++ 工具链、Windows SDK、CMake、PATH 中的 NuGet CLI；运行预览需要 WebView2 Runtime |
 | Windows 打包 | Inno Setup、WiX Toolset；MSIX 使用 Windows SDK 的 MakeAppx / SignTool |
 | macOS | Xcode、CocoaPods |
 | Linux | Clang、CMake、Ninja、pkg-config、GTK3、通知和托盘开发库；打包还需要 RPM、desktop-file-utils、appstream |
 
 在目标操作系统上运行 `flutter doctor` 检查桌面工具链。三平台具体 CI 依赖以仓库的 `.github/workflows/release.yml` 为准。
 
-Windows 发布固定使用 `windows-2022` runner。现有 WebView 插件仍使用实验性协程接口，更新的 MSVC 工具链会报 STL1011；升级编译器前应先验证插件兼容性。
+Windows 发布环境以 workflow 的 runner 与实际插件版本为准。升级 MSVC 前先验证 WebView 插件兼容性；本机某一工具链构建成功，不代表所有版本的编译器都可直接互换。
 
 ## 首次克隆与启动
 
@@ -65,11 +67,15 @@ flutter run -d windows
 
 | 路径 | 职责 |
 | --- | --- |
-| `lib/core` | 文件版本、树构建、监控与备份 |
+| `lib/modules` | 版本、快照、监控、删除、占用查询等业务命令与公开契约 |
+| `lib/file_access` | 文件访问、共享变更范围协调与原生适配 |
+| `lib/app` | 构造注入、桌面装配与服务生命周期 |
+| `lib/adapters/ui` | 界面依赖与版本图投影，不拥有文件写入规则 |
 | `lib/view` | 页面、节点操作、预览对话框 |
 | `lib/component/app_cli.dart` | CLI 动作解析 |
 | `lib/platform` | 系统菜单、自启动等平台集成 |
-| `lib/api`、`lib/service` | 本机 API、业务服务、局域网分享与预览会话 |
+| `lib/api`、`lib/service` | HTTP 协议适配、局域网分享与预览会话 |
+| `windows/file_tools` | 独立 C++17 文件工具进程、路径守卫与进程诊断 |
 | `vendor/office-viewer` | 通用预览源码子模块 |
 | `web/office_preview` | Vertree 的只读 React 宿主及依赖锁定 |
 | `assets/office_viewer` | 构建生成的离线资源，生成内容不入 Git |
@@ -82,6 +88,7 @@ flutter run -d windows
 已有预览资源后，在仓库根目录运行：
 
 ```bash
+dart run tools/check_architecture.dart
 flutter analyze
 flutter test
 npm --prefix web/office_preview test
@@ -97,6 +104,8 @@ cmake --build build/context-menu-tests --config Release
 ctest --test-dir build/context-menu-tests -C Release --output-on-failure
 ```
 
+Windows 文件工具的原生测试、集成测试与受控基准见[文件工具架构](file-tools.md)。所有删除或进程结束测试必须只处理自己创建的临时对象。
+
 自动测试和跨平台编译不能代替原生 WebView、Explorer、Finder 等实机验收。预览回归应包括连续打开不同文件、关闭回收、未知文本与二进制、大文件和相应格式的真实样例。
 
 ## 构建发布工件
@@ -110,9 +119,9 @@ pwsh -File windows/build.ps1 -BuildMode Release
 pwsh -File windows/build_msix.ps1 -BuildMode Release
 ```
 
-产物在 `windows/`，文件名前缀为 `vertree-windows-x64-<version>`，包含 EXE 安装器、ZIP、MSI、MSIX 及调试包。
+产物在 `windows/`，文件名前缀为 `vertree-windows-x64-<version>`，由对应脚本生成 EXE 安装器、ZIP、MSI，以及另行构建的 MSIX 和可用调试包。是否发布成功，以 Release 实际附件为准。
 
-Windows 11 新菜单通过 sparse MSIX 提供包身份。目标设备需要信任签名证书。构建脚本接受 `VERTREE_MSIX_CERTIFICATE_PATH` 和 `VERTREE_MSIX_CERTIFICATE_PASSWORD`，CI 对应使用仓库证书 secrets。未签名包仅适合相应开发流程，不能据此保证新设备的 Win11 菜单注册成功。
+Windows 11 新菜单需要包身份。分发使用 sparse MSIX 时，目标设备需要信任签名证书；本地开发环境可注册 loose manifest，但这不保证干净终端设备可用。构建脚本接受 `VERTREE_MSIX_CERTIFICATE_PATH` 和 `VERTREE_MSIX_CERTIFICATE_PASSWORD`，CI 对应使用仓库证书 secrets。未签名包仅适合相应开发流程，不能据此保证新设备的 Win11 菜单注册成功。
 
 ### macOS
 
@@ -140,7 +149,7 @@ npm ci
 npm start
 ```
 
-提交前执行 `npm run build` 检查链接、MDX 和静态输出。站点由 main 分支的 Pages workflow 构建并部署。仓库当前也跟踪 `docs/build`，更新文档时同步生成产物。
+提交前执行 `npm run build` 检查链接、MDX 和静态输出。站点由 main 分支的 Pages workflow 构建并部署。本地构建通过不代表公网已更新，必须单独检查部署结果。仓库当前也跟踪 `docs/build`，更新文档时同步生成产物。
 
 更新应用截图使用仓库根目录的 `python tools/update_doc_images.py`。脚本通过开发控制器和应用 API 导航、调整主题、导出 PNG；应使用由控制器管理的开发进程与标准样例，检查生成画面后再提交。不要把旧截图当作新版界面的验收证据。
 
@@ -151,7 +160,7 @@ npm start
 1. 修改 `pubspec.yaml` 中的版本号。应用展示版本从 `PackageInfo` 读取，不需要在 Dart 中另写一份版本常量。
 2. 新建 `.github/release-<version>.md`，更新 README、文档首页和必要的公告。公告使用 `docs/static/announcement.json`，包含唯一标识、内容、有效期和可选链接。
 3. 生成预览资源，完成相关测试、静态检查和文档构建，确认子模块提交可在远端获取。
-4. 提交并推送代码，创建与 pubspec 一致的标签，例如 `V1.1.0`。
+4. 提交并推送代码，创建与 pubspec 一致的标签，例如与 `2.0.1` 对应的 `V2.0.1`。
 5. Release workflow 构建 Windows、macOS、Linux。三平台均成功后才发布 GitHub Release，上传工件和 `SHA256SUMS.txt`。
 6. 检查 Release 实际附件、版本和校验和，确认 Pages 部署成功。
 

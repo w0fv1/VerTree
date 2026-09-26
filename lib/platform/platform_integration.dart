@@ -349,14 +349,4 @@ class PlatformIntegration {
     if (!isWindows) return false;
     return WindowsRegistryBridge.checkWin11ContextMenuHandler();
   }
-
-  static Future<bool> checkLegacyMenuRootExists() async {
-    if (!isWindows) return false;
-    return WindowsRegistryBridge.checkLegacyMenuRootExists();
-  }
-
-  static Future<bool> migrateLegacyMenuLayoutConfig() async {
-    if (!isWindows) return false;
-    return WindowsRegistryBridge.migrateLegacyMenuLayoutConfig();
-  }
 }

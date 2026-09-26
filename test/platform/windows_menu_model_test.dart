@@ -27,12 +27,24 @@ class FakeRegistry {
 }
 
 void main() {
-  test('upgrade adds preview while preserving disabled actions', () {
-    expect(WindowsMenuPlan.migrateSelection({WindowsMenuAction.backup}), {
-      WindowsMenuAction.backup,
-      WindowsMenuAction.preview,
-    });
-    expect(WindowsMenuPlan.migrateSelection({}), isEmpty);
+  test('modern menu defaults and explicit empty selection are distinct', () {
+    expect(
+      Windows11MenuPreferences.fromConfig({}).actions,
+      unorderedEquals(WindowsMenuAction.values),
+    );
+    expect(
+      Windows11MenuPreferences.fromConfig({
+        Windows11MenuPreferences.selectionKey: <String>[],
+      }).actions,
+      isEmpty,
+    );
+    expect(
+      Windows11MenuPreferences.fromConfig({
+        Windows11MenuPreferences.selectionKey: ['backup'],
+        'windowsLegacyMenuActions': ['preview', 'fastDelete'],
+      }).actions,
+      {WindowsMenuAction.backup},
+    );
   });
 
   test(

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/app_cli.dart';
+import 'file_tools_selection.dart';
 
 typedef FileActionCallback = FutureOr<void> Function(String path);
 typedef UserNotificationCallback = void Function(String title, String body);
@@ -18,8 +19,10 @@ class AppCommandHandler {
     required this.onNotify,
     required this.onLogInfo,
     required this.onLogError,
+    this.onFileTools,
   });
 
+  final FutureOr<void> Function(List<String> paths, String action)? onFileTools;
   final FileActionCallback onBackup;
   final FileActionCallback onExpressBackup;
   final FileActionCallback onMonit;
@@ -44,6 +47,22 @@ class AppCommandHandler {
         return;
       }
 
+      if (request.isFileTools) {
+        final callback = onFileTools;
+        if (callback == null) throw StateError('FILE_TOOLS_UNAVAILABLE');
+        final paths = request.selectionFile == null
+            ? request.paths
+            : await readFileToolsSelection(request.selectionFile!);
+        await callback(
+          paths,
+          request.action == AppCliAction.fastDelete
+              ? 'delete'
+              : request.action == AppCliAction.fileUsage
+              ? 'scan'
+              : 'none',
+        );
+        return;
+      }
       final path = request.path;
       final entity = FileSystemEntity.typeSync(path);
       if (entity == FileSystemEntityType.notFound) {
@@ -57,6 +76,10 @@ class AppCommandHandler {
       }
 
       switch (request.action) {
+        case AppCliAction.fileTools:
+        case AppCliAction.fastDelete:
+        case AppCliAction.fileUsage:
+          throw StateError('File-tools actions must use the confirmation UI');
         case AppCliAction.preview:
           await onPreview(path);
           break;

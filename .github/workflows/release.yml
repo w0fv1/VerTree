@@ -66,6 +66,12 @@ jobs:
             echo "notes_file=$notes_file" >> "$GITHUB_OUTPUT"
           fi
 
+  docs:
+    name: Documentation release gate
+    uses: ./.github/workflows/docs-quality.yml
+    permissions:
+      contents: read
+
   windows:
     name: Windows
     runs-on: windows-2022
@@ -103,6 +109,32 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           flutter test
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Validate native file tools and Explorer contracts
+        shell: pwsh
+        run: |
+          cmake -S windows/file_tools -B build/file_tools_native -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/file_tools_native --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/file_tools_native -C Release --output-on-failure
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_windows_file_tools.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake -S windows/context_menu/tests -B build/file_tools_menu_tests -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/file_tools_menu_tests --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ./build/file_tools_menu_tests/Release/vertree_menu_tests.exe
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Keep file-tools validation results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: windows-file-tools-release-validation
+          path: build/file_tools_dev/integration-results.json
+          if-no-files-found: warn
 
       - name: Install Inno Setup
         shell: pwsh
@@ -319,6 +351,7 @@ jobs:
       - windows
       - linux
       - macos
+      - docs
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -347,7 +380,10 @@ jobs:
             --dir release-artifacts
 
           find release-artifacts -type f -name 'vertree-*' -print0 | while IFS= read -r -d '' file; do
-            cp "$file" "release-assets/$(basename "$file")"
+            case "$(basename "$file")" in
+              *.exe|*.zip|*.msi|*.msix|*.dmg|*.tar.gz|*.deb|*.rpm)
+                cp "$file" "release-assets/$(basename "$file")" ;;
+            esac
           done
 
       - name: Generate checksums
@@ -373,6 +409,13 @@ jobs:
             exit 1
           fi
 
+          version="${{ needs.meta.outputs.version }}"
+          for name in "vertree-windows-x64-$version-setup.exe" "vertree-windows-x64-$version.zip" "vertree-windows-x64-$version.msi" "vertree-windows-x64-$version.msix" "vertree-linux-x64-$version.tar.gz" "vertree-linux-x64-$version.deb" "vertree-linux-x64-$version.rpm"; do
+            test -s "release-assets/$name" || { echo "Missing required release file: $name" >&2; exit 1; }
+          done
+          compgen -G "release-assets/vertree-macos-*-$version.dmg" > /dev/null || exit 1
+          compgen -G "release-assets/vertree-macos-*-$version.zip" > /dev/null || exit 1
+          (cd release-assets && sha256sum --check SHA256SUMS.txt)
           printf 'Staged release assets:\n'
           printf ' - %s\n' "${release_files[@]#release-assets/}"
 
@@ -420,12 +463,16 @@ jobs:
                 target_commitish: context.sha,
                 name: tag,
                 body,
-                draft: false,
+                draft: true,
                 prerelease,
-                make_latest: prerelease ? 'false' : 'true',
+                make_latest: 'false',
               })).data;
             }
 
+            if (!release.draft) {
+              core.setFailed(`Release ${tag} is already public. Publish fixes under a new version; do not replace its assets.`);
+              return;
+            }
             release = (await github.rest.repos.updateRelease({
               owner,
               repo,
@@ -434,9 +481,9 @@ jobs:
               target_commitish: context.sha,
               name: tag,
               body,
-              draft: false,
+              draft: true,
               prerelease,
-              make_latest: prerelease ? 'false' : 'true',
+              make_latest: 'false',
             })).data;
 
             core.info(`Using release ${release.id} for tag ${tag}`);
@@ -502,3 +549,22 @@ jobs:
             echo "Release asset upload incomplete: expected at least ${#asset_files[@]}, got $uploaded_count" >&2
             exit 1
           fi
+
+      - name: Publish verified complete release
+        uses: actions/github-script@v8
+        env:
+          RELEASE_ID: ${{ steps.release_meta.outputs.release_id }}
+          IS_PRERELEASE: ${{ contains(needs.meta.outputs.version, '-') }}
+        with:
+          script: |
+            const owner = context.repo.owner, repo = context.repo.repo;
+            const release_id = Number(process.env.RELEASE_ID);
+            const prerelease = process.env.IS_PRERELEASE === 'true';
+            const assets = (await github.rest.repos.listReleaseAssets({owner, repo, release_id, per_page: 100})).data;
+            if (!assets.some(a => a.name === 'SHA256SUMS.txt') || assets.some(a => a.state !== 'uploaded' || a.size === 0)) {
+              core.setFailed('Release attachments are incomplete; keep the release draft.');
+              return;
+            }
+            const release = (await github.rest.repos.updateRelease({owner, repo, release_id,
+              draft: false, prerelease, make_latest: prerelease ? 'false' : 'true'})).data;
+            core.notice(`Published verified release: ${release.html_url}`);

@@ -17,8 +17,10 @@ class MonitManager {
     required this.interval,
     required this.maxBackups,
     required this.emit,
+    this.isPathReserved,
   });
   final FileAccess files;
+  final bool Function(String path)? isPathReserved;
   final SnapshotCommands snapshots;
   final FileWatcher watcher;
   final List<dynamic> Function() loadTasks;
@@ -86,8 +88,11 @@ class MonitManager {
   }
 
   Future<Result<FileMonitTask, String>> addFileMonitTask(String path) =>
-      _commands.run(['tasks'], () async {
+      _commands.run([MutationScope.task('tasks')], () async {
         final source = await files.canonicalize(path);
+        if (isPathReserved?.call(source) == true) {
+          return Result.eMsg('PATH_BUSY: path is reserved for deletion');
+        }
         if (_tasks.any((task) => p.equals(task.filePath, source))) {
           return Result.eMsg('Task already exists for: $source');
         }
@@ -118,7 +123,7 @@ class MonitManager {
       });
 
   Future<void> removeFileMonitTask(String path) =>
-      _commands.run(['tasks'], () async {
+      _commands.run([MutationScope.task('tasks')], () async {
         final source = await files.canonicalize(path);
         final index = _tasks.indexWhere(
           (task) => p.equals(task.filePath, source),
@@ -148,11 +153,15 @@ class MonitManager {
   Future<Result<FileMonitTask, String>> setEnabled(
     FileMonitTask task,
     bool enabled,
-  ) => _commands.run(['tasks'], () async {
+  ) => _commands.run([MutationScope.task('tasks')], () async {
     if (!_tasks.contains(task)) {
       return Result.eMsg('Task not found: ${task.filePath}');
     }
-    if (task.enabled == enabled) return Result.ok(task);
+    if (enabled && isPathReserved?.call(task.filePath) == true) {
+      return Result.eMsg('PATH_BUSY: path is reserved for deletion');
+    }
+    if (task.enabled == enabled && !task._suspended) return Result.ok(task);
+    task._suspended = false;
     if (enabled && !await files.exists(task.filePath)) {
       return Result.eMsg('File does not exist: ${task.filePath}');
     }
@@ -175,6 +184,7 @@ class MonitManager {
   });
 
   Future<void> _start(FileMonitTask task) async {
+    if (task._suspended || isPathReserved?.call(task.filePath) == true) return;
     task._fileExists = await files.exists(task.filePath);
     task._monitor = Monitor(
       filePath: task.filePath,
@@ -196,6 +206,48 @@ class MonitManager {
       snapshots.list(task.filePath, task.id);
   Future<void> clearSnapshots(FileMonitTask task) =>
       snapshots.clear(task.filePath, task.id);
+
+  /// Suspend runtime watching without changing the persisted enabled setting.
+  /// The app supplies an identity check; a replacement is never auto-resumed.
+  Future<Future<void> Function()> suspendPaths(
+    List<String> paths, {
+    required Future<bool> Function(String path) canResume,
+  }) async {
+    final suspended = await _commands.run(
+      [MutationScope.task('tasks')],
+      () async {
+        final matches = _tasks
+            .where(
+              (task) => paths.any(
+                (path) => MutationScope.containsPath(path, task.filePath),
+              ),
+            )
+            .toList();
+        for (final task in matches) {
+          task._suspended = true;
+          await task._monitor?.stop();
+          task._monitor = null;
+        }
+        _changed();
+        return matches;
+      },
+    );
+    return () => _commands.run([MutationScope.task('tasks')], () async {
+      for (final task in suspended) {
+        if (!_tasks.contains(task)) continue;
+        task._fileExists = await files.exists(task.filePath);
+        var sameObject = false;
+        if (task._fileExists) {
+          try {
+            sameObject = await canResume(task.filePath);
+          } catch (_) {}
+        }
+        task._suspended = task.enabled && task._fileExists && !sameObject;
+        if (task.enabled && sameObject) await _start(task);
+      }
+      _changed();
+    });
+  }
 
   Future<void> dispose() async {
     await _commands.close();
@@ -220,11 +272,14 @@ class FileMonitTask {
   final String id, filePath;
   final String? backupDirPath;
   bool _enabled, _fileExists;
+  bool _suspended = false;
   Monitor? _monitor;
   bool get enabled => _enabled;
   bool get fileExists => _fileExists;
   Monitor? get monitor => _monitor;
-  String get runtimeStatus => _monitor?.status ?? 'stopped';
+  String get runtimeStatus => _suspended
+      ? 'suspended-for-file-operation'
+      : _monitor?.status ?? 'stopped';
   Map<String, dynamic> toJson() => {
     'id': id,
     'filePath': filePath,

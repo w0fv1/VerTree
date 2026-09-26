@@ -142,18 +142,6 @@ class WindowsRegistryBridge {
     );
   }
 
-  static Future<bool> checkLegacyMenuRootExists() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return _registryService.checkLegacyMenuRootExists();
-  }
-
-  static Future<bool> migrateLegacyMenuLayoutConfig() async {
-    if (!Platform.isWindows) return false;
-    await _ensureLoaded();
-    return _registryService.migrateLegacyMenuLayoutConfig();
-  }
-
   static Future<bool> applyInitialSetup() async {
     if (!Platform.isWindows) return true;
     await _ensureLoaded();
@@ -176,6 +164,11 @@ class WindowsRegistryBridge {
     if (!Platform.isWindows) return false;
     await _ensureLoaded();
     return _registryService.checkWin11ContextMenuHandler();
+  }
+
+  static Future<void> notifyMenuPreferencesChanged() async {
+    if (!Platform.isWindows) return;
+    _registryService.notifyMenuPreferencesChanged();
   }
 
   static Future<bool> isWin11PackagedOrRegistered() async {

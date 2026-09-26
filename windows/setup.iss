@@ -1,4 +1,4 @@
-﻿[Setup]
+[Setup]
 AppId={{E3E58F5C-9E78-4A10-9F2B-76F968B8034C}}
 AppName=Vertree
 #ifndef AppVersion
@@ -81,6 +81,12 @@ begin
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeMonitor');
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeShare');
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeViewTree');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeFileUsage');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\RegistryVerTreeFastDelete');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\Directory\shell\RegistryVerTreeFileUsage');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\Directory\shell\RegistryVerTreeFastDelete');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\CLSID\{D6F4258B-C42C-487A-ABCE-94A6BE01D6B1}');
+  RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\CLSID\{1C501413-5FC4-4E07-B132-790198D45724}');
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\备份文件 VerTree');
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\快速备份文件 VerTree');
   RegDeleteKeyIncludingSubkeys(RootKey, 'Software\Classes\*\shell\监控文件变动 VerTree');

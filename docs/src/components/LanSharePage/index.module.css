@@ -317,3 +317,12 @@
     justify-content: flex-start;
   }
 }
+
+/* Align the download handoff page with the documentation visual language. */
+.page {background:var(--ifm-background-color); padding-block:48px 64px;}
+.card {background:var(--vt-surface); border-color:var(--vt-border); border-radius:18px; box-shadow:none; backdrop-filter:none;}
+.hero h1 {line-height:1.4;}
+.candidateCard {border-radius:12px;}
+.candidateCard > div {min-width:0;}
+.retryButton, .downloadButton {border-radius:10px;}
+@media(max-width:480px) {.page {padding:32px 16px;} .card {padding:20px;} .sectionHeader {flex-wrap:wrap;} }

@@ -3,6 +3,7 @@ import '../../api/local_http_api_server.dart';
 import '../../component/app_logger.dart';
 import '../../component/app_version_info.dart';
 import '../../component/configer.dart';
+import '../../component/brand_slogans.dart';
 import '../../component/i18n_lang.dart';
 import '../../modules/monitoring/monitoring.dart';
 import '../../modules/versions/versions.dart';
@@ -11,6 +12,8 @@ import '../../modules/preview/preview.dart';
 import '../../service/app_announcement_service.dart';
 import '../../service/initial_setup_service.dart';
 import 'versions/version_actions.dart';
+import 'file_tools_controller.dart';
+import '../../service/file_preview_session.dart';
 
 enum AppThemeSetting { system, light, dark }
 
@@ -21,6 +24,7 @@ class DesktopDependencies {
     required this.logger,
     required this.configer,
     required this.appLocale,
+    required this.brandSlogan,
     required this.monitService,
     required this.catalog,
     required this.events,
@@ -38,10 +42,17 @@ class DesktopDependencies {
     required this.updateThemeSetting,
     required this.toggleLightDarkTheme,
     required this.refreshTray,
+    required this.fileTools,
+    required this.openFileTools,
+    required this.openPreviewSession,
   });
+  final FileToolsController fileTools;
+  final Future<void> Function(List<String> paths, String action) openFileTools;
+  final Future<FilePreviewSession> Function(String path) openPreviewSession;
   final AppLogger logger;
   final Configer configer;
   final AppLocale appLocale;
+  final BrandSloganSession brandSlogan;
   final MonitManager monitService;
   final VersionCatalog catalog;
   final AppEvents events;

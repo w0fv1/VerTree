@@ -1,5 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import Layout from '@theme/Layout';
+import Link from '@docusaurus/Link';
 import styles from './index.module.css';
 
 const DEFAULT_LAN_SHARE_PORT = 31424;
@@ -28,13 +29,10 @@ function big(value) {
   return BigInt(value);
 }
 
-function logShareDebug(level, message, details = undefined) {
+function logShareDebug(level, message) {
+  // A share URL is a capability: never log its fragment, key or candidate URLs.
   const logger = console[level] || console.log;
-  if (details === undefined) {
-    logger(`[Vertree fs] ${message}`);
-    return;
-  }
-  logger(`[Vertree fs] ${message}`, details);
+  logger(`[Vertree share] ${message}`);
 }
 
 function stripRetrySuffix(hash) {
@@ -619,13 +617,23 @@ export default function FileSharePage() {
   }, [browserSupported, candidateIds, candidates, fragment, probeAttempt, shareParams]);
 
   const headline = {
-    idle: '准备开始局域网探测',
-    probing: '正在自动探测可用下载地址',
-    redirecting: '已选通，正在跳转下载',
-    failed: '自动选路失败',
+    idle: '正在准备连接',
+    probing: '正在连接分享者的电脑',
+    redirecting: '已连接，即将打开下载页',
+    failed: '暂时无法连接分享者',
     invalid: '分享链接无效',
     unsupported: '当前浏览器不受支持',
   }[status];
+
+  if (status === 'invalid' || status === 'unsupported') {
+    return <Layout title="局域网文件分享" description="打开分享者提供的完整链接，在局域网中接收文件。">
+      <main className="vt-empty"><p className="vt-eyebrow">VERTREE · 局域网分享</p>
+        <h1>{status === 'unsupported' ? '请使用支持此功能的浏览器' : fragment ? '分享链接不完整或已损坏' : '还没有分享链接'}</h1>
+        <p>{status === 'unsupported' ? '请在较新的系统浏览器中重新打开完整分享链接。' : '请让分享者在 Vertree 中选择“分享到局域网”，再发送完整链接或二维码。单独打开这个页面不能找到文件。'}</p>
+        <p>接收期间保持两台设备网络可达，分享者需要保持 Vertree 运行。文件直接来自分享者的电脑。</p>
+        <div className="vt-actions"><Link className="button button--primary" to="/docs/tutorial-usage/sharing">查看分享指南</Link><Link className="button button--secondary" to="/">返回首页</Link></div>
+      </main></Layout>;
+  }
 
   return (
     <Layout
@@ -634,10 +642,10 @@ export default function FileSharePage() {
     >
       <main className={styles.page}>
         <section className={styles.hero}>
-          <div className={styles.badge}>Vertree LAN Share</div>
-          <h1>{headline}</h1>
+          <div className={styles.badge}>Vertree · 局域网分享</div>
+          <h1 aria-live="polite">{headline}</h1>
           <p className={styles.description}>
-            这个页面会优先尝试连通分享者电脑暴露出来的 RFC1918 局域网地址。探测成功后会自动跳转到可下载的目标地址。
+            请保持两台设备网络可达，并让分享者保持 Vertree 运行。连接成功后会打开下载页，文件不会经过官网服务器。
           </p>
         </section>
 
@@ -675,7 +683,7 @@ export default function FileSharePage() {
                   ? '当前浏览器缺少解析局域网分享页所需的现代能力。请改用较新的 Chrome、Edge、Firefox 或 Safari 打开这个链接。'
                 : status === 'failed'
                   ? (needsLocalNetworkPermission
-                    ? '浏览器没有拿到访问本地网络的权限。请先允许访问本地网络中的其他设备，然后重新探测或直接手动打开下面的候选下载页。'
+                    ? '连接可能被浏览器的本地网络权限限制。请检查权限提示，也可以手动打开下面的下载页；网络或防火墙也可能导致连接失败。'
                     : '浏览器没有自动探测到可用地址。你可以手动点击下面的候选下载页，并先确认是否和分享者连接在同一个网络。')
                   : status === 'invalid'
                     ? '当前链接不是有效的局域网分享链接，请让分享者重新生成。'
@@ -703,11 +711,11 @@ export default function FileSharePage() {
 
         <section className={styles.card}>
           <div className={styles.sectionHeader}>
-            <h2>候选地址</h2>
+            <h2>可尝试的连接地址</h2>
             <button
               className={styles.retryButton}
               type="button"
-              disabled={status === 'probing' || status === 'redirecting'}
+              disabled={status === 'probing' || status === 'redirecting' || candidates.length === 0}
               onClick={() => setProbeAttempt((current) => current + 1)}
             >
               重新探测
@@ -735,7 +743,7 @@ export default function FileSharePage() {
                     className={styles.downloadButton}
                     href={candidate.pageUrl}
                   >
-                    手动下载
+                    打开下载页
                   </a>
                 </div>
               </div>

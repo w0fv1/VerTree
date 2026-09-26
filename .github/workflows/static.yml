@@ -34,7 +34,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
           cache-dependency-path: docs/package-lock.json
       - name: Setup Pages
@@ -45,6 +45,13 @@ jobs:
       - name: Build docs
         working-directory: ./docs
         run: npm run build
+      - name: Setup Python for the static audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Audit generated routes
+        working-directory: ./docs
+        run: npm run audit:static
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

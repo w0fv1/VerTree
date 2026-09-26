@@ -4,9 +4,10 @@
   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
   xmlns:uap10="http://schemas.microsoft.com/appx/manifest/uap/windows10/10"
   xmlns:com="http://schemas.microsoft.com/appx/manifest/com/windows10"
+  xmlns:desktop5="http://schemas.microsoft.com/appx/manifest/desktop/windows10/5"
   xmlns:desktop4="http://schemas.microsoft.com/appx/manifest/desktop/windows10/4"
   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
-  IgnorableNamespaces="uap uap10 com desktop4 rescap">
+  IgnorableNamespaces="uap uap10 com desktop4 desktop5 rescap">
   <Identity
     Name="w0fv1.vertree"
     Publisher="CN=w0fv1"
@@ -41,6 +42,8 @@
                 Id="BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E"
                 Path="vertree_context_menu.dll"
                 ThreadingModel="STA" />
+              <com:Class Id="D6F4258B-C42C-487A-ABCE-94A6BE01D6B1" Path="vertree_context_menu.dll" ThreadingModel="STA" />
+              <com:Class Id="1C501413-5FC4-4E07-B132-790198D45724" Path="vertree_context_menu.dll" ThreadingModel="STA" />
             </com:SurrogateServer>
           </com:ComServer>
         </com:Extension>
@@ -49,6 +52,9 @@
             <desktop4:ItemType Type="*">
               <desktop4:Verb Id="Vertree" Clsid="BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E" />
             </desktop4:ItemType>
+            <desktop5:ItemType Type="Directory">
+              <desktop5:Verb Id="VertreeDirectory" Clsid="BFD9F3B4-3C8C-4B1C-8E57-1F4BA6A96F3E" />
+            </desktop5:ItemType>
           </desktop4:FileExplorerContextMenus>
         </desktop4:Extension>
       </Extensions>

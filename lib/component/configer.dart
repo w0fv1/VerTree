@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:vertree/modules/settings/settings.dart';
 
-/// File-backed settings adapter. Reads are side-effect free; writes are queued.
+/// The sole settings authority is settings.json. No legacy import or recovery
+/// configuration is read. Reads are side-effect free; writes are queued and
+/// staged beside the destination before replacement.
 class Configer {
   Configer({
     Future<Directory> Function()? directoryResolver,
@@ -32,13 +34,23 @@ class Configer {
         _config = _decode(await file.readAsString());
       } catch (error) {
         _onLogError?.call('Cannot read settings: $error');
-        await file.copy(
-          '$configFilePath.corrupt-${DateTime.now().microsecondsSinceEpoch}',
-        );
-        final backup = File('$configFilePath.previous');
-        if (await backup.exists()) {
-          _config = _decode(await backup.readAsString());
+        // Invalid/unsupported settings start from code defaults, never from a
+        // previous file or the legacy schema. The next explicit write replaces
+        // the invalid file using the same single-file commit path.
+        _config = {};
+      }
+    }
+    // Only obsolete settings filenames owned by this adapter are removed.
+    // Never touch monitoring snapshots, application logs or unrelated files.
+    for (final name in ['config.json', 'settings.json.previous']) {
+      final obsolete = '${directory.path}/$name';
+      try {
+        if (await FileSystemEntity.type(obsolete, followLinks: false) ==
+            FileSystemEntityType.file) {
+          await File(obsolete).delete();
         }
+      } catch (error) {
+        _onLogError?.call('Cannot remove obsolete settings file $name: $error');
       }
     }
     _initialized = true;
@@ -101,20 +113,21 @@ class Configer {
   Future<void> _writeConfig(Map<String, dynamic> snapshot) async {
     final file = File(configFilePath);
     final staged = File('$configFilePath.tmp');
-    await staged.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(snapshot),
-      flush: true,
-    );
-    if (await file.exists()) {
-      // Only a valid current file may replace the recovery copy.
+    try {
+      await staged.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(snapshot),
+        flush: true,
+      );
+      await staged.rename(file.path);
+    } finally {
+      // The staging file is not a second configuration and is never read at
+      // startup. Clean it after a failed commit without masking the write error.
       try {
-        _decode(await file.readAsString());
-        await file.copy('$configFilePath.previous');
-      } on FormatException {
-        /* Preserve a known-good recovery copy. */
+        if (await staged.exists()) await staged.delete();
+      } catch (error) {
+        _onLogError?.call('Cannot remove settings staging file: $error');
       }
     }
-    await staged.rename(file.path);
   }
 
   Map<String, dynamic> toJson() =>

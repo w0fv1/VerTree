@@ -1,4 +1,6 @@
 ---
+description: 说明版本、快照、配置和 API 的不兼容升级。
+authors: [w0fv1.dev]
 slug: 2-0-0-architecture
 title: Vertree 2.0.0：版本、快照与监控架构升级
 ---
@@ -6,6 +8,10 @@ title: Vertree 2.0.0：版本、快照与监控架构升级
 本次为不兼容升级：重组版本、快照和监控架构，并修正 Windows MSI 安装包。
 
 <!-- truncate -->
+
+:::note 历史版本记录
+本页记录 2.0.0 当时的变化和验证，不代表最新版本的全部行为。当前指南见[文档中心](/docs/intro)，安装包以[下载页](/download)为准。
+:::
 
 ## 升级前请注意
 

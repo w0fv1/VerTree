@@ -4,8 +4,11 @@
 #include <algorithm>
 #include <string>
 #include <vector>
+#include <mutex>
+#include "menu_preferences.h"
 
 #include "resource.h"
+#include "file_tools_selection.h"
 
 #pragma comment(lib, "ole32.lib")
 #pragma comment(lib, "shell32.lib")
@@ -22,15 +25,18 @@ struct MenuCommandDefinition {
   const wchar_t* en;
   const wchar_t* ja;
   int icon;
+  const char* selection_key;
 };
 
 constexpr MenuCommandDefinition kMenuCommands[] = {
-  {L"preview", L"预览文件", L"Preview file", L"ファイルをプレビュー", IDI_VERTREE_VIEWTREE},
-  {L"backup", L"备份文件", L"Backup file", L"ファイルをバックアップ", IDI_VERTREE_BACKUP},
-  {L"express-backup", L"快速备份文件", L"Quick backup", L"クイックバックアップ", IDI_VERTREE_EXPRESS_BACKUP},
-  {L"monit", L"监控文件变动", L"Monitor file changes", L"ファイル変更を監視", IDI_VERTREE_MONITOR},
-  {L"share", L"局域网分享下载", L"Share on LAN", L"LAN で共有", IDI_VERTREE_SHARE},
-  {L"viewtree", L"查看文件版本树", L"View version tree", L"バージョンツリーを表示", IDI_VERTREE_VIEWTREE},
+  {L"preview", L"预览文件", L"Preview file", L"ファイルをプレビュー", IDI_VERTREE_PREVIEW, "preview"},
+  {L"backup", L"备份文件", L"Backup file", L"ファイルをバックアップ", IDI_VERTREE_BACKUP, "backup"},
+  {L"express-backup", L"快速备份文件", L"Quick backup", L"クイックバックアップ", IDI_VERTREE_EXPRESS_BACKUP, "expressBackup"},
+  {L"monit", L"监控文件变动", L"Monitor file changes", L"ファイル変更を監視", IDI_VERTREE_MONITOR, "monitor"},
+  {L"share", L"局域网分享下载", L"Share on LAN", L"LAN で共有", IDI_VERTREE_SHARE, "share"},
+  {L"viewtree", L"查看文件版本树", L"View version tree", L"バージョンツリーを表示", IDI_VERTREE_VIEWTREE, "viewTree"},
+  {L"unlock", L"查看／解除文件占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_VIEWTREE, "fileUsage"},
+  {L"fast-delete", L"快速删除（永久）…", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_VIEWTREE, "fastDelete"},
 };
 
 HINSTANCE g_instance = nullptr;
@@ -127,21 +133,21 @@ std::wstring GetConfigPath() {
     return L"";
   }
   std::wstring base(appdata);
-  return base + L"\\dev.w0fv1\\vertree\\config.json";
+  return base + L"\\dev.w0fv1\\vertree\\settings.json";
 }
 
 bool ReadFileContent(const std::wstring& path, std::string& out) {
   HANDLE file = CreateFileW(
       path.c_str(),
       GENERIC_READ,
-      FILE_SHARE_READ | FILE_SHARE_WRITE,
+      FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
       nullptr,
       OPEN_EXISTING,
       FILE_ATTRIBUTE_NORMAL,
       nullptr);
   if (file == INVALID_HANDLE_VALUE) return false;
   LARGE_INTEGER size;
-  if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0) {
+  if (!GetFileSizeEx(file, &size) || size.QuadPart <= 0 || size.QuadPart > 1024 * 1024) {
     CloseHandle(file);
     return false;
   }
@@ -156,72 +162,44 @@ bool ReadFileContent(const std::wstring& path, std::string& out) {
   return true;
 }
 
-bool IsWin11MenuEnabled() {
-  static LONG cached = -1;
+#ifdef VERTREE_CONTEXT_MENU_TESTS
+std::string g_test_preferences = "{}";
+#endif
+
+vertree_menu::Json ReadMenuPreferences() {
+#ifdef VERTREE_CONTEXT_MENU_TESTS
+  return vertree_menu::ParsePreferences(g_test_preferences);
+#else
+  static std::mutex mutex;
   static ULONGLONG last_tick = 0;
-
-  const ULONGLONG now = GetTickCount64();
-  if (cached != -1 && (now - last_tick) < 1500) {
-    return cached == 1;
-  }
+  static vertree_menu::Json cached = vertree_menu::Json::object();
+  std::lock_guard<std::mutex> guard(mutex);
+  const auto now = GetTickCount64();
+  if (last_tick && now - last_tick < 250) return cached;
   last_tick = now;
-
-  const std::wstring path = GetConfigPath();
-  if (path.empty()) {
-    cached = 1;
-    return true;
-  }
   std::string content;
-  if (!ReadFileContent(path, content)) {
-    cached = 1;
-    return true;
+  if (ReadFileContent(GetConfigPath(), content)) {
+    cached = vertree_menu::ParsePreferences(content);
   }
-  const std::string key = "\"win11MenuEnabled\"";
-  auto pos = content.find(key);
-  if (pos == std::string::npos) {
-    cached = 1;
-    return true;
-  }
-  pos = content.find(":", pos + key.size());
-  if (pos == std::string::npos) {
-    cached = 1;
-    return true;
-  }
-  auto next = content.find_first_not_of(" \t\r\n", pos + 1);
-  if (next == std::string::npos) {
-    cached = 1;
-    return true;
-  }
-  if (content.compare(next, 4, "true") == 0) {
-    cached = 1;
-    return true;
-  }
-  if (content.compare(next, 5, "false") == 0) {
-    cached = 0;
-    return false;
-  }
-  cached = 1;
-  return true;
+  // On a transient read failure retain the last snapshot, rather than enabling
+  // an item the user just disabled. No directory enumeration or registry writes.
+  return cached;
+#endif
 }
 
-std::string ReadConfigStringValue(const std::string& key, const std::string& default_value) {
-  const std::wstring path = GetConfigPath();
-  if (path.empty()) return default_value;
-  std::string content;
-  if (!ReadFileContent(path, content)) return default_value;
+bool IsWin11ActionEnabled(const std::wstring& verb) {
+  const auto config = ReadMenuPreferences();
+  if (!vertree_menu::Enabled(config)) return false;
+  for (const auto& command : kMenuCommands) {
+    if (verb == command.verb) return vertree_menu::Selected(config, command.selection_key);
+  }
+  return false;
+}
 
-  const std::string quoted_key = "\"" + key + "\"";
-  auto pos = content.find(quoted_key);
-  if (pos == std::string::npos) return default_value;
-  pos = content.find(":", pos + quoted_key.size());
-  if (pos == std::string::npos) return default_value;
-  auto next = content.find_first_not_of(" \t\r\n", pos + 1);
-  if (next == std::string::npos) return default_value;
-  if (content[next] != '"') return default_value;
-  ++next;
-  const auto end = content.find('"', next);
-  if (end == std::string::npos || end <= next) return default_value;
-  return content.substr(next, end - next);
+std::string ReadConfigStringValue(const std::string& key, const std::string& fallback) {
+  const auto config = ReadMenuPreferences();
+  const auto it = config.find(key);
+  return it != config.end() && it->is_string() ? it->get<std::string>() : fallback;
 }
 
 enum class MenuLang {
@@ -377,8 +355,8 @@ class ComObjectBase {
 
 class LeafCommand : public IExplorerCommand, public ComObjectBase {
  public:
-  LeafCommand(const wchar_t* verb, std::wstring title)
-      : verb_(verb ? verb : L""), title_(std::move(title)) {}
+  LeafCommand(const wchar_t* verb, std::wstring title, bool require_win11 = true)
+      : verb_(verb ? verb : L""), title_(std::move(title)), require_win11_(require_win11) {}
 
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
     if (!ppv) return E_POINTER;
@@ -434,20 +412,36 @@ class LeafCommand : public IExplorerCommand, public ComObjectBase {
       return S_OK;
     }
     *guid = clsid;
+    for (size_t index = 0; index < _countof(kMenuCommands); ++index) {
+      if (verb_ == kMenuCommands[index].verb) guid->Data1 ^= static_cast<ULONG>(index + 1);
+    }
     return S_OK;
   }
 
-  HRESULT STDMETHODCALLTYPE GetState(IShellItemArray*, BOOL, EXPCMDSTATE* state) override {
-    LogLine(L"LeafCommand GetState");
+  HRESULT STDMETHODCALLTYPE GetState(IShellItemArray* items, BOOL, EXPCMDSTATE* state) override {
     if (!state) return E_POINTER;
-    const bool enabled = IsWin11MenuEnabled();
-    *state = enabled ? ECS_ENABLED : ECS_HIDDEN;
+    const bool enabled = !require_win11_ || IsWin11ActionEnabled(verb_);
+    *state = enabled && vertree_selection::SelectionSupported(items,
+        vertree_selection::IsToolVerb(verb_)) ? ECS_ENABLED : ECS_HIDDEN;
     return S_OK;
   }
 
   HRESULT STDMETHODCALLTYPE Invoke(IShellItemArray* items, IBindCtx*) override {
     LogLine(L"LeafCommand Invoke");
-    if (!items) return E_FAIL;
+    if (require_win11_ && !IsWin11ActionEnabled(verb_)) return E_ACCESSDENIED;
+    const bool tool = vertree_selection::IsToolVerb(verb_);
+    if (!vertree_selection::SelectionSupported(items, tool)) return E_INVALIDARG;
+    if (tool) {
+      std::vector<std::wstring> paths;
+      std::wstring manifest;
+      if (!vertree_selection::CollectPaths(items, paths) ||
+          !vertree_selection::WriteManifest(paths, manifest)) {
+        return HRESULT_FROM_WIN32(ERROR_BUFFER_OVERFLOW);
+      }
+      const bool launched = LaunchAppWithArgs(verb_ + L" --selection-file \"" + manifest + L"\"");
+      if (!launched) DeleteFileW(manifest.c_str());
+      return launched ? S_OK : E_FAIL;
+    }
     std::wstring path = GetFirstItemPath(items);
     if (path.empty()) return E_FAIL;
     std::wstring args = BuildArgs(verb_, path);
@@ -472,6 +466,7 @@ class LeafCommand : public IExplorerCommand, public ComObjectBase {
  private:
   std::wstring verb_;
   std::wstring title_;
+  bool require_win11_;
 };
 
 class CommandEnumerator : public IEnumExplorerCommand, public ComObjectBase {
@@ -617,11 +612,20 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
     return S_OK;
   }
 
-  HRESULT STDMETHODCALLTYPE GetState(IShellItemArray*, BOOL, EXPCMDSTATE* state) override {
+  HRESULT STDMETHODCALLTYPE GetState(IShellItemArray* items, BOOL, EXPCMDSTATE* state) override {
     LogLine(L"RootCommand GetState");
     if (!state) return E_POINTER;
-    const bool enabled = IsWin11MenuEnabled();
-    *state = enabled ? ECS_ENABLED : ECS_HIDDEN;
+    const auto config = ReadMenuPreferences();
+    bool any = false;
+    if (vertree_menu::Enabled(config)) {
+      for (const auto& command : kMenuCommands) {
+        if (vertree_menu::Selected(config, command.selection_key) &&
+            vertree_selection::SelectionSupported(items, vertree_selection::IsToolVerb(command.verb))) {
+          any = true; break;
+        }
+      }
+    }
+    *state = any ? ECS_ENABLED : ECS_HIDDEN;
     return S_OK;
   }
 
@@ -645,8 +649,12 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
 
     std::vector<IExplorerCommand*> cmds;
     cmds.reserve(_countof(kMenuCommands));
-    for (const auto& command : kMenuCommands) {
-      cmds.push_back(new LeafCommand(command.verb, GetCommandTitle(command.verb)));
+    const auto config = ReadMenuPreferences();
+    if (vertree_menu::Enabled(config)) {
+      for (const auto& command : kMenuCommands) {
+        if (vertree_menu::Selected(config, command.selection_key))
+          cmds.push_back(new LeafCommand(command.verb, GetCommandTitle(command.verb)));
+      }
     }
 
     *enum_commands = new CommandEnumerator(std::move(cmds), 0);
@@ -656,6 +664,7 @@ class RootCommand : public IExplorerCommand, public ComObjectBase {
 
 class ClassFactory : public IClassFactory, public ComObjectBase {
  public:
+  explicit ClassFactory(int command = -1) : command_(command) {}
   HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, void** ppv) override {
     if (!ppv) return E_POINTER;
     if (riid == IID_IUnknown || riid == IID_IClassFactory) {
@@ -672,6 +681,12 @@ class ClassFactory : public IClassFactory, public ComObjectBase {
 
   HRESULT STDMETHODCALLTYPE CreateInstance(IUnknown* outer, REFIID riid, void** ppv) override {
     if (outer) return CLASS_E_NOAGGREGATION;
+    if (command_ >= 0 && command_ < static_cast<int>(_countof(kMenuCommands))) {
+      const auto& definition = kMenuCommands[command_];
+      auto* leaf = new LeafCommand(definition.verb, GetCommandTitle(definition.verb), false);
+      const auto result = leaf->QueryInterface(riid, ppv);
+      leaf->Release(); return result;
+    }
     LogLine(L"CreateInstance RootCommand");
     auto* root = new RootCommand();
     HRESULT hr = root->QueryInterface(riid, ppv);
@@ -687,6 +702,8 @@ class ClassFactory : public IClassFactory, public ComObjectBase {
     }
     return S_OK;
   }
+ private:
+  int command_;
 };
 
 }
@@ -719,9 +736,14 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv) {
     LogLine(L"DllGetClassObject: CLSIDFromString failed");
     return CLASS_E_CLASSNOTAVAILABLE;
   }
+  int command = -1;
   if (!IsEqualCLSID(rclsid, clsid)) {
-    LogLine(L"DllGetClassObject: CLSID mismatch");
-    return CLASS_E_CLASSNOTAVAILABLE;
+    CLSID usage{}, deletion{};
+    CLSIDFromString(vertree_selection::kUsageClsid, &usage);
+    CLSIDFromString(vertree_selection::kDeleteClsid, &deletion);
+    if (IsEqualCLSID(rclsid, usage)) command = 6;
+    else if (IsEqualCLSID(rclsid, deletion)) command = 7;
+    else return CLASS_E_CLASSNOTAVAILABLE;
   }
 
   wchar_t clsid_str[64];
@@ -734,7 +756,7 @@ STDAPI DllGetClassObject(REFCLSID rclsid, REFIID riid, void** ppv) {
   _snwprintf_s(buf, _countof(buf), _TRUNCATE, L"DllGetClassObject rclsid=%s riid=%s", clsid_str, riid_str);
   LogLine(buf);
   LogLine(L"DllGetClassObject: create factory");
-  auto* factory = new ClassFactory();
+  auto* factory = new ClassFactory(command);
   HRESULT hr = factory->QueryInterface(riid, ppv);
   factory->Release();
   wchar_t buf2[128];

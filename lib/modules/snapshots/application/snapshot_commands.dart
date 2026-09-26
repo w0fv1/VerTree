@@ -21,7 +21,7 @@ class SnapshotCommands {
     required int keep,
   }) async {
     source = await files.canonicalize(source);
-    return writes.run([p.dirname(source), 'snapshots:$monitorId'], () async {
+    return writes.run([MutationScope.directoryEntries(p.dirname(source)), MutationScope.subtree(store.directoryFor(source, monitorId)), MutationScope.task('snapshots:$monitorId')], () async {
       final snapshot = await store.create(source, monitorId);
       emit('snapshot.created', {
         'path': source,
@@ -51,13 +51,14 @@ class SnapshotCommands {
   Future<List<Snapshot>> list(String source, String monitorId) async {
     source = await files.canonicalize(source);
     return writes.run([
-      'snapshots:$monitorId',
+      MutationScope.subtree(store.directoryFor(source, monitorId)),
+      MutationScope.task('snapshots:$monitorId'),
     ], () => store.list(source, monitorId));
   }
 
   Future<void> clear(String source, String monitorId) async {
     source = await files.canonicalize(source);
-    return writes.run(['snapshots:$monitorId'], () async {
+    return writes.run([MutationScope.subtree(store.directoryFor(source, monitorId)), MutationScope.task('snapshots:$monitorId')], () async {
       final owned = await store.list(source, monitorId);
       await store.deleteOwned(source, monitorId, owned);
       emit('snapshots.deleted', {'monitorId': monitorId});

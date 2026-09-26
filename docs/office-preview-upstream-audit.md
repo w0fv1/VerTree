@@ -2,6 +2,8 @@
 
 核对日期：2026-09-07。Vertree 直接依赖我们自己的 Office-Viewer；该仓库参考的功能上游是 [cweijan/vscode-office](https://github.com/cweijan/vscode-office)。本次核对其 main 提交 `908258dafc827ce0475fe7671d414914fbd3867b`，同时读取格式注册和具体实现，未直接替换现有子模块。
 
+> 本文是固定提交的历史审计。下文“当时已有”或“缺口”不代表当前仍缺失；使用者以 [当前格式矩阵](docs/tutorial-usage/preview.md) 为准。2026-09-27 复审仅明确时间语境，未重新执行全部跨平台格式验收。
+
 ## 核对时发现的格式缺口
 
 | 格式 | 上游实现 | 接入注意事项 |
@@ -17,7 +19,7 @@
 
 ## 核对时已有入口，但上游显示更完整
 
-| 格式 | 当前 Office-Viewer / Vertree | 上游实现 |
+| 格式 | 当时的 Office-Viewer / Vertree | 固定参考上游实现 |
 | --- | --- | --- |
 | PPTX | 逐页文本和备注 | `src/react/view/powerpoint/PowerPoint.tsx` 使用 pptxviewjs 显示幻灯片 |
 | PSD | 尺寸、图层结构摘要 | `src/react/view/psd/psdParser.ts` 读取合成图和图层图像，可显示画面 |

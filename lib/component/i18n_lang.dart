@@ -444,9 +444,8 @@ class AppLocale {
         "Administrator elevation is being requested too frequently. Please try again later.",
 
     LocaleKey.brandTitle: 'Vertree',
-    LocaleKey.brandSlogan:
-        'Vertree, a tree-based file version manager 🌲, making every iteration worry-free!',
-    LocaleKey.brandMonitorPage: 'Monitor Page',
+    LocaleKey.brandSlogan: 'Make every iteration traceable',
+    LocaleKey.brandMonitorPage: 'Monitor',
     LocaleKey.brandSettingPage: 'Settings',
     LocaleKey.brandExit: 'Exit',
     LocaleKey.brandInitTitle: 'Initial Setup',
@@ -547,7 +546,7 @@ class AppLocale {
     LocaleKey.settingLaunchToTraySetupHint:
         "Tray support is not ready in the current GNOME session yet. Please complete the suggested setup first.",
     LocaleKey.settingEnableAutostart: "Enable Vertree on startup (Recommended)",
-    LocaleKey.settingOpenConfig: "Open config.json",
+    LocaleKey.settingOpenConfig: "Open settings.json",
     LocaleKey.settingOpenLogs: "Open logs folder",
     LocaleKey.settingVisitWebsite: "Visit official website",
     LocaleKey.settingDonate: "Donate & Support",
@@ -760,9 +759,9 @@ class AppLocale {
     LocaleKey.appAdminPermissionTooFrequent: "获得管理员权限频率过高，请稍后再试。",
 
     LocaleKey.brandTitle: 'Vertree维树',
-    LocaleKey.brandSlogan: 'Vertree维树，树状文件版本管理🌲，让每一次迭代都有备无患！',
-    LocaleKey.brandMonitorPage: '监控页',
-    LocaleKey.brandSettingPage: '设置页',
+    LocaleKey.brandSlogan: '让每一次迭代都有迹可循',
+    LocaleKey.brandMonitorPage: '监控',
+    LocaleKey.brandSettingPage: '设置',
     LocaleKey.brandExit: '退出',
     LocaleKey.brandInitTitle: '初始化设置',
     LocaleKey.brandInitContent: '是否允许Vertree添加右键菜单和开机启动？',
@@ -849,7 +848,7 @@ class AppLocale {
     LocaleKey.settingLaunchToTrayUnsupported: "启动后最小化到托盘（需先启用托盘支持）",
     LocaleKey.settingLaunchToTraySetupHint: "当前 GNOME 会话尚未启用托盘支持，请先按提示完成配置。",
     LocaleKey.settingEnableAutostart: "开机自启 Vertree（推荐）",
-    LocaleKey.settingOpenConfig: "打开 config.json",
+    LocaleKey.settingOpenConfig: "打开 settings.json",
     LocaleKey.settingOpenLogs: "打开日志文件夹",
 
     LocaleKey.settingVisitWebsite: "访问官方网站",
@@ -1044,9 +1043,9 @@ class AppLocale {
         "管理者権限の要求回数が多すぎます。しばらくしてから再試行してください。",
 
     LocaleKey.brandTitle: 'Vertree',
-    LocaleKey.brandSlogan: 'Vertree、ツリー型のファイルバージョン管理🌲、すべての変更を安全に！',
-    LocaleKey.brandMonitorPage: 'モニター画面',
-    LocaleKey.brandSettingPage: '設定画面',
+    LocaleKey.brandSlogan: 'すべての改良に、たどれる足跡を',
+    LocaleKey.brandMonitorPage: 'モニター',
+    LocaleKey.brandSettingPage: '設定',
     LocaleKey.brandExit: '終了',
     LocaleKey.brandInitTitle: '初期設定',
     LocaleKey.brandInitContent: 'Vertreeに右クリックメニューと自動起動を許可しますか？',
@@ -1136,7 +1135,7 @@ class AppLocale {
     LocaleKey.settingLaunchToTraySetupHint:
         "現在の GNOME セッションではまだトレイ対応が有効になっていません。案内に従って先に設定してください。",
     LocaleKey.settingEnableAutostart: "起動時に Vertree を自動実行（推奨）",
-    LocaleKey.settingOpenConfig: "config.json を開く",
+    LocaleKey.settingOpenConfig: "settings.json を開く",
     LocaleKey.settingOpenLogs: "ログフォルダを開く",
     LocaleKey.settingVisitWebsite: "公式サイトを訪問",
     LocaleKey.settingDonate: "寄付とサポート",

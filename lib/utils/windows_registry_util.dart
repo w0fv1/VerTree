@@ -189,6 +189,7 @@ class RegistryHelper {
     String? command,
     String? iconPath,
     bool isSubmenu = false,
+    String? explorerCommandClsid,
     RegistryHive hive = RegistryHive.currentUser,
   }) {
     try {
@@ -210,6 +211,14 @@ class RegistryHelper {
 
       final menuKey = shellKey.createKey(keyName);
       menuKey.createValue(RegistryValue.string('MUIVerb', muiVerb));
+      if (explorerCommandClsid != null) {
+        menuKey.createValue(
+          RegistryValue.string('ExplorerCommandHandler', explorerCommandClsid),
+        );
+        menuKey.createValue(RegistryValue.string('MultiSelectModel', 'Player'));
+      } else if (!isSubmenu) {
+        menuKey.createValue(RegistryValue.string('MultiSelectModel', 'Single'));
+      }
 
       if (iconPath != null && iconPath.isNotEmpty) {
         menuKey.createValue(RegistryValue.string('Icon', iconPath));
@@ -249,6 +258,29 @@ class RegistryHelper {
         return false;
       }
       developer.log('添加右键菜单失败: $e');
+      return false;
+    }
+  }
+
+  /// Per-user COM registration for the two bounded, read-only shell handoffs.
+  static bool registerExplorerCommand(String clsid, String dllPath) {
+    if (!RegExp(r'^\{[0-9A-F-]{36}\}$').hasMatch(clsid)) return false;
+    try {
+      final key = _openOrCreatePath(
+        RegistryHive.currentUser,
+        'Software\\Classes\\CLSID\\$clsid\\InprocServer32',
+        desiredAccessRights: AccessRights.allAccess,
+      );
+      if (key == null) return false;
+      try {
+        key.createValue(RegistryValue.string('', dllPath));
+        key.createValue(RegistryValue.string('ThreadingModel', 'Apartment'));
+      } finally {
+        key.close();
+      }
+      return true;
+    } catch (error) {
+      developer.log('Explorer command registration failed: $error');
       return false;
     }
   }

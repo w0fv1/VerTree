@@ -23,6 +23,7 @@ class AppBackend {
       files: files,
       snapshots: snapshots,
       watcher: LocalFileWatcher(),
+      isPathReserved: writes.isReserved,
       loadTasks: () => config.get<List<dynamic>>('monitorTasks', []),
       saveTasks: (tasks) async {
         config.set('monitorTasks', tasks);

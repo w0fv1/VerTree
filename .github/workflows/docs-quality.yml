@@ -1,0 +1,50 @@
+name: Documentation quality
+
+on:
+  pull_request:
+    paths: ['docs/**', 'assets/img/logo/**', '.github/workflows/docs-quality.yml']
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Install and build
+        working-directory: docs
+        run: |
+          npm ci
+          npm run build
+          npm run audit:static
+          npx playwright install --with-deps chromium
+      - name: Audit production routes
+        working-directory: docs
+        run: |
+          python -m http.server 33030 --bind 127.0.0.1 --directory build > /tmp/vertree-docs-server.log 2>&1 &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:33030/ > /dev/null && break
+            sleep 1
+          done
+          VERTREE_BROWSER_CHANNEL=chromium npm run audit:browser
+      - name: Keep audit reports and screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-quality-report
+          path: build/site-audit
+          if-no-files-found: warn

@@ -1,30 +1,155 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
-
-/* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-color-primary: #33663f;
+  --ifm-color-primary-dark: #2e5c39;
+  --ifm-color-primary-darker: #2b5736;
+  --ifm-color-primary-darkest: #24472c;
+  --ifm-color-primary-light: #387046;
+  --ifm-color-primary-lighter: #3b7549;
+  --ifm-color-primary-lightest: #428552;
+  --ifm-background-color: #f6f7f3;
+  --ifm-background-surface-color: #fff;
+  --ifm-font-color-base: #222a24;
+  --ifm-font-color-secondary: #556258;
+  --ifm-heading-color: #1e2921;
+  --ifm-font-family-base: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+  --ifm-font-family-monospace: 'Cascadia Code', Consolas, 'SFMono-Regular', monospace;
+  --ifm-line-height-base: 1.85;
+  --ifm-heading-line-height: 1.4;
+  --ifm-code-font-size: 88%;
+  --ifm-global-radius: 12px;
+  --ifm-button-border-radius: 10px;
+  --ifm-navbar-height: 72px;
+  --ifm-navbar-shadow: none;
+  --ifm-toc-border-color: #dfe5dd;
+  --ifm-menu-color: #4b584f;
+  --ifm-menu-color-background-active: #e7eee2;
+  --ifm-footer-background-color: #edf0e8;
+  --ifm-footer-color: #4b584f;
+  --ifm-footer-link-color: #344c39;
+  --ifm-table-border-color: #dfe5dd;
+  --ifm-table-stripe-background: #f6f8f3;
+  --docusaurus-highlighted-code-line-bg: #e8eee2;
+  --vt-border: #dfe5dd;
+  --vt-muted: #556258;
+  --vt-soft: #e7eee2;
+  --vt-surface: #fff;
+  --vt-shadow: 0 20px 60px -28px rgba(32, 55, 34, .26);
 }
-
-/* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  --ifm-color-primary: #a7d49a;
+  --ifm-color-primary-dark: #8cc57b;
+  --ifm-color-primary-darker: #7ebd6c;
+  --ifm-color-primary-darkest: #61a64c;
+  --ifm-color-primary-light: #c2e3b9;
+  --ifm-color-primary-lighter: #d0ebc8;
+  --ifm-color-primary-lightest: #ebf8e7;
+  --ifm-background-color: #141a16;
+  --ifm-background-surface-color: #1c241e;
+  --ifm-font-color-base: #e4ebe0;
+  --ifm-font-color-secondary: #b1bfaf;
+  --ifm-heading-color: #eef3e8;
+  --ifm-navbar-background-color: #141a16;
+  --ifm-menu-color: #b1bfaf;
+  --ifm-menu-color-background-active: #29362b;
+  --ifm-footer-background-color: #1a231c;
+  --ifm-footer-color: #b1bfaf;
+  --ifm-footer-link-color: #c8ddbf;
+  --ifm-table-border-color: #354037;
+  --ifm-table-stripe-background: #202a22;
+  --ifm-toc-border-color: #354037;
+  --docusaurus-highlighted-code-line-bg: #2a392b;
+  --vt-border: #354037;
+  --vt-muted: #b1bfaf;
+  --vt-soft: #29362b;
+  --vt-surface: #1c241e;
+  --vt-shadow: 0 20px 60px -28px rgba(0,0,0,.65);
 }
+html {scroll-padding-top: 90px;}
+body {text-rendering: optimizeLegibility;}
+a {text-underline-offset: .22em;}
+:focus-visible {outline: 3px solid var(--ifm-color-primary); outline-offset: 4px;}
+.navbar {border-bottom: 1px solid var(--vt-border); padding-inline: max(1.25rem, calc((100vw - 1240px) / 2));}
+.navbar__brand {margin-right: 2rem; font-weight: 750;}
+.navbar__logo img {object-fit: contain;}
+[data-theme='dark'] .navbar__logo img {filter: invert(1);}
+.navbar__link {font-size: .92rem; font-weight: 600;}
+.nav-download {background: var(--ifm-color-primary); color: var(--ifm-background-color) !important; border-radius: 9px; padding: .4rem 1.15rem !important; margin-inline: .5rem;}
+.footer {border-top: 1px solid var(--vt-border); padding: 3rem max(1.25rem, calc((100vw - 1180px) / 2));}
+.footer__title {font-size: .94rem; color: var(--ifm-heading-color);}
+.footer__item {font-size: .9rem; margin: .3rem 0;}
+.footer__copyright {font-size: .83rem; padding-top: 1.5rem; border-top: 1px solid var(--vt-border); margin-top: 1.5rem;}
+.button {font-weight: 650; line-height: 1.5; padding: .7rem 1.25rem; transition: background-color .15s, border-color .15s;}
+.button--primary {color: var(--ifm-background-color);}
+.button--secondary {background: var(--vt-surface); color: var(--ifm-heading-color); border: 1px solid var(--vt-border);}
+.button--secondary:hover {background: var(--vt-soft); border-color: var(--ifm-color-primary);}
+.theme-doc-markdown {font-size: .96rem; overflow-wrap: anywhere;}
+.theme-doc-markdown > header h1 {font-size: clamp(1.9rem, 3vw, 2.6rem); letter-spacing: -.03em; margin-bottom: 1.5rem;}
+.markdown h2 {font-size: 1.5rem; margin-top: 2.5rem; padding-top: .6rem; border-top: 1px solid var(--vt-border);}
+.markdown h3 {font-size: 1.15rem; margin-top: 1.8rem;}
+.markdown p, .markdown ul, .markdown ol {margin-bottom: 1.1rem;}
+.markdown li + li {margin-top: .35rem;}
+.markdown table {display: block; max-width: 100%; overflow-x: auto; font-size: .88rem; border-collapse: collapse; line-height: 1.75;}
+.markdown th {background: var(--vt-soft); text-align: left;}
+.markdown td, .markdown th {padding: .8rem .95rem; min-width: 110px;}
+.markdown img {border: 1px solid var(--vt-border); border-radius: 14px; height: auto;}
+.markdown pre {border: 1px solid var(--vt-border); line-height: 1.7;}
+.markdown blockquote {background: var(--vt-soft); border-left-color: var(--ifm-color-primary); padding: 1rem 1.25rem; border-radius: 0 10px 10px 0;}
+.theme-admonition {box-shadow: none; border: 1px solid var(--vt-border); border-left: 4px solid var(--ifm-color-primary); border-radius: 10px;}
+.menu__link {font-size: .88rem; line-height: 1.5; padding: .6rem .8rem; border-radius: 8px;}
+.theme-doc-sidebar-container {background: var(--vt-surface);}
+.table-of-contents {font-size: .8rem; line-height: 1.75;}
+.pagination-nav__link {border-color: var(--vt-border); background: var(--vt-surface); padding: 1.1rem;}
+.pagination-nav__sublabel {font-size: .8rem; color: var(--vt-muted);}
+.breadcrumbs {font-size: .82rem; margin-bottom: 1.25rem;}
+.vt-shell {max-width: 1200px; margin-inline: auto; padding-inline: 28px;}
+.vt-section {padding-block: 80px;}
+.vt-eyebrow {font-size: .76rem; font-weight: 750; letter-spacing: .12em; color: var(--ifm-color-primary); margin-bottom: 14px;}
+.vt-section-heading {max-width: 740px; margin-bottom: 32px;}
+.vt-section-heading h2 {font-size: clamp(1.65rem, 2.9vw, 2.25rem); letter-spacing: -.035em; margin-bottom: 12px;}
+.vt-section-heading p, .vt-muted {color: var(--vt-muted);}
+.vt-actions {display: flex; flex-wrap: wrap; align-items: center; gap: 12px;}
+.vt-page-header {padding: 64px 0 36px; max-width: 790px;}
+.vt-page-header h1 {font-size: clamp(2.1rem, 4.5vw, 3.4rem); letter-spacing: -.04em;}
+.vt-page-header p {color: var(--vt-muted); font-size: 1.06rem;}
+.vt-grid {display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;}
+.vt-card {padding: 28px; border: 1px solid var(--vt-border); border-radius: 18px; background: var(--vt-surface); min-width: 0;}
+.vt-card h2, .vt-card h3 {font-size: 1.2rem;}
+.vt-card p {font-size: .94rem; color: var(--vt-muted);}
+.vt-callout {padding: 24px 28px; border: 1px solid var(--vt-border); border-radius: 16px; background: var(--vt-soft); margin-block: 32px;}
+.vt-callout p:last-child {margin-bottom: 0;}
+.vt-doc-grid {display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 24px 0 32px;}
+.vt-doc-card {display: block; padding: 20px; border: 1px solid var(--vt-border); border-radius: 12px; background: var(--vt-surface); color: var(--ifm-heading-color); text-decoration: none;}
+.vt-doc-card:hover {text-decoration: none; border-color: var(--ifm-color-primary); background: var(--vt-soft);}
+.vt-doc-card strong {display: block; font-size: 1.02rem; margin-bottom: 6px;}
+.vt-doc-card span {color: var(--vt-muted); font-size: .9rem;}
+.vt-empty {max-width: 720px; margin: 64px auto; padding: 40px; background: var(--vt-surface); border: 1px solid var(--vt-border); border-radius: 20px;}
+.vt-empty h1 {font-size: 2rem;}
+@media (min-width: 997px) { .theme-doc-markdown {padding: 0 .5rem;} .theme-doc-toc-desktop {padding-left: 16px;} }
+@media (max-width: 760px) {
+  .vt-shell {padding-inline: 20px;}
+  .vt-section {padding-block: 48px;}
+  .vt-grid, .vt-doc-grid {grid-template-columns: 1fr;}
+  .vt-page-header {padding-top: 40px;}
+  .vt-card {padding: 22px;}
+  .vt-empty {margin: 32px 20px; padding: 24px;}
+  .markdown td, .markdown th {padding: .65rem .75rem;}
+  .footer {padding-block: 2.5rem;}
+}
+@media (prefers-reduced-motion: reduce) {html {scroll-behavior: auto !important;} *, *::before, *::after {animation-duration: .01ms !important; transition-duration: .01ms !important;} }
+
+/* Inline links must be recognizable without relying on color alone. */
+main p a:not(.button), .markdown li a, .markdown td a {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: .22em;
+}
+/* The generated blog archive uses Classic's hero; keep its heading readable. */
+.hero.hero--primary {background:var(--vt-soft); color:var(--ifm-heading-color); padding:3.5rem 1.5rem;}
+.hero--primary .hero__title {color:var(--ifm-heading-color); font-size:clamp(2rem,4vw,3rem);}
+
+/* Override Infima's higher-specificity secondary-button foreground in dark mode. */
+.button.button--secondary:not(.button--outline) {
+  --ifm-button-color: var(--ifm-heading-color);
+  color: var(--ifm-heading-color);
+}
+.button.button--secondary:not(.button--outline):hover {color:var(--ifm-heading-color);}

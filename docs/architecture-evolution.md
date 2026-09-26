@@ -1,6 +1,6 @@
 # Vertree 长期演进架构
 
-日期：2026-09-07。状态：已落地的架构与后续演进约束。
+架构基线：2026-09-07；本次文档审计：2026-09-27。状态：当前开发分支的实现与后续演进约束。
 
 ## 决策
 
@@ -24,6 +24,8 @@
 | `lib/modules/settings` | 设置默认值与校验 |
 | `lib/modules/automation` | 有界作业调度与取消 |
 | `lib/modules/preview` | 预览活动状态 |
+| `lib/modules/deletion`、`file_locks` | 删除与占用查询的独立命令和授权边界 |
+| `windows/file_tools` | 有界原生操作、对象身份与受限辅助进程 |
 | `lib/adapters/ui` | 桌面依赖注入、主题、版本操作反馈和版本图布局模型 |
 | `lib/api`、`lib/service/local_http_api_service.dart` | HTTP 路由、协议、DTO、界面自动化适配 |
 | `lib/component/configer.dart` | 文件式设置持久化适配 |
@@ -57,7 +59,7 @@ flowchart TD
 
 ### 写入
 
-生产实例共享一个 `FileMutationCoordinator`。手动版本与自动快照按规范化源目录协调；快照还按任务 UUID 协调。多资源一次获取、顺序固定，锁内不递归获取锁。关闭时拒绝新操作并等待已接收操作完成。
+生产实例共享一个 `FileMutationCoordinator`。开发分支使用文件、目录条目、子树和任务 UUID 范围；祖先删除与子目录中的写入同样识别为冲突。删除预留范围后拒绝新重叠写入，再排空已受理操作。多资源一次获取、顺序固定，锁内不递归获取锁。关闭时拒绝新操作并等待已接收操作完成。
 
 新文件先在同目录暂存，复制前后比较源元数据并 flush，之后以不覆盖目标的方式发布。Windows 使用 MoveFileExW 的不替换模式；POSIX 使用 link/unlink，文件系统不支持时明确失败。native/file_access.c 在原生调用内立即捕获错误码，避免 FFI 返回过程覆盖线程错误状态；hook/build.dart 负责把该窄适配层打包进各平台产物。源检查、内部锁和不覆盖发布不能提供对外部编辑器的完整事务隔离。
 
@@ -79,9 +81,13 @@ flowchart TD
 
 任务列表由 manager 持有，对外只读，并发布 revision 变化。监控页面订阅变化，HTTP 创建或变更任务后不需要重新进入页面才能同步。
 
+### 独立文件工具
+
+删除与占用页面共用低层适配，但不共用隐式授权。只对本次确认目标处理可解除阻碍，失败重试绑定原始对象身份与范围；取消不是回滚，任务报告不能授权重启续删。辅助进程终止确认后才释放资源预留。设计和限制见 [实现说明](windows-file-tools.md)。
+
 ### 设置、事件与退出
 
-`Configer.get` 不写配置；默认值集中于 AppSettings。写入队列保存独立快照，暂存写入并替换，保留前一份有效文件。损坏配置另存 `.corrupt-*`，可读取 `.previous`。业务需确认落盘时 await flush；当前同步 set 会先更新内存，不承诺整个设置集合的事务回滚。
+`Configer.get` 不写配置；默认值集中于 AppSettings。写入队列保存独立快照，暂存写入并替换；`settings.json` 是唯一配置。旧 `config.json` 与 `.previous` 不导入、不回退，并在初始化时清理固定的旧配置文件。损坏或不支持的 schema 记录错误并使用当前默认值，下一次显式写入替换原文件；不生成历史配置副本。业务需确认落盘时 await flush；当前同步 set 会先更新内存，不承诺整个设置集合的事务回滚。
 
 事件总线由 app 创建并注入，包含启动 sessionId、单调序号与 schemaVersion。SSE 游标为 `sessionId:序号`；过期或上次进程的游标要求重新查询状态。手动版本与自动快照分别发布 version.created 和 snapshot.created。事件是通知，不替代命令或数据库。
 

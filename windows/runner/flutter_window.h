@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "win32_window.h"
+#include "file_tools_picker.h"
 
 
 class FlutterWindow : public Win32Window {
@@ -25,6 +26,7 @@ class FlutterWindow : public Win32Window {
  private:
 
   flutter::DartProject project_;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> file_tools_picker_;
 
 
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;

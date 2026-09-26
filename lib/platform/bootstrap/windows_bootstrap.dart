@@ -1,4 +1,5 @@
 import 'package:vertree/platform/bootstrap/platform_bootstrap.dart';
+import 'package:vertree/component/isolated_profile.dart';
 import 'package:vertree/platform/windows_registry_bridge.dart';
 import 'package:vertree/platform/windows_single_instance_bridge.dart';
 
@@ -20,7 +21,7 @@ class WindowsBootstrap extends PlatformBootstrap {
   }) {
     return WindowsSingleInstanceBridge.ensureSingleInstance(
       args,
-      "dev.w0fv1.vertree",
+      "dev.w0fv1.vertree$isolatedInstanceSuffix",
       onSecondWindow: onSecondInstanceArgs,
       bringWindowToFront: false,
     );

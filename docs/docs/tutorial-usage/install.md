@@ -1,78 +1,72 @@
 ---
+title: 安装与升级
+description: 按平台选择安装包，了解资源依赖、单配置文件与升级边界。
 sidebar_position: 1
 ---
 
 # 安装与升级
 
-从 [GitHub Releases](https://github.com/w0fv1/VerTree/releases/latest) 下载最新正式版。安装包已包含文件预览资源；普通使用不需要安装 Flutter、Node.js、Python 或 Office-Viewer 的独立应用。
 
-## 选择下载文件
+先在[下载页](/download)选择平台，再从 GitHub 发布附件安装。正式包已包含文件预览资源，不需要安装开发工具。
 
-| 平台 | 常规使用 | 其他下载 |
+## 选哪个文件
+
+| 平台 | 常规使用 | 其他选择 |
 | --- | --- | --- |
-| Windows x64 | `vertree-windows-x64-<version>-setup.exe` | `.zip` 为便携版，`.msi` 为另一种安装包 |
-| macOS | `vertree-macos-<arch>-<version>.dmg` | `.zip` 为应用归档；按设备和发布页提供的架构选择 |
-| Linux x64 | Debian / Ubuntu 选 `.deb`，RPM 系统选 `.rpm` | `.tar.gz` 为便携包 |
+| Windows x64 | 文件名以 `-setup.exe` 结尾 | ZIP 便携版、MSI |
+| macOS Apple Silicon | 带 `arm64` 的 DMG | ZIP 应用归档 |
+| Linux x64 | Debian / Ubuntu 选 DEB，Fedora 等选 RPM | TAR.GZ 便携包 |
 
-`-symbols.zip` 和 `-win11-dev.zip` 用于开发调试，日常安装不需要。MSIX 的签名和应用身份用途见[开发与构建](../tutorial-develop/develop.md#windows)。
+具体架构以发布页实际附件为准。`symbols.zip` 和 `win11-dev.zip` 是调试工件，不是普通用户需要安装的组件。MSIX 的签名要求见[Windows 构建说明](../tutorial-develop/develop.md#windows)。
 
 ## Windows
 
-1. 下载 `setup.exe` 并运行，按向导完成安装。
-2. 启动 Vertree，在初始设置中选择需要的右键菜单和开机自启选项。
-3. 在资源管理器中右键一个文件，选择“预览文件”或“查看文件版本树”。Windows 11 新菜单中的入口位于 `Vertree` 子菜单内。
-4. 需要调整入口时，打开 Vertree 设置页。传统菜单可逐项开关，也可折叠到一个子菜单中。
+运行 EXE 安装程序，完成后启动 Vertree。在“设置”中选择需要的菜单入口、自启动与监控参数，然后对一个测试文件执行备份。Windows 11 的新入口位于资源管理器的 `Vertree` 子菜单，经典入口位于“显示更多选项”。
 
-文件预览需要 **Microsoft Edge WebView2 Runtime**。如果预览提示浏览器环境初始化失败，安装或修复该运行时后重新启动 Vertree。
+预览依赖 **Microsoft Edge WebView2 Runtime**。全部格式都无法预览时，先检查这个运行环境，不要通过修改文件扩展名排查。
 
-使用便携版时，应将整个 ZIP 解压到固定目录，再启动 `vertree.exe`；请保留同目录中的 DLL 和 `data` 等资源。注册菜单后移动便携目录，需要在设置页重新注册菜单，让入口指向新位置。
+便携版必须整体解压到固定目录，保留 EXE、DLL、`data` 等资源。注册菜单后移动安装位置，需要重新应用菜单设置。Windows 11 新菜单还依赖包身份注册；没有成功注册时，先使用经典菜单。
 
-Windows 11 新菜单依赖安装时建立的包身份。若新菜单不可用，可以先从“显示更多选项”使用传统菜单，详细排查见[常见问题](troubleshooting.md#windows-右键菜单没有预览文件)。
+3.0.0 中两套菜单均支持逐项设置。旧版本可能只有 Windows 11 总开关，参见[菜单版本区别](entry-points.md)。
 
 ## macOS
 
-1. 下载与设备匹配的 DMG，打开后将 Vertree 拖入“应用程序”。也可以解压 ZIP 后放入该目录。
-2. 启动一次应用，完成设置，再检查 Finder 的“服务”菜单。
-3. 在版本树内打开预览。macOS 使用系统 WKWebView，不需要 WebView2。
+将 DMG 中的应用拖入“应用程序”，或解压 ZIP 后移动到该目录。第一次启动后再检查 Finder Services。预览使用系统 WKWebView，不需要 WebView2。
 
-当前发布流程未进行 Apple notarization，首次打开可能需要按系统提示确认。Finder Services 当前提供备份、快速备份、监控和版本树入口，预览可从应用内打开。
-
-更多菜单栏、Dock 和 Services 行为见 [macOS 说明](../macos.md)。
+当前发布流程未进行 Apple 公证。首次打开按系统提示处理，只安装确认来自项目发布页的文件，不要全局关闭系统安全检查。更多说明见 [macOS](../macos.md)。
 
 ## Linux
 
-Debian / Ubuntu 下载 DEB 后，通过系统软件安装器打开，或在下载目录执行：
+用系统软件安装器打开 DEB 或 RPM。使用终端时，替换为实际下载的文件名，例如：
 
 ```bash
-sudo apt install ./vertree-linux-x64-1.1.0.deb
+# Debian / Ubuntu；将版本号换成实际下载版本
+sudo apt install ./vertree-linux-x64-3.0.0.deb
 ```
-
-Fedora 等 RPM 系统可使用系统安装器，或执行：
 
 ```bash
-sudo dnf install ./vertree-linux-x64-1.1.0.rpm
+# Fedora 等 RPM 系统
+sudo dnf install ./vertree-linux-x64-3.0.0.rpm
 ```
 
-便携 TAR.GZ 需要整体解压，并保留包内资源。Linux 预览由本机浏览器显示；请保持 Vertree 的预览对话框打开，关闭后对应页面不能继续读取文件。
+便携 TAR.GZ 也需要整体解压。交互预览使用本机浏览器，关闭 Vertree 预览会话后旧页面不能继续读取文件。GNOME Files 与托盘依赖见 [Linux](../linux.md)。
 
-GNOME Files 菜单需要 `python3-nautilus`（Debian / Ubuntu）或 `nautilus-python`（Fedora）。GNOME 托盘通常还需要启用 AppIndicator 扩展；菜单和托盘问题见 [Linux 说明](../linux.md)。
+## 升级前后各做什么
 
-## 从旧版本升级
+保存正在编辑的内容，等待文件操作结束，再完全退出 Vertree 后覆盖安装。安装后检查应用版本、监控任务和所用菜单入口，并试着预览一个小文件。
 
-1. 保存正在编辑的文件，并从 Vertree 托盘或菜单中退出应用，避免安装时文件被占用。
-2. 安装新版；便携版建议解压到新目录确认可启动，再调整原有快捷方式和菜单入口。
-3. 打开设置检查版本、监控任务和菜单选项，再预览一个常用文件。
+**从 2.0 以前升级需要重新配置监控。** 当前配置采用 `settings.json`、`monitorTasks` 与任务 UUID。旧 `config.json` 不导入，旧 `*_bak` 备份不自动转为新快照，但磁盘上的手动版本文件仍可识别。3.0.0还会清理固定的旧配置文件名，不保留 `.previous` 配置副本；不会借此删除旧备份内容。
 
-升级不需要转换已有版本文件。版本树仍从磁盘上的文件重建，配置和日志位置可在设置页打开。
+不要把“覆盖安装”当作迁移所有旧设置的保证。配置字段和位置见[设置与配置文件](settings.md)。新功能是否随安装包提供，以对应发布说明为准。
 
-从旧版升级时，已启用传统右键菜单的用户会自动获得预览项；原来全部关闭的用户保持关闭。传统菜单的逐项选择与 Windows 11 新菜单开关分别管理。
+## 核对下载与卸载
 
-## 校验下载
-
-Release 附带 `SHA256SUMS.txt`。需要确认下载完整性时，将文件的 SHA-256 与清单中的同名条目比较：
+将下载文件的 SHA-256 与发布附件 `SHA256SUMS.txt` 中的同名条目对照：
 
 ```powershell
-Get-FileHash .\vertree-windows-x64-1.1.0-setup.exe -Algorithm SHA256
+Get-FileHash .\vertree-windows-x64-3.0.0-setup.exe -Algorithm SHA256
 ```
 
-构建源码和发布流程见[开发与构建](../tutorial-develop/develop.md)。
+卸载前先退出应用，再使用对应安装器的卸载入口。多个安装器留下多个记录时，不要假定它们指向不同目录；先核对路径，避免另一份卸载器移除仍在使用的程序。用户文件与备份的保留应单独检查。
+
+下一步：[完成第一次备份](quick-start.md)。

@@ -11,7 +11,9 @@
     "clear": "docusaurus clear",
     "serve": "docusaurus serve",
     "write-translations": "docusaurus write-translations",
-    "write-heading-ids": "docusaurus write-heading-ids"
+    "write-heading-ids": "docusaurus write-heading-ids",
+    "audit:static": "python scripts/audit_static.py",
+    "audit:browser": "node scripts/audit_browser.cjs"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.0",
@@ -23,8 +25,10 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
     "@docusaurus/module-type-aliases": "3.10.0",
-    "@docusaurus/types": "3.10.0"
+    "@docusaurus/types": "3.10.0",
+    "playwright": "1.63.0"
   },
   "browserslist": {
     "production": [
@@ -39,6 +43,6 @@
     ]
   },
   "engines": {
-    "node": ">=18.0"
+    "node": ">=20.0"
   }
 }

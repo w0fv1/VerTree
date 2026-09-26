@@ -1,4 +1,6 @@
 ---
+title: 本机 API 与开发控制器
+description: 使用认证的 loopback API，理解版本、快照、任务、事件与开发进程的控制边界。
 sidebar_position: 6
 ---
 
@@ -61,6 +63,10 @@ Invoke-RestMethod -Uri "$apiBase/monitor-tasks" -Headers $apiHeaders -NoProxy
 表中路径均相对于 `/api/v1`。请求字段、响应结构和限制以运行实例的 OpenAPI 为准；其中 `verification-writes` 是会修改文件的测试接口，仅对专用样例使用。
 
 任务 ID 是 UUID，PATCH 使用 `enabled`。版本树返回 `entries`、`parents` 和 `diagnostics`，不包含 UI 布局对象。JSON 请求最多 1 MiB，错误响应使用 `success: false`、`code`、`message`。旧 `/backups`、`/version-files` 和任务 `/backups` 不再注册。
+
+## 文件工具不提供免确认删除接口
+
+Windows 3.0.0 的删除和结束占用进程经桌面界面确认。本文列出的 `/batch` 与 `/jobs` 不因此获得通用 `delete` 或 `kill` 动作，不应把内部进程协议当成公开 HTTP API。具体入口见[右键菜单与命令行](../tutorial-usage/entry-points.md)。
 
 ## 开发控制器
 
@@ -176,8 +182,8 @@ Invoke-WebRequest -Method Post -Uri "$apiBase/preview-images" `
 
 上述 body 发往 `/batch`；增加 `"action": "batch"` 后也可以发往 `/jobs` 后台执行。单个异步任务的 body 为 `action` 加对应参数。支持动作：backup、monitor、share、restore、compare；每批 1–100 项，失败不会回滚先前完成项。share 支持 `expiresInMinutes`。
 
-创建任务返回 202 和任务 ID。进度 0–1；最多同时 4 个任务，保留最近 100 个记录，仅保存在本次进程内。取消为协作式：排队任务或批次下一项开始前停止；正在执行的单次复制/恢复会安全完成，该情况下最终状态可能仍是 succeeded，并保留 `cancelRequested: true`。
+创建任务返回 202 和任务 ID。进度为 0–1，无法确定总量的操作可为 null；最多同时 4 个任务，保留最近 100 个记录，仅保存在本次进程内。取消为协作式：排队任务或批次下一项开始前停止；正在执行的单次复制/恢复可能先完成当前文件写入再停止。当前调度器可将已收到取消请求的作业标为 cancelled，同时保留实际执行结果；不能从状态名称推断磁盘已回滚。结构化文件工具结果还可为 partial 或 interrupted。
 
 Linux 的交互预览沿用外部浏览器，状态为 awaiting-browser / external-browser；无法读取外部标签页的加载完成状态。后台 PNG 接口不受交互窗口影响。
 
-SSE 使用相同 Bearer 认证，事件包括 preview.*、monitor.*、file.changed、backup.created、version.*、share.*、settings.updated 和 job.*。使用 HTTP 客户端流式读取，不要依赖不能设置 Authorization 的原生 EventSource。重连可传 `Last-Event-ID`，最多回放最近 256 条；游标过期返回 409，应重新查询状态后无游标连接。每 10 秒发送心跳；慢连接会断开，进程重启后事件 ID 重置。
+SSE 使用相同 Bearer 认证，事件包括 preview.*、monitor.*、file.changed、snapshot.created、version.*、share.*、settings.updated 和 job.*。使用 HTTP 客户端流式读取，不要依赖不能设置 Authorization 的原生 EventSource。重连可传 `Last-Event-ID`，最多回放最近 256 条；游标过期返回 409，应重新查询状态后无游标连接。每 10 秒发送心跳；慢连接会断开，游标格式为 `sessionId:序号`，进程重启后旧会话游标不能继续使用。

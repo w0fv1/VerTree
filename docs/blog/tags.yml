@@ -1,5 +1,4 @@
 hello:
-  label: Hello
+  label: 设计与理念
   permalink: /hello
-  description: Hello tag description
-
+  description: 关于 Vertree 的设计目标、适用场景与产品取舍的记录。

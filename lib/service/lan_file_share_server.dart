@@ -1,5 +1,6 @@
 import 'dart:async';
 import '../foundation/app_events.dart';
+import '../file_access/file_access.dart';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -11,6 +12,8 @@ import 'package:vertree/service/lan_share_payload_codec.dart';
 class LanFileShareServer {
   LanFileShareServer({
     required this.events,
+    this.isPathReserved,
+    this.canonicalizePath,
     this.sharePageBaseUrl = defaultSharePageBaseUrl,
     Future<List<String>> Function()? addressResolver,
     Future<String?> Function()? wifiNameResolver,
@@ -27,6 +30,9 @@ class LanFileShareServer {
   static const String defaultSharePageBaseUrl = 'https://vertree.w0fv1.dev/f';
 
   final AppEvents events;
+  final bool Function(String path)? isPathReserved;
+  final Future<String> Function(String path)? canonicalizePath;
+  final _sourceTransfers = <_ShareSourceTransfer>{};
   final String sharePageBaseUrl;
   final Future<List<String>> Function() _addressResolver;
   final Future<String?> Function() _wifiNameResolver;
@@ -126,7 +132,12 @@ class LanFileShareServer {
       return Result.eMsg('expiresInMinutes must be greater than 0');
     }
 
-    final normalizedPath = p.normalize(filePath);
+    final normalizedPath =
+        await (canonicalizePath?.call(filePath) ??
+            Future.value(p.normalize(filePath)));
+    if (isPathReserved?.call(normalizedPath) == true) {
+      return Result.eMsg('PATH_BUSY: path is reserved for deletion');
+    }
     final file = File(normalizedPath);
     if (!file.existsSync()) {
       return Result.eMsg('File does not exist: $normalizedPath');
@@ -141,6 +152,9 @@ class LanFileShareServer {
       );
     }
 
+    if (isPathReserved?.call(normalizedPath) == true) {
+      return Result.eMsg('PATH_BUSY: path is reserved for deletion');
+    }
     final stat = file.statSync();
     final now = DateTime.now();
     final entry = _LanFileShareEntry(
@@ -191,7 +205,7 @@ class LanFileShareServer {
 
   Result<Map<String, dynamic>, String> revokeShare(String token) {
     _purgeExpiredShares();
-    final entry = _findActiveShare(token);
+    final entry = _sharesByToken[token] ?? _sharesByKey[token];
     if (entry == null) {
       return Result.eMsg('LAN file share not found: $token');
     }
@@ -207,6 +221,50 @@ class LanFileShareServer {
       'revoked': true,
       'fileName': entry.fileName,
     });
+  }
+
+  Future<void> releasePaths(List<String> paths) async {
+    bool matches(String path) =>
+        paths.any((root) => MutationScope.containsPath(root, path));
+    for (final entry
+        in _sharesByToken.values
+            .where((entry) => matches(entry.filePath))
+            .toList()) {
+      revokeShare(entry.token);
+    }
+    await Future.wait(
+      _sourceTransfers
+          .where((entry) => matches(entry.path))
+          .toList()
+          .map((entry) => entry.cancel()),
+    );
+  }
+
+  Future<void> _streamSharedSource(File file, HttpResponse response) async {
+    if (isPathReserved?.call(file.path) == true) throw StateError('PATH_BUSY');
+    final transfer = _ShareSourceTransfer(file.path);
+    final stream = StreamController<List<int>>(sync: true);
+    stream.onListen = () {
+      transfer.subscription = file.openRead().listen(
+        stream.add,
+        onError: stream.addError,
+        onDone: () => unawaited(stream.close()),
+      );
+    };
+    stream.onPause = () => transfer.subscription?.pause();
+    stream.onResume = () => transfer.subscription?.resume();
+    stream.onCancel = () => transfer.subscription?.cancel();
+    transfer.closeStream = () {
+      if (!stream.isClosed) unawaited(stream.close());
+    };
+    _sourceTransfers.add(transfer);
+    try {
+      await response.addStream(stream.stream);
+      await response.close();
+    } finally {
+      await transfer.cancel();
+      _sourceTransfers.remove(transfer);
+    }
   }
 
   Future<void> _listen(HttpServer server) async {
@@ -455,7 +513,7 @@ class LanFileShareServer {
       'content-disposition',
       'inline; filename="${entry.fileName.replaceAll('"', '')}"',
     );
-    await file.openRead().pipe(request.response);
+    await _streamSharedSource(file, request.response);
   }
 
   Future<void> _handleDownload(HttpRequest request, String token) async {
@@ -489,7 +547,7 @@ class LanFileShareServer {
       'content-disposition',
       _contentDisposition(entry.fileName),
     );
-    await file.openRead().pipe(request.response);
+    await _streamSharedSource(file, request.response);
 
     entry.downloadCount += 1;
     entry.lastDownloadedAt = DateTime.now();
@@ -502,7 +560,7 @@ class LanFileShareServer {
     }
 
     final entry = _sharesByToken[normalizedRef] ?? _sharesByKey[normalizedRef];
-    if (entry == null) {
+    if (entry == null || isPathReserved?.call(entry.filePath) == true) {
       return null;
     }
     if (entry.isExpired) {
@@ -1208,6 +1266,18 @@ $previewSection
     }
     return null;
   }
+}
+
+class _ShareSourceTransfer {
+  _ShareSourceTransfer(this.path);
+  final String path;
+  StreamSubscription<List<int>>? subscription;
+  void Function()? closeStream;
+  Future<void>? _cancelling;
+  Future<void> cancel() => _cancelling ??= () async {
+    await subscription?.cancel();
+    closeStream?.call();
+  }();
 }
 
 class _LanFileShareEntry {

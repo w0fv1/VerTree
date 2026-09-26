@@ -1,6 +1,6 @@
 {
-  "uuid": "v2-0-0-release-20260908",
-  "content": "Vertree V2.0.0 已发布：统一版本、快照与监控架构，修复 Windows MSI 安装包。注意：旧配置和旧自动备份不自动导入，升级后请重新设置偏好与监控任务；手动版本文件继续保留。",
-  "expiresAt": "2026-10-08T23:59:59+08:00",
-  "link": "https://github.com/w0fv1/VerTree/releases/tag/V2.0.0"
+  "uuid": "vertree-3.0.0-20260927",
+  "content": "Vertree 3.0.0 已发布：Windows 快速删除与解除占用、两套菜单逐项设置，以及新版首页、官网和使用文档。快速删除不进回收站，并可能结束占用程序，确认前请保存工作。2.x 有效设置与监控任务保留。",
+  "expiresAt": "2026-10-27T23:59:59+08:00",
+  "link": "https://github.com/w0fv1/VerTree/releases/tag/V3.0.0"
 }

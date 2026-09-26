@@ -7,3 +7,5 @@ IDI_VERTREE_MONITOR ICON "..\\..\\assets\\img\\icon\\monit.ico"
 IDI_VERTREE_SHARE ICON "..\\..\\assets\\img\\icon\\share.ico"
 IDI_VERTREE_VIEWTREE ICON "..\\..\\assets\\img\\logo\\logo.ico"
 
+
+IDI_VERTREE_PREVIEW ICON "..\\..\\assets\\img\\icon\\preview.ico"

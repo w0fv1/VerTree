@@ -1,11 +1,9 @@
-.features {
-  display: flex;
-  align-items: center;
-  padding: 2rem 0;
-  width: 100%;
-}
-
-.featureSvg {
-  height: 200px;
-  width: 200px;
-}
+.grid {display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:18px;}
+.card {padding:28px; border:1px solid var(--vt-border); border-radius:18px; background:var(--vt-surface); color:var(--ifm-heading-color); display:flex; flex-direction:column; align-items:flex-start; text-decoration:none; transition:border-color .16s, background .16s;}
+.card:hover {background:var(--vt-surface); color:var(--ifm-heading-color); border-color:var(--ifm-color-primary); text-decoration:none;}
+.icon {display:flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:var(--vt-soft); color:var(--ifm-color-primary); margin-bottom:22px;}
+.card h3 {font-size:1.12rem; margin-bottom:10px;}
+.card p {color:var(--vt-muted); font-size:.93rem; line-height:1.85; margin-bottom:20px;}
+.read {margin-top:auto; color:var(--ifm-color-primary); font-size:.82rem; font-weight:650; display:flex; gap:8px;}
+@media(max-width:996px) {.grid {grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:640px) {.grid {grid-template-columns:1fr;} .card {padding:24px;} .icon {margin-bottom:16px;}}

@@ -1,4 +1,5 @@
 // Exercises the shell COM surface without registering it or launching Explorer.
+#define VERTREE_CONTEXT_MENU_TESTS
 #include "../vertree_context_menu.cpp"
 #include <iostream>
 #include <stdexcept>
@@ -51,7 +52,7 @@ int main() {
       command->Release();
       ++total;
     }
-    Require(total == 6 && count == 0, "six menu actions and clean end");
+    Require(total == 8 && count == 0, "eight menu actions and clean end");
     Require(SUCCEEDED(commands->Reset()), "enumerator reset");
     Require(commands->Next(1, &command, &count) == S_OK, "enumerator reopen");
     command->Release();
@@ -59,7 +60,7 @@ int main() {
     root->Release();
     Require(DllCanUnloadNow() == S_OK, "COM objects released");
     CoUninitialize();
-    std::cout << "PASS: six shell actions, preview first, argument round trips, COM lifecycle\n";
+    std::cout << "PASS: eight shell actions, preview first, argument round trips, COM lifecycle\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

@@ -9,7 +9,10 @@ import 'package:vertree/component/themed_assets.dart';
 import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/platform/platform_integration.dart';
 import 'package:vertree/view/component/app_bar.dart';
+import 'package:vertree/view/component/home_slogan.dart';
 import 'package:vertree/view/component/app_page_background.dart';
+import 'package:vertree/view/component/responsive_home_card.dart';
+import 'package:vertree/view/component/home_actions.dart';
 import 'package:vertree/view/page/monit_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
 
@@ -193,7 +196,6 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
     return Scaffold(
       appBar: VAppBar(
         title: Row(
@@ -207,88 +209,40 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
         goHome: false,
       ),
       body: AppPageBackground(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 760),
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Card.filled(
-                color: scheme.surfaceContainerLowest,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 28,
-                    vertical: 32,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      themedLogoImage(
-                        context: context,
-                        width: 240,
-                        height: 180,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        _desktop.appLocale.getText(LocaleKey.brandTitle),
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 440),
-                        child: Text(
-                          _desktop.appLocale.getText(LocaleKey.brandSlogan),
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyLarge?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          FilledButton.tonalIcon(
-                            onPressed: () async {
-                              _desktop.go(MonitPage());
-                            },
-                            icon: const Icon(Icons.monitor_heart_rounded),
-                            label: Text(
-                              _desktop.appLocale.getText(
-                                LocaleKey.brandMonitorPage,
-                              ),
-                            ),
-                          ),
-                          FilledButton.tonalIcon(
-                            onPressed: () async {
-                              _desktop.go(SettingPage());
-                            },
-                            icon: const Icon(Icons.settings_rounded),
-                            label: Text(
-                              _desktop.appLocale.getText(
-                                LocaleKey.brandSettingPage,
-                              ),
-                            ),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: () async {
-                              await _desktop.quitApplication();
-                            },
-                            icon: const Icon(Icons.exit_to_app_rounded),
-                            label: Text(
-                              _desktop.appLocale.getText(LocaleKey.brandExit),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+        child: ResponsiveHomeCard(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              themedLogoImage(context: context, width: 240, height: 180),
+              const SizedBox(height: 12),
+              Text(
+                _desktop.appLocale.getText(LocaleKey.brandTitle),
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
                 ),
               ),
-            ),
+              const SizedBox(height: 10),
+              HomeSlogan(
+                session: _desktop.brandSlogan,
+                language: _desktop.appLocale.lang.name,
+              ),
+              const SizedBox(
+                key: ValueKey('home-brand-actions-spacing'),
+                height: ResponsiveHomeCard.brandActionsSpacing,
+              ),
+              HomeActions(
+                monitorLabel: _desktop.appLocale.getText(
+                  LocaleKey.brandMonitorPage,
+                ),
+                settingsLabel: _desktop.appLocale.getText(
+                  LocaleKey.brandSettingPage,
+                ),
+                exitLabel: _desktop.appLocale.getText(LocaleKey.brandExit),
+                onMonitor: () => _desktop.go(MonitPage()),
+                onSettings: () => _desktop.go(SettingPage()),
+                onExit: () => unawaited(_desktop.quitApplication()),
+              ),
+            ],
           ),
         ),
       ),

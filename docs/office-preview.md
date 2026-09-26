@@ -5,7 +5,7 @@ Vertree 直接复用 Office-Viewer 的 React 预览模块，生成离线资源�
 集成说明已整理进文档站，避免在此维护另一套格式列表和过时的逐轮开发记录：
 
 - [文件预览与格式支持](docs/tutorial-usage/preview.md)：入口、完整格式表、未知格式与大文件边界。
-- [右键菜单与命令行](docs/tutorial-usage/entry-points.md)：Windows 两套菜单、迁移与 CLI。
+- [右键菜单与命令行](docs/tutorial-usage/entry-points.md)：Windows 两套菜单、独立设置与 CLI。
 - [预览架构](docs/tutorial-develop/preview-architecture.md)：会话、路由、加载方式与两个仓库的职责。
 - [开发与构建](docs/tutorial-develop/develop.md)：首次构建、子模块更新、测试和发布。
 - [上游能力核对](office-preview-upstream-audit.md)：固定参考版本的支持缺口与实现记录。

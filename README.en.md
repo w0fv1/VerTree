@@ -1,69 +1,63 @@
 # Vertree
 
-[Documentation](https://vertree.w0fv1.dev/docs/intro) · [Download](https://github.com/w0fv1/VerTree/releases/latest) · [Supported formats](docs/docs/tutorial-usage/preview.md) · [Troubleshooting](docs/docs/tutorial-usage/troubleshooting.md) · [Build guide](docs/docs/tutorial-develop/develop.md)
+**Keep every iteration traceable.**
 
-File previews use the bundled Office Viewer frontend (embedded on Windows/macOS, local browser on Linux). Before the first Flutter build, install Node.js 24 and Python 3 and run `python tools/build_office_preview.py`. Windows additionally needs NuGet CLI for building and WebView2 Runtime for viewing. See [integration notes](docs/office-preview.md).
+Vertree is a desktop version manager for individual files. Keep milestones as ordinary file copies, inspect their lineage in a version tree, and use automatic snapshots, read-only previews or temporary LAN sharing when needed. Continue editing in the applications you already use.
 
-Vertree is a desktop version manager for single files. It is meant for evolving design files, documents, scripts, and config files that do not fit cleanly into a normal Git workflow. Vertree keeps history as plain files, draws the file lineage as a tree, and exposes native desktop entry points so the workflow stays close to how people already work.
+[中文](README.md) · [Website](https://vertree.w0fv1.dev/) · [Quick start](docs/docs/tutorial-usage/quick-start.md) · [Stable downloads](https://github.com/w0fv1/VerTree/releases/latest) · [Troubleshooting](docs/docs/tutorial-usage/troubleshooting.md)
 
-![Version tree overview](docs/static/img/version-tree-overview.png)
+![Version tree using example files](docs/static/img/version-tree-overview.png)
 
-## 2.0.0
+## Choose the right kind of history
 
-Version commands and file writes now share one backend across UI, CLI, tray and HTTP. Automatic snapshots have task UUIDs and ownership manifests; failed monitoring retries without losing subsequent changes. Windows MSI shortcut destinations are corrected and installation is checked before release.
+Manual versions live beside the source file, with version numbers and optional notes in their names. Automatic snapshots live under `.vertree/snapshots/<task UUID>` and use ownership manifests. The default minimum snapshot interval is five minutes, with fifty recognized snapshots retained per task; not every save produces a separate snapshot.
 
-**Breaking upgrade:** settings move to settings.json; old configuration and *_bak snapshots are not imported. Reconfigure preferences and monitoring after upgrading. Manual version files remain readable. The local API uses /versions and /snapshots; old backup routes are removed.
+Previews are read-only and processed locally. LAN sharing is a separate, explicit action: a temporary link lets network-reachable recipients download from the sending computer. The authenticated loopback API is disabled by default.
 
-[Release notes](https://github.com/w0fv1/VerTree/releases/tag/V2.0.0)
+Full copies consume disk space. Local history is not a substitute for an independent backup, and format support does not imply exact layout reproduction or general binary merging.
 
-## What It Does
+## Release status
 
-- Visual version tree for a single file and its branches
-- Manual backup and express backup
-- File monitoring with owned snapshots under `.vertree/snapshots`
-- Native entry points on Windows, macOS, and Linux GNOME
-- Local loopback-only HTTP API for automation and verification
-- Temporary LAN file sharing with a short share page and QR code
+**V3.0.0** adds Windows fast permanent deletion and File Locksmith-style usage inspection, per-action settings for both Explorer menu styles, single-file preferences and a revised homepage, website and documentation. Deletion requires confirmation and may terminate eligible blocking applications. Usage inspection is a separate, non-deleting feature. See the [release notes](https://github.com/w0fv1/VerTree/releases/tag/V3.0.0).
 
-## Local Automation
+Deletion and file-usage inspection are separate pages, reached through file context menus. Confirming deletion also authorizes removal of read-only attributes and termination of eligible blocking processes; unsaved work may be lost. System protections are not bypassed. See the [deletion guide](docs/docs/tutorial-usage/fast-delete.md) and [file-usage guide](docs/docs/tutorial-usage/file-locks.md).
 
-The local HTTP API is disabled by default. Enable it in Settings and copy the actual loopback address and the token for the current session. Business requests require `Authorization: Bearer <token>`. Only the index, documentation, and minimal `/ping` endpoint are public.
+Upgrades from before 2.0 require monitoring to be configured again. Current preferences use `settings.json` and UUID-based `monitorTasks`; legacy `config.json` and `*_bak` snapshots are not imported. The development branch no longer creates or restores `.previous` preferences. Old backup contents are not deleted as part of preference cleanup.
 
-- `GET /api/v1/health`
-- `POST /api/v1/ui/navigation`
-- `POST /api/v1/ui/window-state`
-- `POST /api/v1/ui/theme-mode`
-- `POST /api/v1/ui/file-tree/viewport`
-- `POST /api/v1/ui/screenshot`
+## Install and try one file
 
-The `health` payload now includes the current UI page, theme setting, effective light/dark state, and whether startup announcement dialogs were suppressed for the current session.
+On Windows x64, choose the EXE installer. On macOS, match the architecture supplied by the release; the 3.0.0 release supplies arm64 builds. On Linux x64, choose DEB, RPM or the complete portable archive. Keep all bundled DLLs and data files when using portable distributions.
 
-## Screenshot-Friendly Startup
+Windows previews require WebView2 Runtime; macOS uses WKWebView; Linux opens a local browser. End users do not need Flutter, Node.js, Python or the standalone Office-Viewer application. See [platform and installation details](docs/docs/tutorial-usage/install.md).
 
-For documentation screenshots or scripted demos, you can start Vertree with:
+Save a disposable example document, create a manual backup with a note, and open its version tree. Verify the new copy before enabling monitoring for important work.
+
+## Build and test
+
+Use Flutter stable with the Dart constraint in `pubspec.yaml`, Python 3, Node.js 24 and the target platform's desktop toolchain. Windows also requires Visual Studio C++ tools, Windows SDK and NuGet. Build the pinned preview frontend before the first Flutter run:
 
 ```bash
-python dev_server.py --bootstrap --device windows --app-arg --no-announcement
+git clone https://github.com/w0fv1/VerTree.git
+cd VerTree
+git submodule update --init vendor/office-viewer
+python tools/build_office_preview.py
+flutter pub get
+flutter run -d windows
 ```
 
-That runtime flag disables the startup announcement dialog so it does not pollute screenshots.
-
-## Documentation Screenshots
-
-Use the repository script below to refresh the docs screenshots:
+Use `macos` or `linux` on the corresponding host. Vertree imports Office-Viewer's React preview modules, not its Tauri runtime.
 
 ```bash
-python tools/update_doc_images.py
+dart run tools/check_architecture.dart
+flutter analyze
+flutter test
+npm --prefix docs ci
+npm --prefix docs run build
+npm --prefix docs run audit:static
 ```
 
-The script drives the local UI through the HTTP API and defaults normal documentation screenshots to light mode. Dark mode screenshots should only be used where the dark theme itself is being explained.
-
-## More Docs
-
-- Chinese README: [README.md](README.md)
-- Docs site: https://vertree.w0fv1.dev/
-- Local docs guide: [docs/README.md](docs/README.md)
+The [build guide](docs/docs/tutorial-develop/develop.md), [architecture rules](docs/architecture-evolution.md), [API guide](docs/docs/tutorial-develop/local-api.md) and [site maintenance guide](docs/README.md) describe the supported workflows. Destructive tests must use dedicated temporary fixtures and test-owned processes only.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+MIT; see [LICENSE](LICENSE). Bundled third-party components retain their own notices. No cloud synchronization or multi-user merge service is included.

@@ -25,6 +25,7 @@ bool FlutterWindow::OnCreate() {
     return false;
   }
   RegisterPlugins(flutter_controller_->engine());
+  file_tools_picker_ = RegisterFileToolsPicker(flutter_controller_->engine()->messenger(), GetHandle());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
 
@@ -33,6 +34,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  file_tools_picker_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }

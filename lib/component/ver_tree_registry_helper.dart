@@ -39,37 +39,13 @@ class VerTreeRegistryService {
           .where((action) => saved.contains(action.name))
           .toSet();
     }
-    return WindowsMenuPlan.migrateSelection(
-      WindowsMenuAction.values.where(
-        (action) =>
-            _registered(action.keyName) ||
-            (action.legacyKeyName != null &&
-                _registered(action.legacyKeyName!)),
-      ),
-    );
+    // The current settings file is authoritative; do not reconstruct a
+    // selection from old registry entries or silently enable preview.
+    return <WindowsMenuAction>{};
   }
 
-  bool _registered(String key) =>
-      RegistryHelper.checkRegistryMenuExistsByKey(key) ||
-      RegistryHelper.checkRegistryMenuExistsByKeyAtPath(
-        '${RegistryHelper.currentUserClassesShellPath}\\${WindowsMenuPlan.rootKey}\\shell',
-        key,
-      ) ||
-      RegistryHelper.checkMachineRegistryMenuExistsByKey(key) ||
-      RegistryHelper.checkMachineRegistryMenuExistsByKeyAtPath(
-        '${RegistryHelper.allUsersClassesShellPath}\\${WindowsMenuPlan.rootKey}\\shell',
-        key,
-      );
-
-  bool checkLegacyMenuRootExists() =>
-      RegistryHelper.checkRegistryMenuExistsByKey(WindowsMenuPlan.rootKey) ||
-      RegistryHelper.checkMachineRegistryMenuExistsByKey(
-        WindowsMenuPlan.rootKey,
-      );
-
   bool get _collapsed =>
-      configer.toJson()[legacyMenuCollapsedConfigKey] as bool? ??
-      checkLegacyMenuRootExists();
+      configer.get<bool>(legacyMenuCollapsedConfigKey, false);
 
   bool isActionEnabled(WindowsMenuAction action) =>
       _selection().contains(action);
@@ -96,33 +72,58 @@ class VerTreeRegistryService {
   bool setLegacyMenuLayout(bool collapsed) =>
       _apply(_selection(), collapsed: collapsed);
 
-  bool migrateLegacyMenuLayoutConfig() {
-    if (!configer.toJson().containsKey(legacyMenuCollapsedConfigKey)) {
-      configer.set(legacyMenuCollapsedConfigKey, checkLegacyMenuRootExists());
-    }
-    return true;
-  }
-
   void reAddContextMenu() {
     if (!_apply(_selection(), collapsed: _collapsed, cleanMachine: false)) {
       logger.error('同步右键菜单失败');
     }
   }
 
-  String _title(WindowsMenuAction action) => appLocale.getText(switch (action) {
-    WindowsMenuAction.preview => LocaleKey.registryPreviewKeyName,
-    WindowsMenuAction.backup => LocaleKey.registryBackupKeyName,
-    WindowsMenuAction.expressBackup => LocaleKey.registryExpressBackupKeyName,
-    WindowsMenuAction.monitor => LocaleKey.registryMonitorKeyName,
-    WindowsMenuAction.share => LocaleKey.registryShareKeyName,
-    WindowsMenuAction.viewTree => LocaleKey.registryViewTreeKeyName,
-  });
+  String _title(WindowsMenuAction action) => switch (action) {
+    WindowsMenuAction.fileUsage => switch (appLocale.lang) {
+      Lang.zhCn || Lang.other => '查看／解除文件占用',
+      Lang.en => 'Inspect / release file usage',
+      Lang.ja => 'ファイルの使用状況を確認',
+    },
+    WindowsMenuAction.fastDelete => switch (appLocale.lang) {
+      Lang.zhCn || Lang.other => '快速删除（永久）…',
+      Lang.en => 'Fast delete (permanent)…',
+      Lang.ja => '高速削除（完全削除）…',
+    },
+    WindowsMenuAction.preview => appLocale.getText(
+      LocaleKey.registryPreviewKeyName,
+    ),
+    WindowsMenuAction.backup => appLocale.getText(
+      LocaleKey.registryBackupKeyName,
+    ),
+    WindowsMenuAction.expressBackup => appLocale.getText(
+      LocaleKey.registryExpressBackupKeyName,
+    ),
+    WindowsMenuAction.monitor => appLocale.getText(
+      LocaleKey.registryMonitorKeyName,
+    ),
+    WindowsMenuAction.share => appLocale.getText(
+      LocaleKey.registryShareKeyName,
+    ),
+    WindowsMenuAction.viewTree => appLocale.getText(
+      LocaleKey.registryViewTreeKeyName,
+    ),
+  };
 
   bool _apply(
     Set<WindowsMenuAction> selected, {
     required bool collapsed,
     bool cleanMachine = true,
   }) {
+    final dll = path.join(FileUtils.appDirPath(), 'vertree_context_menu.dll');
+    for (final action in selected.where((action) => action.isFileTool)) {
+      if (!File(dll).existsSync() ||
+          !RegistryHelper.registerExplorerCommand(
+            action.explorerCommandClsid!,
+            dll,
+          )) {
+        return false;
+      }
+    }
     final plan = WindowsMenuPlan(selected, collapsed: collapsed);
     final root = RegistryHelper.currentUserClassesShellPath;
     final success = plan.apply(
@@ -134,7 +135,8 @@ class VerTreeRegistryService {
           [root, ...parts].join('\\'),
           keyName,
           action == null ? 'Vertree' : _title(action),
-          command: action == null
+          explorerCommandClsid: action?.explorerCommandClsid,
+          command: action == null || action.isFileTool
               ? null
               : '"${Platform.resolvedExecutable}" ${action.verb} "%1"',
           iconPath: path.joinAll([
@@ -158,6 +160,30 @@ class VerTreeRegistryService {
       },
     );
     if (!success) return false;
+    const folderRoot = r'Software\Classes\Directory\shell';
+    for (final action in WindowsMenuAction.values.where(
+      (action) => action.isFileTool,
+    )) {
+      final installed = selected.contains(action)
+          ? RegistryHelper.addContextMenuOptionAtPath(
+              folderRoot,
+              action.keyName,
+              _title(action),
+              explorerCommandClsid: action.explorerCommandClsid,
+              iconPath: dll,
+            )
+          : RegistryHelper.removeContextMenuOptionByKeyAtPath(
+              folderRoot,
+              action.keyName,
+            );
+      if (!installed) return false;
+      if (!selected.contains(action)) {
+        RegistryHelper.removeContextMenuOptionByKeyAtPath(
+          r'Software\Classes\CLSID',
+          action.explorerCommandClsid!,
+        );
+      }
+    }
     if (cleanMachine && !_cleanMachineMenus()) return false;
     configer.set(_selectionKey, selected.map((action) => action.name).toList());
     configer.set(legacyMenuCollapsedConfigKey, collapsed);
@@ -219,6 +245,9 @@ class VerTreeRegistryService {
     WindowsShellNotify.associationsChanged();
     return true;
   }
+
+  void notifyMenuPreferencesChanged() =>
+      WindowsShellNotify.associationsChanged();
 
   bool checkWin11ContextMenuHandler() =>
       WindowsPackageIdentity.isPackagedOrRegistered();

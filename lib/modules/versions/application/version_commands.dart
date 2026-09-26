@@ -18,8 +18,9 @@ class VersionCommands {
 
   // Directory locking also serializes renames involving family aliases and
   // restores with a different target family. Independent directories proceed.
-  Future<List<String>> _resources(List<String> paths) async => [
-    for (final path in paths) await files.canonicalize(p.dirname(path)),
+  Future<List<MutationScope>> _resources(List<String> paths) async => [
+    for (final path in paths)
+      MutationScope.directoryEntries(await files.canonicalize(p.dirname(path))),
   ];
 
   Future<String> create(

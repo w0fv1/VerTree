@@ -60,7 +60,7 @@ class _FilePreviewDialogState extends State<FilePreviewDialog> {
       if (Platform.isWindows) {
         environment = await PreviewWebViewEnvironment.shared;
       }
-      session = await FilePreviewSession.open(widget.path);
+      session = await _desktop.openPreviewSession(widget.path);
       if (!mounted) {
         await session.close();
         return;

@@ -14,7 +14,7 @@ class VersionCatalog {
     if (!name.supported) {
       throw const OperationFailure('UNSUPPORTED_NAME', '当前文件命名不支持版本树');
     }
-    return writes.run([p.dirname(source)], () async {
+    return writes.run([MutationScope.directoryEntries(p.dirname(source))], () async {
       await files.fingerprint(source);
       final entries =
           (await files.files(p.dirname(source)))

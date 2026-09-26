@@ -68,12 +68,12 @@ void main() {
     () async {
       final writes = FileMutationCoordinator();
       await expectLater(
-        writes.run(['a'], () async => throw StateError('fail')),
+        writes.run([MutationScope.task('a')], () async => throw StateError('fail')),
         throwsStateError,
       );
-      expect(await writes.run(['a'], () async => 42), 42);
+      expect(await writes.run([MutationScope.task('a')], () async => 42), 42);
       await writes.close();
-      await expectLater(writes.run(['a'], () async => 0), throwsStateError);
+      await expectLater(writes.run([MutationScope.task('a')], () async => 0), throwsStateError);
     },
   );
 }

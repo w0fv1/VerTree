@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:uuid/uuid.dart';
 import '../../../foundation/app_events.dart';
+import '../../../foundation/operation_control.dart';
 
 class JobCancelled implements Exception {}
 
@@ -11,17 +12,29 @@ class AutomationJob {
   final AppEvents events;
   final DateTime createdAt = DateTime.now().toUtc();
   String status = 'queued';
-  double progress = 0;
-  bool cancelRequested = false;
+  double? progress = 0;
+  final control = OperationControl();
+  bool get cancelRequested => control.cancelled;
+  set cancelRequested(bool value) {
+    if (value) control.cancel();
+  }
+
+  bool get pauseRequested => control.paused;
   Object? result;
   String? error;
-  bool get completed => ['succeeded', 'failed', 'cancelled'].contains(status);
+  bool get completed => [
+    'succeeded',
+    'failed',
+    'cancelled',
+    'partial',
+    'interrupted',
+  ].contains(status);
   void checkCancelled() {
     if (cancelRequested) throw JobCancelled();
   }
 
-  void update(double value) {
-    progress = value.clamp(0, 1);
+  void update(double? value) {
+    progress = value?.clamp(0, 1);
     events.emit('job.progress', toJson());
   }
 
@@ -31,8 +44,9 @@ class AutomationJob {
     'status': status,
     'progress': progress,
     'cancelRequested': cancelRequested,
+    'pauseRequested': pauseRequested,
     'createdAt': createdAt.toIso8601String(),
-    'result': result,
+    'result': result is JobResult ? (result as JobResult).toJson() : result,
     'error': error,
   };
 }
@@ -66,8 +80,14 @@ class AutomationJobs {
         job.status = 'running';
         events.emit('job.started', job.toJson());
         job.result = await run(job);
-        job.status = 'succeeded';
-        job.progress = 1;
+        job.status = job.result is JobResult
+            ? (job.result as JobResult).outcome
+            : job.cancelRequested
+            ? 'cancelled'
+            : 'succeeded';
+        if (job.status == 'succeeded') job.progress = 1;
+      } on OperationCancelled {
+        job.status = 'cancelled';
       } on JobCancelled {
         job.status = 'cancelled';
       } catch (error) {
@@ -87,6 +107,26 @@ class AutomationJobs {
       job.cancelRequested = true;
     }
     await Future.wait(_running.toList());
+  }
+
+  AutomationJob pause(String id) {
+    final job = _jobs[id];
+    if (job == null) throw StateError('JOB_NOT_FOUND');
+    if (!job.completed) {
+      job.control.pause();
+      events.emit('job.paused', job.toJson());
+    }
+    return job;
+  }
+
+  AutomationJob resume(String id) {
+    final job = _jobs[id];
+    if (job == null) throw StateError('JOB_NOT_FOUND');
+    if (!job.completed) {
+      job.control.resume();
+      events.emit('job.resumed', job.toJson());
+    }
+    return job;
   }
 
   AutomationJob cancel(String id) {

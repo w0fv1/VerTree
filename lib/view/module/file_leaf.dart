@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 
 import 'package:vertree/component/file_utils.dart';
@@ -550,7 +551,7 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
                 Navigator.of(context).pop();
                 showFilePreview(this.context, fileNode.mate.fullPath);
               },
-              icon: const Icon(Icons.preview_outlined),
+              icon: const Icon(Icons.visibility_outlined),
               label: Text(
                 _desktop.appLocale.getText(LocaleKey.fileleafMenuPreview),
               ),
@@ -584,11 +585,33 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
         globalPosition.dy,
       ),
       items: [
+        if (Platform.isWindows)
+          PopupMenuItem(
+            value: 'file-usage',
+            child: _buildMenuEntry(
+              context,
+              icon: const Icon(Icons.manage_search, size: 18),
+              label: _desktop.appLocale.lang == Lang.zhCn
+                  ? '查看／解除文件占用'
+                  : 'Inspect / release file usage',
+            ),
+          ),
+        if (Platform.isWindows)
+          PopupMenuItem(
+            value: 'fast-delete',
+            child: _buildMenuEntry(
+              context,
+              icon: const Icon(Icons.delete_forever_outlined, size: 18),
+              label: _desktop.appLocale.lang == Lang.zhCn
+                  ? '快速删除（永久）…'
+                  : 'Fast delete (permanent)…',
+            ),
+          ),
         PopupMenuItem(
           value: 'preview',
           child: _buildMenuEntry(
             context,
-            icon: const Icon(Icons.preview_outlined, size: 18),
+            icon: const Icon(Icons.visibility_outlined, size: 18),
             label: _desktop.appLocale.getText(LocaleKey.fileleafMenuPreview),
           ),
         ),
@@ -656,7 +679,11 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
       return;
     }
 
-    if (result == 'backup') {
+    if (result == 'file-usage' || result == 'fast-delete') {
+      await _desktop.openFileTools([
+        fileNode.mate.fullPath,
+      ], result == 'fast-delete' ? 'delete' : 'scan');
+    } else if (result == 'backup') {
       widget.backupNode(fileNode, position, widget.canvasComponentKey);
     } else if (result == 'branch') {
       widget.branchNode(fileNode, position, widget.canvasComponentKey);

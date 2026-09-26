@@ -1,20 +1,59 @@
 <?xml version="1.0" encoding="utf-8"?><?xml-stylesheet type="text/xsl" href="rss.xsl"?>
 <rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
     <channel>
-        <title>Vertree维树 Blog</title>
+        <title>Vertree 维树 Blog</title>
         <link>https://vertree.w0fv1.dev/blog</link>
-        <description>Vertree维树 Blog</description>
-        <lastBuildDate>Tue, 08 Sep 2026 00:00:00 GMT</lastBuildDate>
+        <description>Vertree 维树 Blog</description>
+        <lastBuildDate>Sun, 27 Sep 2026 00:00:00 GMT</lastBuildDate>
         <docs>https://validator.w3.org/feed/docs/rss2.html</docs>
         <generator>https://github.com/jpmonette/feed</generator>
         <language>zh</language>
+        <item>
+            <title><![CDATA[Vertree 3.0.0：文件工具、首页与文档更新]]></title>
+            <link>https://vertree.w0fv1.dev/blog/3-0-0-file-tools</link>
+            <guid>https://vertree.w0fv1.dev/blog/3-0-0-file-tools</guid>
+            <pubDate>Sun, 27 Sep 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[Windows 快速永久删除、解除占用、菜单逐项设置、单文件配置与新版首页，以及官网和文档重整。]]></description>
+            <content:encoded><![CDATA[<p>3.0.0 把 Windows 快速删除与解除占用做成两个独立功能，同时整理菜单、配置和首页，让文件操作入口保持明确。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="文件工具各自做好一件事">文件工具各自做好一件事<a href="https://vertree.w0fv1.dev/blog/3-0-0-file-tools#%E6%96%87%E4%BB%B6%E5%B7%A5%E5%85%B7%E5%90%84%E8%87%AA%E5%81%9A%E5%A5%BD%E4%B8%80%E4%BB%B6%E4%BA%8B" class="hash-link" aria-label="文件工具各自做好一件事的直接链接" title="文件工具各自做好一件事的直接链接" translate="no">​</a></h2>
+<p>从文件右键菜单进入<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/fast-delete">快速删除</a>或<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/file-locks">解除占用</a>。前者处理文件和目录，后者查看并按需结束占用进程。页面不要求手工输入路径，也不展示并发选项或任务历史。</p>
+<p><strong>删除是永久删除，不进入回收站，并可能结束可处理的占用程序。确认前保存工作；已删除内容不能撤销。</strong> 系统保护、权限和身份检查仍然生效，没有“绕过所有阻碍”的承诺。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="菜单与配置统一">菜单与配置统一<a href="https://vertree.w0fv1.dev/blog/3-0-0-file-tools#%E8%8F%9C%E5%8D%95%E4%B8%8E%E9%85%8D%E7%BD%AE%E7%BB%9F%E4%B8%80" class="hash-link" aria-label="菜单与配置统一的直接链接" title="菜单与配置统一的直接链接" translate="no">​</a></h2>
+<p>Windows 11 和经典菜单采用同样的单项开关样式，各自保留选中状态。配置只使用 <code>settings.json</code>，不导入旧配置或恢复 <code>.previous</code>；已有有效的 2.x 设置与监控任务继续保留。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="首页更克制">首页更克制<a href="https://vertree.w0fv1.dev/blog/3-0-0-file-tools#%E9%A6%96%E9%A1%B5%E6%9B%B4%E5%85%8B%E5%88%B6" class="hash-link" aria-label="首页更克制的直接链接" title="首页更克制的直接链接" translate="no">​</a></h2>
+<p>卡片改为比例宽度并保留优选最小值与最大值，小窗口可缩窄和滚动。品牌区与按钮间距增加至 40，按钮仍紧凑；退出只保留图标。10 句文案在完整启动时随机选择，同一次运行中保持不变。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="官网与文档一起更新">官网与文档一起更新<a href="https://vertree.w0fv1.dev/blog/3-0-0-file-tools#%E5%AE%98%E7%BD%91%E4%B8%8E%E6%96%87%E6%A1%A3%E4%B8%80%E8%B5%B7%E6%9B%B4%E6%96%B0" class="hash-link" aria-label="官网与文档一起更新的直接链接" title="官网与文档一起更新的直接链接" translate="no">​</a></h2>
+<p>首页、功能页、下载页和导航重新排版，文档按实际任务组织。修正自动快照目录和菜单配置的过时说明，补充使用截图、常见问题和开发边界。站内链接、资源、浅深色及手机布局纳入构建检查。</p>
+<p><a class="" href="https://vertree.w0fv1.dev/download">下载 3.0.0</a> · <a href="https://github.com/w0fv1/VerTree/releases/tag/V3.0.0" target="_blank" rel="noopener noreferrer" class="">完整发布说明</a> · <a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/install">升级注意事项</a></p>]]></content:encoded>
+        </item>
+        <item>
+            <title><![CDATA[开发进展：Windows 文件工具与界面整理]]></title>
+            <link>https://vertree.w0fv1.dev/blog/windows-tools-development</link>
+            <guid>https://vertree.w0fv1.dev/blog/windows-tools-development</guid>
+            <pubDate>Sun, 27 Sep 2026 00:00:00 GMT</pubDate>
+            <description><![CDATA[快速删除、占用查询、菜单设置与文档改进的开发分支说明，尚不是正式版本发布。]]></description>
+            <content:encoded><![CDATA[<p>这一轮把 Windows 文件清理和占用诊断拆成两个独立功能，同时整理菜单设置、首页与文档。<strong>这是开发进展，不是正式安装包的发布公告。</strong></p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="两种动作分别确认">两种动作，分别确认<a href="https://vertree.w0fv1.dev/blog/windows-tools-development#%E4%B8%A4%E7%A7%8D%E5%8A%A8%E4%BD%9C%E5%88%86%E5%88%AB%E7%A1%AE%E8%AE%A4" class="hash-link" aria-label="两种动作，分别确认的直接链接" title="两种动作，分别确认的直接链接" translate="no">​</a></h2>
+<p>快速删除面向大文件和海量小文件。目标从右键菜单带入，或点击选择卡片补充；确认永久删除与进程终止风险后再执行，不展示并发参数和历史任务面板。</p>
+<p>解除占用以进程卡片展示使用文件的程序，按需展开详情、刷新或进行管理员扫描。“结束任务”独立确认，本身不删除文件。</p>
+<p>不会因为强调“快”就自动改 ACL、关闭安全软件或结束受保护进程。取消不能撤销已完成的永久删除。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="设置更一致">设置更一致<a href="https://vertree.w0fv1.dev/blog/windows-tools-development#%E8%AE%BE%E7%BD%AE%E6%9B%B4%E4%B8%80%E8%87%B4" class="hash-link" aria-label="设置更一致的直接链接" title="设置更一致的直接链接" translate="no">​</a></h2>
+<p>Windows 11 与经典菜单的单项设置共用相同的滑动开关样式，选择状态仍然独立。应用设置只以 <code>settings.json</code> 为准，不再导入旧配置或回退 <code>.previous</code>。</p>
+<p>首页保留紧凑的“监控”“设置”和无边框退出图标；文案每次完全启动随机一条，同次运行不变。背景卡片按可用宽度缩放，具备最小值、上限和窄窗退让规则，不再由句子长短决定宽度。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="文档与发布边界">文档与发布边界<a href="https://vertree.w0fv1.dev/blog/windows-tools-development#%E6%96%87%E6%A1%A3%E4%B8%8E%E5%8F%91%E5%B8%83%E8%BE%B9%E7%95%8C" class="hash-link" aria-label="文档与发布边界的直接链接" title="文档与发布边界的直接链接" translate="no">​</a></h2>
+<p>官网增加功能与下载页，用户指南按备份、版本树、监控、菜单与文件工具组织。更正旧快照目录、固定菜单项数量和旧模块路径，同时保留历史发布文章的时间语境。</p>
+<p>当前公开正式版在审计时为 2.0.1。以上新增能力必须等明确版本发布后，才能视为公开安装包已提供。使用流程见<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/fast-delete">快速删除</a>、<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/file-locks">解除占用</a>和<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/settings">设置说明</a>。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="发布后续">发布后续<a href="https://vertree.w0fv1.dev/blog/windows-tools-development#%E5%8F%91%E5%B8%83%E5%90%8E%E7%BB%AD" class="hash-link" aria-label="发布后续的直接链接" title="发布后续的直接链接" translate="no">​</a></h2>
+<p>上述开发工作已纳入 <a class="" href="https://vertree.w0fv1.dev/blog/3-0-0-file-tools">3.0.0 发布说明</a>。本文保留开发阶段记录，当前用法以对应版本的用户指南为准。</p>]]></content:encoded>
+        </item>
         <item>
             <title><![CDATA[Vertree 2.0.0：版本、快照与监控架构升级]]></title>
             <link>https://vertree.w0fv1.dev/blog/2-0-0-architecture</link>
             <guid>https://vertree.w0fv1.dev/blog/2-0-0-architecture</guid>
             <pubDate>Tue, 08 Sep 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[本次为不兼容升级：重组版本、快照和监控架构，并修正 Windows MSI 安装包。]]></description>
+            <description><![CDATA[说明版本、快照、配置和 API 的不兼容升级。]]></description>
             <content:encoded><![CDATA[<p>本次为不兼容升级：重组版本、快照和监控架构，并修正 Windows MSI 安装包。</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>历史版本记录</div><div class="admonitionContent_BuS1"><p>本页记录 2.0.0 当时的变化和验证，不代表最新版本的全部行为。当前指南见<a class="" href="https://vertree.w0fv1.dev/docs/intro">文档中心</a>，安装包以<a class="" href="https://vertree.w0fv1.dev/download">下载页</a>为准。</p></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="升级前请注意">升级前请注意<a href="https://vertree.w0fv1.dev/blog/2-0-0-architecture#%E5%8D%87%E7%BA%A7%E5%89%8D%E8%AF%B7%E6%B3%A8%E6%84%8F" class="hash-link" aria-label="升级前请注意的直接链接" title="升级前请注意的直接链接" translate="no">​</a></h2>
 <ul>
 <li class="">使用新的 settings.json 配置和 monitorTasks 任务格式，不读取或迁移旧 config.json。升级后请重新设置偏好并添加监控任务。</li>
@@ -48,8 +87,9 @@
             <link>https://vertree.w0fv1.dev/blog/1-1-0-file-preview</link>
             <guid>https://vertree.w0fv1.dev/blog/1-1-0-file-preview</guid>
             <pubDate>Mon, 07 Sep 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[1.1.0 把本地文件预览接入了 Vertree。现在可以在 Windows 右键菜单选择“预览文件”，也可以从版本树节点打开历史文件，快速确认内容后再决定是否用原软件编辑。]]></description>
+            <description><![CDATA[首次接入本地文件预览，并说明格式与资源边界。]]></description>
             <content:encoded><![CDATA[<p>1.1.0 把本地文件预览接入了 Vertree。现在可以在 Windows 右键菜单选择“预览文件”，也可以从版本树节点打开历史文件，快速确认内容后再决定是否用原软件编辑。</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>历史版本记录</div><div class="admonitionContent_BuS1"><p>本页记录 1.1.0 当时的变化和验证，不代表最新版本的全部行为。当前指南见<a class="" href="https://vertree.w0fv1.dev/docs/intro">文档中心</a>，安装包以<a class="" href="https://vertree.w0fv1.dev/download">下载页</a>为准。</p></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="预览不需要先建立版本树">预览不需要先建立版本树<a href="https://vertree.w0fv1.dev/blog/1-1-0-file-preview#%E9%A2%84%E8%A7%88%E4%B8%8D%E9%9C%80%E8%A6%81%E5%85%88%E5%BB%BA%E7%AB%8B%E7%89%88%E6%9C%AC%E6%A0%91" class="hash-link" aria-label="预览不需要先建立版本树的直接链接" title="预览不需要先建立版本树的直接链接" translate="no">​</a></h2>
 <p>任意文件都可以尝试预览。Windows 和 macOS 在应用内显示，Linux 使用本机浏览器；命令行也支持 <code>vertree preview "文件路径"</code>。</p>
 <p>通用格式能力由配套的 <a href="https://github.com/w0fv1/Office-Viewer" target="_blank" rel="noopener noreferrer" class="">Office-Viewer</a> 仓库维护，Vertree 复用其前端模块，文件内容在本机处理。</p>
@@ -69,8 +109,9 @@
             <link>https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes</link>
             <guid>https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes</guid>
             <pubDate>Mon, 07 Sep 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[1.1.4 修复 Windows 任务栏 Logo 白底和退出拖延，并统一各平台与官网使用的 Logo 资源。]]></description>
+            <description><![CDATA[记录 Windows 任务栏图标和退出流程的历史修复。]]></description>
             <content:encoded><![CDATA[<p>1.1.4 修复 Windows 任务栏 Logo 白底和退出拖延，并统一各平台与官网使用的 Logo 资源。</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>历史版本记录</div><div class="admonitionContent_BuS1"><p>本页记录 1.1.4 当时的变化和验证，不代表最新版本的全部行为。当前指南见<a class="" href="https://vertree.w0fv1.dev/docs/intro">文档中心</a>，安装包以<a class="" href="https://vertree.w0fv1.dev/download">下载页</a>为准。</p></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="任务栏图标">任务栏图标<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E4%BB%BB%E5%8A%A1%E6%A0%8F%E5%9B%BE%E6%A0%87" class="hash-link" aria-label="任务栏图标的直接链接" title="任务栏图标的直接链接" translate="no">​</a></h2>
 <p>运行窗口明确指定公共透明 ICO，并与安装器创建的快捷方式使用相同的应用标识，避免升级后继续选取旧的图标关联。修复已在实际 Windows 任务栏确认。</p>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="退出流程">退出流程<a href="https://vertree.w0fv1.dev/blog/1-1-4-windows-fixes#%E9%80%80%E5%87%BA%E6%B5%81%E7%A8%8B" class="hash-link" aria-label="退出流程的直接链接" title="退出流程的直接链接" translate="no">​</a></h2>
@@ -84,8 +125,9 @@
             <link>https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api</link>
             <guid>https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api</guid>
             <pubDate>Mon, 07 Sep 2026 00:00:00 GMT</pubDate>
-            <description><![CDATA[Vertree 1.2.0 新增文件预览图 API：传入本机文件绝对路径，后台直接返回 PNG。预览图通过 Office-Viewer 的共享渲染模块生成，不弹窗，也不替换当前预览。]]></description>
+            <description><![CDATA[记录预览图与本机自动化 API 的初始发布。]]></description>
             <content:encoded><![CDATA[<p>Vertree 1.2.0 新增文件预览图 API：传入本机文件绝对路径，后台直接返回 PNG。预览图通过 Office-Viewer 的共享渲染模块生成，不弹窗，也不替换当前预览。</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>历史版本记录</div><div class="admonitionContent_BuS1"><p>本页记录 1.2.0 当时的变化和验证，不代表最新版本的全部行为。当前指南见<a class="" href="https://vertree.w0fv1.dev/docs/intro">文档中心</a>，安装包以<a class="" href="https://vertree.w0fv1.dev/download">下载页</a>为准。</p></div></div>
 <h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="文件预览图">文件预览图<a href="https://vertree.w0fv1.dev/blog/1-2-0-preview-image-api#%E6%96%87%E4%BB%B6%E9%A2%84%E8%A7%88%E5%9B%BE" class="hash-link" aria-label="文件预览图的直接链接" title="文件预览图的直接链接" translate="no">​</a></h2>
 <p><code>POST /api/v1/preview-images</code> 支持宽高、PDF/PPT 页码、工作表和视频时间点。未知扩展名按内容检测文本，未知二进制和音频等无可视内容的文件明确返回不支持。</p>
 <p>Word 与连续文本目前导出首屏；Windows 使用 WebView2，macOS 使用 WKWebView，Linux 后台生成需要安装 Chromium 或 Google Chrome。</p>
@@ -98,36 +140,23 @@
 <p><a href="https://github.com/w0fv1/VerTree/releases/tag/V1.2.0" target="_blank" rel="noopener noreferrer" class="">前往 V1.2.0 发布页</a>。Windows 常规安装请选择 <code>vertree-windows-x64-1.2.0-setup.exe</code>，先退出旧版或本地测试程序，再覆盖安装。</p>]]></content:encoded>
         </item>
         <item>
-            <title><![CDATA[Welcome]]></title>
+            <title><![CDATA[为什么做一个单文件版本管理工具]]></title>
             <link>https://vertree.w0fv1.dev/blog/welcome</link>
             <guid>https://vertree.w0fv1.dev/blog/welcome</guid>
             <pubDate>Thu, 06 Mar 2025 00:00:00 GMT</pubDate>
-            <description><![CDATA[为什么我们需要Vertree：单文件版本管理的革命]]></description>
-            <content:encoded><![CDATA[<h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="为什么我们需要vertree单文件版本管理的革命">为什么我们需要Vertree：单文件版本管理的革命<a href="https://vertree.w0fv1.dev/blog/welcome#%E4%B8%BA%E4%BB%80%E4%B9%88%E6%88%91%E4%BB%AC%E9%9C%80%E8%A6%81vertree%E5%8D%95%E6%96%87%E4%BB%B6%E7%89%88%E6%9C%AC%E7%AE%A1%E7%90%86%E7%9A%84%E9%9D%A9%E5%91%BD" class="hash-link" aria-label="为什么我们需要Vertree：单文件版本管理的革命的直接链接" title="为什么我们需要Vertree：单文件版本管理的革命的直接链接" translate="no">​</a></h3>
-<p>在数字创作的时代，文件版本管理是一个不可忽视的问题。无论是设计师、程序员还是普通的文档编辑者，我们都面临着文件版本混乱的困境。Vertree的诞生，正是为了应对这一挑战，提供一个简单而高效的解决方案。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="动机从混乱到有序">动机：从混乱到有序<a href="https://vertree.w0fv1.dev/blog/welcome#%E5%8A%A8%E6%9C%BA%E4%BB%8E%E6%B7%B7%E4%B9%B1%E5%88%B0%E6%9C%89%E5%BA%8F" class="hash-link" aria-label="动机：从混乱到有序的直接链接" title="动机：从混乱到有序的直接链接" translate="no">​</a></h4>
-<p>多年以前，我目睹了一位设计师朋友的经历，他为甲方的反复修改而苦恼。每次修改，文件都会被复制一份，版本越来越多，越来越乱。甲方的每一次推倒重来，都像是在无序的海洋中挣扎。这让我意识到，<strong>版本管理</strong>不仅仅是一个技术问题，更是一个实际的工作痛点。</p>
-<p>在编程领域，我们有Git、SVN这样的工具，它们帮助我们管理代码的版本，记录每一次的修改和更新。但在设计、文档编辑等领域，这样的工具却显得力不从心。PSD、DOCX等文件格式，无法像文本一样被轻松地纳入版本控制系统。市场上的解决方案要么复杂难用，要么根本不存在。</p>
-<p>经过对用户需求的深入分析，我发现了一个空白：<strong>单文件版本管理</strong>。这个领域的痛点很明显，但一直被忽视。Vertree的出现，就是为了填补这个空白，让每一个创作者都能轻松管理自己的文件版本。</p>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="设计思路让复杂变得简单">设计思路：让复杂变得简单<a href="https://vertree.w0fv1.dev/blog/welcome#%E8%AE%BE%E8%AE%A1%E6%80%9D%E8%B7%AF%E8%AE%A9%E5%A4%8D%E6%9D%82%E5%8F%98%E5%BE%97%E7%AE%80%E5%8D%95" class="hash-link" aria-label="设计思路：让复杂变得简单的直接链接" title="设计思路：让复杂变得简单的直接链接" translate="no">​</a></h4>
-<p>Vertree的核心设计思路，是让版本管理变得直观、自然，符合用户的使用习惯。</p>
-<ol>
-<li class="">
-<p><strong>树状版本结构</strong>：我们引入了分支和备份的概念，把复杂的版本关系转化为清晰的树状结构。<strong>分支</strong>用于记录文件的不同走向，<strong>备份</strong>则捕捉每次修改的关键节点。用户不需要了解复杂的版本管理理论，只需要轻轻一点，就能生成清晰的版本树。</p>
-</li>
-<li class="">
-<p><strong>实时监控</strong>：Vertree会默默地守护你的文件，记录每一次的细微修改。它就像是一个智能的守护者，当你忙于创作时，它在背后默默工作。如果出现问题，它可以快速还原到任何版本，让你的创作过程永远不会被中断。</p>
-</li>
-<li class="">
-<p><strong>无缝使用，无侵入性</strong>：这是Vertree最大的特点。我们没有创造新的流程，而是简化了现有的操作。你只需要像平常一样使用文件，Vertree会在背后自动完成版本管理。所有的备份操作都是无感的，不会干扰你的工作流程。</p>
-</li>
-</ol>
-<h4 class="anchor anchorTargetStickyNavbar_Vzrq" id="从混乱到有序vertree的承诺">从混乱到有序：vertree的承诺<a href="https://vertree.w0fv1.dev/blog/welcome#%E4%BB%8E%E6%B7%B7%E4%B9%B1%E5%88%B0%E6%9C%89%E5%BA%8Fvertree%E7%9A%84%E6%89%BF%E8%AF%BA" class="hash-link" aria-label="从混乱到有序：vertree的承诺的直接链接" title="从混乱到有序：vertree的承诺的直接链接" translate="no">​</a></h4>
-<p>vertree不仅仅是一个工具，它是一种对创作过程的尊重。我们相信，每一个创作者都应该专注于自己的作品，而不是被版本管理的复杂性所困扰。vertree的出现，是为了让创作变得更加自由和高效。</p>
-<p>通过vertree，我们希望改变的不仅仅是文件管理的方式，更是创作者的工作习惯。每一次的修改，都会成为创作历程中清晰的印记。每一次的回溯，都可以找到灵感的来源。</p>
-<p>vertree的使命，是让每一个创作者都能轻松管理自己的文件版本，让创作的每一步都变得清晰、有序。</p>
-<p>vertree：让每一次修改都有迹可循。</p>]]></content:encoded>
-            <category>Hello</category>
+            <description><![CDATA[在文档和设计稿反复修改时，给阶段成果与分支关系一个清楚的位置。]]></description>
+            <content:encoded><![CDATA[<p>“最终版”“最终版修改”“这次真的最终版”，往往不是命名习惯的问题，而是没有合适的位置表达一个文件经历过哪些选择。Vertree 想把这些关系整理得更直观。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="从一份反复改稿的文件出发">从一份反复改稿的文件出发<a href="https://vertree.w0fv1.dev/blog/welcome#%E4%BB%8E%E4%B8%80%E4%BB%BD%E5%8F%8D%E5%A4%8D%E6%94%B9%E7%A8%BF%E7%9A%84%E6%96%87%E4%BB%B6%E5%87%BA%E5%8F%91" class="hash-link" aria-label="从一份反复改稿的文件出发的直接链接" title="从一份反复改稿的文件出发的直接链接" translate="no">​</a></h2>
+<p>设计稿、方案、脚本或配置都可能需要保留几个阶段。手动复制容易开始，文件一多却很难看清某一版从哪里来，又向哪个方向修改。Vertree 用版本号、备注和分支把这些关系留在普通文件中。</p>
+<p>Git 等工具当然能够跟踪二进制文件，但它们的仓库与协作流程并不总是符合单文件改稿的习惯。Vertree 不是要替代它们，而是为不需要整套代码协作流程的任务提供另一种入口。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="三个取舍">三个取舍<a href="https://vertree.w0fv1.dev/blog/welcome#%E4%B8%89%E4%B8%AA%E5%8F%96%E8%88%8D" class="hash-link" aria-label="三个取舍的直接链接" title="三个取舍的直接链接" translate="no">​</a></h2>
+<p><strong>文件仍是普通文件。</strong> 不把所有版本锁在专有数据库里，原软件仍能打开；代价是完整副本会占用空间。</p>
+<p><strong>阶段版本与自动记录分开。</strong> 手动备份保留重要节点，监控按变化与间隔创建快照。它不承诺每次保存都生成备份，更不能代替异地备份。</p>
+<p><strong>先看清，再决定。</strong> 版本树帮助确认关系，只读预览帮助确认内容。不同格式的还原能力有边界，精确编辑仍交给原软件。</p>
+<h2 class="anchor anchorTargetStickyNavbar_Vzrq" id="一条持续保留的原则">一条持续保留的原则<a href="https://vertree.w0fv1.dev/blog/welcome#%E4%B8%80%E6%9D%A1%E6%8C%81%E7%BB%AD%E4%BF%9D%E7%95%99%E7%9A%84%E5%8E%9F%E5%88%99" class="hash-link" aria-label="一条持续保留的原则的直接链接" title="一条持续保留的原则的直接链接" translate="no">​</a></h2>
+<p>让每一次迭代都有迹可循，不是承诺永远不会丢失文件，而是尽量让重要节点容易留下、关系容易理解、失败也能明确说明。</p>
+<p>本文是项目设计背景，不是当前功能清单。实际用法从<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/quick-start">快速开始</a>阅读，限制见<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-develop/design">设计取舍</a>。</p>]]></content:encoded>
+            <category>设计与理念</category>
         </item>
     </channel>
 </rss>

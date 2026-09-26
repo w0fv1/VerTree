@@ -58,6 +58,12 @@ add_subdirectory("context_menu")
 
 
 
+# Explicit offline build mode; normal builds continue to use the NuGet CLI.
+if(DEFINED ENV{VERTREE_NUGET_CACHE_ONLY} AND "$ENV{VERTREE_NUGET_CACHE_ONLY}" STREQUAL "1")
+  set(NUGET "${CMAKE_CURRENT_SOURCE_DIR}/../tools/nuget_cache.cmd" CACHE FILEPATH "Verified local NuGet cache adapter" FORCE)
+elseif(DEFINED NUGET AND NUGET MATCHES "nuget_cache[.]cmd$")
+  unset(NUGET CACHE)
+endif()
 include(flutter/generated_plugins.cmake)
 
 
@@ -74,6 +80,8 @@ endif()
 
 set(INSTALL_BUNDLE_DATA_DIR "${CMAKE_INSTALL_PREFIX}/data")
 set(INSTALL_BUNDLE_LIB_DIR "${CMAKE_INSTALL_PREFIX}")
+
+add_subdirectory("file_tools")
 
 install(TARGETS ${BINARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}"
   COMPONENT Runtime)
