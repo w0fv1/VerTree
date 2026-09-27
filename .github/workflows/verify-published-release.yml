@@ -44,11 +44,13 @@ jobs:
           curl --silent --show-error --location --max-time 25 -D build/site-probe/headers.txt https://vertree.w0fv1.dev/ -o build/site-probe/home.html || true
           python - <<'PY'
           from pathlib import Path
-          import re
+          import sys
+          sys.path.insert(0, "tools")
+          from verify_published_release import page_title
           p = Path('build/site-probe/home.html')
           if p.exists():
               s = p.read_text(encoding='utf-8', errors='replace')
-              print('Observed titles:', re.findall(r'<title>(.*?)</title>', s))
+              print('Observed title:', page_title(s))
               print('Body prefix:', s[:1500])
           h = Path('build/site-probe/headers.txt')
           if h.exists():

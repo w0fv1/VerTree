@@ -15,6 +15,7 @@ import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from html.parser import HTMLParser
 
 REPOSITORY = "w0fv1/VerTree"
 SITE = "https://vertree.w0fv1.dev"
@@ -115,6 +116,33 @@ def verify_release(tag: str) -> dict:
             "manifestSha256": manifest_hash, "assets": verified}
 
 
+class _TitleParser(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=True)
+        self.inside_title = False
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "title":
+            self.inside_title = True
+
+    def handle_endtag(self, tag):
+        if tag == "title":
+            self.inside_title = False
+
+    def handle_data(self, data):
+        if self.inside_title:
+            self.parts.append(data)
+
+
+def page_title(html: str) -> str | None:
+    # React/Docusaurus adds attributes such as data-rh="true" to <title>.
+    # Use an HTML parser so attributes, case and entities remain valid HTML.
+    parser = _TitleParser()
+    parser.feed(html)
+    return " ".join("".join(parser.parts).split()) or None
+
+
 def verify_website(tag: str) -> dict:
     version = version_for(tag)
     # Check deployed HTML, not local build output. These are informational pages;
@@ -134,11 +162,11 @@ def verify_website(tag: str) -> dict:
         route, marker = item
         url = SITE + route + "?release-verification=" + urllib.parse.quote(tag)
         html = read_url(url).decode("utf-8")
-        title = re.search(r"<title>(.*?)</title>", html, re.DOTALL)
+        title = page_title(html)
         if not title or marker not in html:
-            raise ValueError(f"Deployed page is missing its expected content: {route}; title={title[1] if title else None!r}; bytes={len(html)}")
+            raise ValueError(f"Deployed page is missing its expected content: {route}; title={title!r}; bytes={len(html)}")
         print(f"PASS website {route}", flush=True)
-        return {"route": route, "title": title[1], "markerFound": True}
+        return {"route": route, "title": title, "markerFound": True}
 
     with ThreadPoolExecutor(max_workers=4) as pool:
         pages = list(pool.map(verify_page, routes.items()))

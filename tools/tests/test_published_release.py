@@ -80,6 +80,20 @@ class PublishedReleaseTests(unittest.TestCase):
         with patch.object(verifier, "read_url", side_effect=read), self.assertRaises(ValueError):
             verifier.verify_release("V3.0.0")
 
+    def test_title_attributes_case_entities_and_newlines(self):
+        self.assertEqual(verifier.page_title('<title data-rh="true">让每一次迭代都有迹可循 | Vertree 维树</title>'), '让每一次迭代都有迹可循 | Vertree 维树')
+        self.assertEqual(verifier.page_title('<TITLE data-value=">"> A &amp; B\n </TITLE>'), 'A & B')
+        self.assertIsNone(verifier.page_title('<html><h1>No title</h1></html>'))
+
+    def test_website_accepts_real_docusaurus_title_markup(self):
+        html = ('<html><head><title data-rh="true">Vertree 维树</title></head><body>'
+                '让每一次迭代都有迹可循 功能与使用场景 从一个文件开始 永久 占用 settings.json '
+                'vertree-windows-x64-3.0.0-setup.exe 3.0.0</body></html>').encode()
+        with patch.object(verifier, "read_url", return_value=html):
+            result = verifier.verify_website("V3.0.0")
+        self.assertEqual(len(result["pages"]), 8)
+        self.assertTrue(all(page["markerFound"] for page in result["pages"]))
+
     def test_website_rejects_old_deployment(self):
         with patch.object(verifier, "read_url", return_value=b"<title>Old website</title>"), self.assertRaises(ValueError):
             verifier.verify_website("V3.0.0")
