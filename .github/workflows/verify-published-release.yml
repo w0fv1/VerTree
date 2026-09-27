@@ -1,0 +1,41 @@
+name: Verify published release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing public stable release tag (read-only verification)"
+        required: true
+        default: "V3.0.0"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-published-release-${{ inputs.tag }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Public downloads and live website
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Test verifier without network access
+        run: python -m unittest discover -s tools/tests -p test_published_release.py
+      - name: Verify public bytes, checksums and deployed pages
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: python tools/verify_published_release.py --tag "$RELEASE_TAG" --report build/published-release-verification.json
+      - name: Keep verification results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: published-release-verification
+          path: build/published-release-verification.json
+          if-no-files-found: warn
