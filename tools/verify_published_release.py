@@ -136,7 +136,7 @@ def verify_website(tag: str) -> dict:
         html = read_url(url).decode("utf-8")
         title = re.search(r"<title>(.*?)</title>", html, re.DOTALL)
         if not title or marker not in html:
-            raise ValueError(f"Deployed page is missing its expected content: {route}")
+            raise ValueError(f"Deployed page is missing its expected content: {route}; title={title[1] if title else None!r}; bytes={len(html)}")
         print(f"PASS website {route}", flush=True)
         return {"route": route, "title": title[1], "markerFound": True}
 

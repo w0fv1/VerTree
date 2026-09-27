@@ -32,10 +32,34 @@ jobs:
         env:
           RELEASE_TAG: ${{ inputs.tag }}
         run: python tools/verify_published_release.py --tag "$RELEASE_TAG" --report build/published-release-verification.json
+      - name: Diagnose public routing after a failed check
+        if: failure()
+        run: |
+          mkdir -p build/site-probe
+          for host in vertree.w0fv1.dev w0fv1.github.io; do
+            echo "DNS $host"
+            dig +short "$host" CNAME
+            dig +short "$host" A
+          done
+          curl --silent --show-error --location --max-time 25 -D build/site-probe/headers.txt https://vertree.w0fv1.dev/ -o build/site-probe/home.html || true
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('build/site-probe/home.html')
+          if p.exists():
+              s = p.read_text(encoding='utf-8', errors='replace')
+              print('Observed titles:', re.findall(r'<title>(.*?)</title>', s))
+              print('Body prefix:', s[:1500])
+          h = Path('build/site-probe/headers.txt')
+          if h.exists():
+              print(h.read_text())
+          PY
       - name: Keep verification results
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: published-release-verification
-          path: build/published-release-verification.json
+          path: |
+            build/published-release-verification.json
+            build/site-probe/
           if-no-files-found: warn
