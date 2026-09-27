@@ -456,7 +456,15 @@ jobs:
                 throw error;
               }
 
-              release = (await github.rest.repos.createRelease({
+              // Draft releases are not reliably addressable through the tag endpoint.
+              // Reuse the unique matching draft when retrying an interrupted upload.
+              const drafts = (await github.paginate(github.rest.repos.listReleases, {
+                owner, repo, per_page: 100,
+              })).filter(item => item.tag_name === tag && item.draft);
+              if (drafts.length > 1) {
+                throw new Error(`Multiple draft releases exist for ${tag}; review them before retrying.`);
+              }
+              release = drafts[0] ?? (await github.rest.repos.createRelease({
                 owner,
                 repo,
                 tag_name: tag,
@@ -542,7 +550,7 @@ jobs:
             -H "$auth_header" \
             -H "$accept_header" \
             -H "$version_header" \
-            "$api_base/releases/tags/$RELEASE_TAG")"
+            "$api_base/releases/$RELEASE_ID")"
           uploaded_count="$(jq '.assets | length' <<<"$release_json")"
           echo "Uploaded release asset count: $uploaded_count"
           if (( uploaded_count < ${#asset_files[@]} )); then
