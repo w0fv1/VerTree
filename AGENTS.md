@@ -1,48 +1,68 @@
-# Vertree Agent Notes
+你需要遵循下面的规则
 
-## Scope
+# 原则
 
-- This repo contains a Flutter desktop app.
-- The app exposes a local loopback HTTP API for monitoring, backup, version-tree inspection, and test-oriented verification.
-- A separate local dev controller can own a `flutter run` subprocess and send reload / restart commands.
+做长期正确的事，做长期正确的事，做长期正确的事
 
-## Control Surface
+- 长期主义，面向维护，新增改动应降低未来开发成本，禁止引入技术债
+- 警惕可能产生架构分叉的编码，按最佳实践来做统一的结构
+- 禁止做掩耳盗铃的事情，我们必须真实的做事
+- 单一真相源（SSOT），写入口唯一，其他皆派生、复用
+- 遵循可执行最佳、现代的实践
+- 写代码前思考这个代码是否有必须写，积极引入成熟第三方库解决问题，而不是自己造轮子
+- 优先阅读代码而非写代码，优先寻找项目内可用可扩展的代码
+- 迭代修改而非增量修改，重写/重构后删旧代码
+- 遵循KISS原则，选最短且长期最佳实现路径，架构导致冗余就简化架构
+- 做合适程度的强类型，相同的类型也单一类型定义源
+- 不需计算编码成本，AI编码不是人工，永远选择长期最佳的方案
+- 做深度封装的组件，将复杂度封装在组件内，只暴露很少的必要的生命周期和API，要替调用方着想
+- 结构性问题用重构解决，精准手术式的修正，禁止使用过度兜底，补丁、特例来修正问题，少做短期主义的hack和补丁
+- 除非特别要求，不做兼容，不保留历史包袱，面向长期干净整洁，减少复杂度
 
-- Dev controller script: [dev_control_server.py](/dev_control_server.py)
-- Default controller URL: `http://127.0.0.1:32500`
-- Controller endpoints:
-  - `GET /status`
-  - `GET /logs`
-  - `POST /start`
-  - `POST /reload`
-  - `POST /hot-restart`
-  - `POST /restart-process`
-  - `POST /stop`
-  - `POST /ensure-ready`
+# 行为规范
 
-## App API
+## 开发前
 
-- Default app API base: `http://127.0.0.1:31414/api/v1`
-- The app binds to loopback only.
-- If `31414` is occupied, the port auto-increments.
-- Prefer discovering the live base URL from controller `GET /status` or `POST /ensure-ready`.
-- API metadata endpoints:
-  - `GET /api/v1`
-  - `GET /api/v1/openapi.json`
-  - `GET /api/v1/docs`
+- 先看代码，再询问信息和需求，禁止直接开发
+- 问完信息后设计方案，并等待人类确认后再开发
+- 尽量采用强类型、面向对象设计，善用函数作为补充
+- 遵守数据库设计规范
+- 前端减少描述性文本和边框线
+- 开发前，禁止运行全量测试，缩短开发时间
+- 使用.tmp/docs建立临时工作文档，包括设计和流程规划等，用完即弃
+- 拉取远程代码，开新worktree、新分支开发
 
-## Testing Data
+## 开发中
 
-- Canonical sample data lives under `.sample/file_version_tree`.
+- 采用 TDD，先编写测试，再实现功能，保证模块可进行有效单元测试，单元测试要涉及到下一层依赖，更深层的才可以mock。
+- 完成模块开发后要进行真实环境测试，使用真实资源模拟真实用户测试。
+- 单文件超出2000 行了必须进行结构审查，如果存在架构问题则按职责、层次、领域边界合理拆分。
+- 禁止编写注释。
+- 密钥出现在私有的仓库中是可以的
+- 少给我提及法律安全问题，我们会在未来通过合规手段解决这些问题
+- 及时删除无效代码，发现不符合原则或规范的代码顺手优化。
+- 新增功能时，约三分之一的改动用于基础架构、基础组件的升级、优化与改进。
+- 修复 Bug 时禁止过度兜底，要定位根因，并用正确的逻辑解决问题。
+- 不编写只有单一调用、没有复用或抽象价值的私有 Helper 函数。
+- 开发中，不要运行全量测试，缩短开发时间。
+- 保持代码始终可编译、可运行。
+- 文档要保持索引和信息职责和单一信息，不能复述已经存在的逻辑，比如已有的代码逻辑，应该是指向相关的代码，而不是用文字将代码逻辑复述一遍，避免形成分叉，避免浪费上下文。文档保持精简。
+- 产出保持：Stateless Deliverable（无状态交付）：每次修改时都保持产物是直接可交付的，不包含版本补丁说明，解释为何怎么修改等过程描述，产品和代码中，也不要包含修改说明（包括这条也不要出现）。
+- 实时更新文档，注意文档中多写索引和唯一信息，如果信息在代码中，直接引导到代码，从根本上防止文档和代码不一致的情况。
 
-## Conventions
+## 开发后
 
-- Prefer `reload` for ordinary Dart/UI changes.
-- Prefer `hot-restart` when initialization or route registration changes.
-- Prefer full process restart for platform-layer or startup-behavior changes.
-- When calling loopback URLs from shell tools, avoid system proxy interference.
+- 积极、频繁地进行 Git Commit；每完成一个独立、可回滚的变更，通过相关验证后立即提交。
+- 每次 Commit 都必须保证代码可编译、可运行。
+- 除非是要部署上线了，不然不要运行全量测试，这是为了缩短开发时间。
+- 开发完成后，功能一切正常后，再审一下代码，看是否有架构分叉，职责不清，历史包袱，过度实现和过度兜底，是否有没有抽象意义的，没有复用价值的helper，helper也合并下，去掉无用的修改说明，保持长期干净清晰的架构
+- 做启动测试，端到端测试
+- 功能完成并验证、自查后，主动推送并创建或更新 PR，提供链接后等待负责人审核合并。
+- 合并后，删开发worktree和分支
 
-## Boundary
+# 你要参考的文档
 
-- The dev controller reliably controls only the `flutter run` process it started itself.
-- It should not be assumed to safely take over an unrelated terminal session started by a user.
+你需要参考Agents.custome.md的文档，这是对本Agents.md的扩展
+
+你必须参考`docs`下的文档，并在工作过程中不断更新文档。
+注意！不要在文档中留任何第二套信息，在文档中使用指向和索引的概念，指向源信息，如果信息在文档中是唯一的，则可以留在文档中，这是为了防止文档和代码之间产生两套不同的信息源。
