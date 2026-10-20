@@ -339,6 +339,15 @@ Set-Location $scriptDir
 $issFile = Join-Path $scriptDir "setup.iss"
 $runnerOutputDir = (Resolve-Path (Join-Path $scriptDir "..\\build\\windows\\x64\\runner\\$BuildMode")).Path
 
+$fileeRuntime = Join-Path $scriptDir "..\\vendor\\filee\\win-x64"
+$fileeTarget = Join-Path $runnerOutputDir "vendor\\filee\\win-x64"
+if (-not (Test-Path (Join-Path $fileeRuntime "filee-cli.exe"))) {
+    Write-Error "Bundled Filee runtime is missing. Run tools/build_filee_runtime.ps1 win-x64 before packaging."
+    exit 1
+}
+New-Item -ItemType Directory -Force -Path $fileeTarget | Out-Null
+Copy-Item (Join-Path $fileeRuntime "*") $fileeTarget -Recurse -Force
+
 & (Join-Path $scriptDir 'build_icon_resources.ps1')
 
 

@@ -14,6 +14,7 @@ import 'package:vertree/view/component/app_page_background.dart';
 import 'package:vertree/view/component/responsive_home_card.dart';
 import 'package:vertree/view/component/home_actions.dart';
 import 'package:vertree/view/page/monit_page.dart';
+import 'package:vertree/view/page/conversion_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
 
 import 'package:window_manager/window_manager.dart';
@@ -234,11 +235,13 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
                 monitorLabel: _desktop.appLocale.getText(
                   LocaleKey.brandMonitorPage,
                 ),
+                conversionLabel: '格式转换',
                 settingsLabel: _desktop.appLocale.getText(
                   LocaleKey.brandSettingPage,
                 ),
                 exitLabel: _desktop.appLocale.getText(LocaleKey.brandExit),
                 onMonitor: () => _desktop.go(MonitPage()),
+                onConversion: () => _desktop.go(const ConversionPage()),
                 onSettings: () => _desktop.go(SettingPage()),
                 onExit: () => unawaited(_desktop.quitApplication()),
               ),

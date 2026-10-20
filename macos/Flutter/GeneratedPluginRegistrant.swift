@@ -6,6 +6,7 @@ import FlutterMacOS
 import Foundation
 
 import bitsdojo_window_macos
+import desktop_drop
 import file_picker
 import flutter_inappwebview_macos
 import local_notifier
@@ -17,6 +18,7 @@ import window_manager
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   BitsdojoWindowPlugin.register(with: registry.registrar(forPlugin: "BitsdojoWindowPlugin"))
+  DesktopDropPlugin.register(with: registry.registrar(forPlugin: "DesktopDropPlugin"))
   FilePickerPlugin.register(with: registry.registrar(forPlugin: "FilePickerPlugin"))
   InAppWebViewFlutterPlugin.register(with: registry.registrar(forPlugin: "InAppWebViewFlutterPlugin"))
   LocalNotifierPlugin.register(with: registry.registrar(forPlugin: "LocalNotifierPlugin"))
