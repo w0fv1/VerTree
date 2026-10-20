@@ -37,6 +37,7 @@ constexpr MenuCommandDefinition kMenuCommands[] = {
   {L"viewtree", L"查看文件版本树", L"View version tree", L"バージョンツリーを表示", IDI_VERTREE_VIEWTREE, "viewTree"},
   {L"unlock", L"查看／解除文件占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_VIEWTREE, "fileUsage"},
   {L"fast-delete", L"快速删除（永久）…", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_VIEWTREE, "fastDelete"},
+  {L"conversion", L"转换格式", L"Convert format", L"形式を変換", IDI_VERTREE_VIEWTREE, "conversion"},
 };
 
 HINSTANCE g_instance = nullptr;

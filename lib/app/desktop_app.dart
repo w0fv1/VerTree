@@ -269,6 +269,7 @@ Future<void> runVertreeApp(
     onShare: share,
     onViewTree: viewtree,
     onPreview: previewFile,
+    onConversion: convertFile,
     onFileTools: openFileTools,
     onNotify: showWindowsNotification,
     onLogInfo: logger.info,
@@ -545,6 +546,14 @@ Future<void> runVertreeApp(
     await appHost.stop();
     exit(1);
   }
+}
+
+Future<void> convertFile(String path) async {
+  await _waitForUiReady();
+  await showMainWindow(
+    page: ConversionPage(key: UniqueKey(), initialFiles: [path]),
+    animate: false,
+  );
 }
 
 Future<void> _ensureWindowVisible() async {
@@ -911,6 +920,24 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> with WindowListener {
   Widget page = BrandPage();
   bool _ctrlDragActive = false;
+  bool _ctrlHeld = false;
+
+  bool _handleGlobalKeyEvent(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.controlLeft &&
+        event.logicalKey != LogicalKeyboardKey.controlRight) {
+      return false;
+    }
+    if (event is KeyDownEvent) {
+      _ctrlHeld = true;
+    } else if (event is KeyUpEvent) {
+      _ctrlHeld = HardwareKeyboard.instance.logicalKeysPressed.any(
+        (key) =>
+            key == LogicalKeyboardKey.controlLeft ||
+            key == LogicalKeyboardKey.controlRight,
+      );
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -921,6 +948,14 @@ class _MainPageState extends State<MainPage> with WindowListener {
       _appUiReadyCompleter.complete();
     }
     windowManager.addListener(this);
+    HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
+    windowManager.removeListener(this);
+    super.dispose();
   }
 
   @override
@@ -940,6 +975,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
                 onDragEntered: (_) {
                   final keys = HardwareKeyboard.instance.logicalKeysPressed;
                   _ctrlDragActive =
+                      _ctrlHeld ||
                       keys.contains(LogicalKeyboardKey.controlLeft) ||
                       keys.contains(LogicalKeyboardKey.controlRight);
                 },
@@ -948,6 +984,7 @@ class _MainPageState extends State<MainPage> with WindowListener {
                   final keys = HardwareKeyboard.instance.logicalKeysPressed;
                   final controlHeld =
                       _ctrlDragActive ||
+                      _ctrlHeld ||
                       keys.contains(LogicalKeyboardKey.controlLeft) ||
                       keys.contains(LogicalKeyboardKey.controlRight);
                   _ctrlDragActive = false;

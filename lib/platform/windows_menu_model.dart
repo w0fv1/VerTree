@@ -21,7 +21,8 @@ enum WindowsMenuAction {
     '查看文件版本树 VerTree',
   ),
   fileUsage('RegistryVerTreeFileUsage', 'unlock', 'logo/logo.ico'),
-  fastDelete('RegistryVerTreeFastDelete', 'fast-delete', 'logo/logo.ico');
+  fastDelete('RegistryVerTreeFastDelete', 'fast-delete', 'logo/logo.ico'),
+  conversion('RegistryVerTreeConversion', 'conversion', 'logo/logo.ico');
 
   const WindowsMenuAction(
     this.keyName,

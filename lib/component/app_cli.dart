@@ -24,6 +24,7 @@ enum AppCliAction {
   monit,
   share,
   viewtree,
+  conversion,
   fileTools,
   fastDelete,
   fileUsage;
@@ -53,6 +54,10 @@ enum AppCliAction {
       case 'open':
       case '--viewtree':
         return AppCliAction.viewtree;
+      case 'conversion':
+      case 'convert':
+      case '--conversion':
+        return AppCliAction.conversion;
       case 'file-tools':
         return AppCliAction.fileTools;
       case 'fast-delete':

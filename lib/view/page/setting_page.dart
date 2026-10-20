@@ -40,6 +40,7 @@ class _SettingPageState extends State<SettingPage> {
 
   bool fileUsageMenu = false;
   bool fastDeleteMenu = false;
+  bool conversionMenu = false;
   bool previewFile = false;
   bool backupFile = false;
   bool expressBackupFile = false;
@@ -138,7 +139,8 @@ class _SettingPageState extends State<SettingPage> {
           shareFile ||
           viewTreeFile ||
           fileUsageMenu ||
-          fastDeleteMenu;
+          fastDeleteMenu ||
+          conversionMenu;
     });
     await _showLinuxMenuToggleResult(success);
   }
@@ -184,6 +186,9 @@ class _SettingPageState extends State<SettingPage> {
       fastDeleteMenu = await WindowsRegistryBridge.isActionEnabled(
         WindowsMenuAction.fastDelete,
       );
+      conversionMenu = await WindowsRegistryBridge.isActionEnabled(
+        WindowsMenuAction.conversion,
+      );
     }
     if (PlatformIntegration.isLinuxGnome) {
       _gnomeFilesSupportInfo =
@@ -215,7 +220,8 @@ class _SettingPageState extends State<SettingPage> {
           shareFile ||
           viewTreeFile ||
           fileUsageMenu ||
-          fastDeleteMenu;
+          fastDeleteMenu ||
+          conversionMenu;
       if (PlatformIntegration.isWindows) {
         final configuredWin11MenuEnabled = _desktop.configer.get(
           "win11MenuEnabled",
@@ -377,6 +383,7 @@ class _SettingPageState extends State<SettingPage> {
     if (previewFile) WindowsMenuAction.preview,
     if (fileUsageMenu) WindowsMenuAction.fileUsage,
     if (fastDeleteMenu) WindowsMenuAction.fastDelete,
+    if (conversionMenu) WindowsMenuAction.conversion,
     if (backupFile) WindowsMenuAction.backup,
     if (expressBackupFile) WindowsMenuAction.expressBackup,
     if (monitorFile) WindowsMenuAction.monitor,
@@ -390,6 +397,7 @@ class _SettingPageState extends State<SettingPage> {
         WindowsMenuAction.preview => _togglePreviewFile(value),
         WindowsMenuAction.fileUsage ||
         WindowsMenuAction.fastDelete => _toggleFileToolMenu(action, value),
+        WindowsMenuAction.conversion => _toggleConversionMenu(value),
         WindowsMenuAction.backup => _toggleBackupFile(value),
         WindowsMenuAction.expressBackup => _toggleExpressBackupFile(value),
         WindowsMenuAction.monitor => _toggleMonitorFile(value),
@@ -405,6 +413,25 @@ class _SettingPageState extends State<SettingPage> {
     setState(() => isLoading = true);
     try {
       if (!await WindowsRegistryBridge.setActionEnabled(action, value)) {
+        showToast(
+          _desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed),
+        );
+      }
+      await _loadPlatformState();
+    } finally {
+      if (mounted) setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> _toggleConversionMenu(bool? value) async {
+    if (value == null || !PlatformIntegration.isWindows) return;
+    setState(() => isLoading = true);
+    try {
+      final success = await WindowsRegistryBridge.setActionEnabled(
+        WindowsMenuAction.conversion,
+        value,
+      );
+      if (!success) {
         showToast(
           _desktop.appLocale.getText(LocaleKey.settingMenuUpdateFailed),
         );
@@ -1223,6 +1250,9 @@ class _SettingPageState extends State<SettingPage> {
                                                       action !=
                                                           WindowsMenuAction
                                                               .preview &&
+                                                      action !=
+                                                          WindowsMenuAction
+                                                              .conversion &&
                                                       !action.isFileTool,
                                                 ),
                                       onChanged: _toggleLegacyAction,

@@ -89,6 +89,11 @@ class VerTreeRegistryService {
       Lang.en => 'Fast delete (permanent)…',
       Lang.ja => '高速削除（完全削除）…',
     },
+    WindowsMenuAction.conversion => switch (appLocale.lang) {
+      Lang.zhCn || Lang.other => '转换格式',
+      Lang.en => 'Convert format',
+      Lang.ja => '形式を変換',
+    },
     WindowsMenuAction.preview => appLocale.getText(
       LocaleKey.registryPreviewKeyName,
     ),
