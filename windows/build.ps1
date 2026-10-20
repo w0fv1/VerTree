@@ -304,7 +304,7 @@ if (-not (Test-Path $nugetExe)) {
     Write-Host "下载 Windows 构建所需 NuGet..."
     Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nugetExe
 }
-$env:PATH = "$toolsDir;$env:PATH"
+$env:PATH = $toolsDir + ";" + $env:PATH
 
 $flutterCmd = Resolve-ToolPath -preferred $Flutter -fallbackPath $flutterDefault -commandName "flutter"
 if ([string]::IsNullOrWhiteSpace($flutterCmd)) {

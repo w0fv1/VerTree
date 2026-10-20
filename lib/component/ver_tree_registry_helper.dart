@@ -228,7 +228,7 @@ class VerTreeRegistryService {
       }
     }
     if (!WindowsPackageIdentity.isPackagedOrRegistered() &&
-        !_runWin11PackagingScript(
+        !_runWin11PackagingScriptElevated(
           'install_sparse_package.ps1',
           arguments: ['-ExternalLocation', FileUtils.appDirPath(), '-Force'],
         )) {
@@ -318,7 +318,7 @@ class VerTreeRegistryService {
     return RegistryHelper.isAutoStartEnabled(runRegistryPath, appName);
   }
 
-  bool _runWin11PackagingScript(
+  bool _runWin11PackagingScriptElevated(
     String scriptName, {
     List<String> arguments = const [],
   }) {
@@ -328,27 +328,18 @@ class VerTreeRegistryService {
       return false;
     }
 
-    try {
-      final result = Process.runSync('powershell.exe', [
-        '-NoProfile',
-        '-ExecutionPolicy',
-        'Bypass',
-        '-File',
-        scriptPath,
-        ...arguments,
-      ]);
-      if (result.exitCode == 0) {
-        logger.info('Win11 新菜单脚本执行成功: $scriptName');
-        return true;
-      }
-
+    logger.info('Win11 新菜单注册需要管理员权限，正在请求 UAC 授权...');
+    final success = ElevatedTaskRunner.runTaskSync(
+      ElevatedTaskRunner.opInstallWin11Package,
+      payload: {'scriptPath': scriptPath, 'arguments': arguments},
+    );
+    if (success) {
+      logger.info('Win11 新菜单脚本提权执行成功: $scriptName');
+    } else {
       logger.error(
-        'Win11 新菜单脚本执行失败: $scriptName exitCode=${result.exitCode} stdout=${result.stdout} stderr=${result.stderr}',
+        'Win11 新菜单脚本提权执行失败: $scriptName ${ElevatedTaskRunner.lastError ?? "unknown error"}',
       );
-      return false;
-    } catch (e) {
-      logger.error('Win11 新菜单脚本启动失败: $scriptName error=$e');
-      return false;
     }
+    return success;
   }
 }

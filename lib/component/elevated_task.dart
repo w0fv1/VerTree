@@ -23,6 +23,7 @@ class ElevatedTaskRunner {
   static const String opDisableAutoStart = 'disable_autostart';
   static const String opRemoveWin11Menu = 'remove_win11_menu';
   static const String opRemoveLegacyMenus = 'remove_legacy_menus';
+  static const String opInstallWin11Package = 'install_win11_package';
 
   static const String _classesShellPath = r'Software\Classes\*\shell';
   static List<DateTime> _fallbackRecentAttempts = <DateTime>[];
@@ -162,6 +163,8 @@ class ElevatedTaskRunner {
         return _removeWin11Menu(payload);
       case opRemoveLegacyMenus:
         return _removeLegacyMenus(payload);
+      case opInstallWin11Package:
+        return _installWin11Package(payload);
       default:
         return false;
     }
@@ -354,6 +357,33 @@ class ElevatedTaskRunner {
 
       WindowsShellNotify.associationsChanged();
       return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  static bool _installWin11Package(Map<String, dynamic> payload) {
+    final scriptPath = _asNonEmptyString(payload['scriptPath']);
+    final rawArguments = payload['arguments'];
+    if (scriptPath == null || rawArguments is! List) {
+      return false;
+    }
+    final arguments = <String>[];
+    for (final argument in rawArguments) {
+      if (argument is! String) return false;
+      arguments.add(argument);
+    }
+
+    try {
+      final result = Process.runSync('powershell.exe', [
+        '-NoProfile',
+        '-ExecutionPolicy',
+        'Bypass',
+        '-File',
+        scriptPath,
+        ...arguments,
+      ]);
+      return result.exitCode == 0;
     } catch (_) {
       return false;
     }
