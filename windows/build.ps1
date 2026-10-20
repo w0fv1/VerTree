@@ -297,6 +297,15 @@ $currentDir = Get-Location
 $projectRoot = (Resolve-Path (Join-Path $scriptDir "..")).Path
 Set-Location $projectRoot
 
+$toolsDir = Join-Path $projectRoot ".tools"
+$nugetExe = Join-Path $toolsDir "nuget.exe"
+if (-not (Test-Path $nugetExe)) {
+    New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
+    Write-Host "下载 Windows 构建所需 NuGet..."
+    Invoke-WebRequest -Uri "https://dist.nuget.org/win-x86-commandline/latest/nuget.exe" -OutFile $nugetExe
+}
+$env:PATH = "$toolsDir;$env:PATH"
+
 $flutterCmd = Resolve-ToolPath -preferred $Flutter -fallbackPath $flutterDefault -commandName "flutter"
 if ([string]::IsNullOrWhiteSpace($flutterCmd)) {
     throw "Flutter not found. Provide -Flutter <path> or ensure 'flutter' is in PATH."
