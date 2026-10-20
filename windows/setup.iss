@@ -46,7 +46,7 @@ Name: "{commonprograms}\Uninstall Vertree"; Filename: "{uninstallexe}"; IconFile
 Name: "{commondesktop}\Vertree"; Filename: "{app}\vertree.exe"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"; AppUserModelID: "dev.w0fv1.vertree.desktop"
 
 [Run]
-Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\win11_packaging\install_sparse_package.ps1"" -ExternalLocation ""{app}"" -Force"; StatusMsg: "Registering Windows 11 context menu..."; Flags: runhidden waituntilterminated; Check: Win11PackagingScriptExists
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\win11_packaging\install_sparse_package.ps1"" -ExternalLocation ""{app}"" -AllowUnsigned -Force"; StatusMsg: "Registering Windows 11 context menu..."; Flags: runhidden waituntilterminated; Check: Win11PackagingScriptExists
 Filename: "{app}\vertree.exe"; Description: "Launch Vertree"; Flags: nowait postinstall skipifsilent runasoriginaluser
 
 [UninstallDelete]

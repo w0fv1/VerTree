@@ -230,7 +230,12 @@ class VerTreeRegistryService {
     if (!WindowsPackageIdentity.isPackagedOrRegistered() &&
         !_runWin11PackagingScriptElevated(
           'install_sparse_package.ps1',
-          arguments: ['-ExternalLocation', FileUtils.appDirPath(), '-Force'],
+          arguments: [
+            '-ExternalLocation',
+            FileUtils.appDirPath(),
+            '-AllowUnsigned',
+            '-Force',
+          ],
         )) {
       return false;
     }
