@@ -9,6 +9,7 @@ import 'package:vertree/adapters/ui/versions/file_version_tree.dart';
 import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/component/tree/canvas_component.dart';
 import 'package:vertree/view/module/file_preview_dialog.dart';
+import 'package:vertree/view/page/conversion_page.dart';
 
 class FileLeaf extends CanvasComponent {
   static const double minCardWidth = 240;
@@ -616,6 +617,14 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
           ),
         ),
         PopupMenuItem(
+          value: 'conversion',
+          child: _buildMenuEntry(
+            context,
+            icon: const Icon(Icons.transform_rounded, size: 18),
+            label: '转换格式',
+          ),
+        ),
+        PopupMenuItem(
           value: 'backup',
           enabled: fileNode.child == null,
           child: _buildMenuEntry(
@@ -753,6 +762,8 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
       if (renamed != null && mounted) {
         setState(() => fileNode.mate = FileMeta(renamed));
       }
+    } else if (result == 'conversion' && mounted) {
+      _desktop.go(ConversionPage(initialFiles: [fileNode.mate.fullPath]));
     } else if (result == 'preview' && mounted) {
       await showFilePreview(context, fileNode.mate.fullPath);
     } else if (result == 'share') {

@@ -29,6 +29,7 @@ dependencies:
   local_notifier: ^0.1.6
   launch_at_startup: ^0.5.1
   file_picker: ^10.3.10
+  desktop_drop: ^0.5.0
   url_launcher: ^6.3.1
   toastification: ^3.0.1
   intl: ^0.20.2
@@ -57,3 +58,5 @@ flutter:
     - assets/img/icon/
     - assets/office_viewer/
     - assets/office_viewer/assets/
+
+
