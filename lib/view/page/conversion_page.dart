@@ -8,9 +8,11 @@ import 'package:vertree/modules/conversion/domain/conversion_models.dart';
 import 'package:vertree/modules/conversion/infrastructure/filee_runtime.dart';
 import 'package:vertree/view/component/app_bar.dart';
 import 'package:vertree/view/component/app_page_background.dart';
+import 'package:vertree/view/module/file_preview_dialog.dart';
 
 class ConversionPage extends StatefulWidget {
-  const ConversionPage({super.key});
+  const ConversionPage({super.key, this.initialFiles = const []});
+  final List<String> initialFiles;
   @override
   State<ConversionPage> createState() => _ConversionPageState();
 }
@@ -21,6 +23,7 @@ class _ConversionPageState extends State<ConversionPage> {
   List<ConversionFormat> _targets = const [];
   StreamSubscription<ConversionJob>? _updates;
   String? _target;
+  final TextEditingController _formatSearch = TextEditingController();
   bool _loading = false;
   bool _dragging = false;
 
@@ -28,6 +31,11 @@ class _ConversionPageState extends State<ConversionPage> {
   void initState() {
     super.initState();
     _queue = ConversionQueue(FileeRuntime());
+    if (widget.initialFiles.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _setFiles(widget.initialFiles),
+      );
+    }
     _updates = _queue.updates.listen((_) {
       if (mounted) setState(() {});
     });
@@ -36,6 +44,7 @@ class _ConversionPageState extends State<ConversionPage> {
   @override
   void dispose() {
     _updates?.cancel();
+    _formatSearch.dispose();
     _queue.dispose();
     super.dispose();
   }
@@ -78,6 +87,78 @@ class _ConversionPageState extends State<ConversionPage> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  List<ConversionFormat> get _visibleTargets {
+    final query = _formatSearch.text.trim().toLowerCase();
+    final source = _files.isEmpty
+        ? ''
+        : p.extension(_files.first).toLowerCase();
+    final category = _formatCategory(source);
+    return _targets.where((format) {
+      final categoryMatch =
+          category == null ||
+          _formatCategory('.${format.id}') == null ||
+          _formatCategory('.${format.id}') == category;
+      final queryMatch =
+          query.isEmpty ||
+          format.id.contains(query) ||
+          format.name.toLowerCase().contains(query) ||
+          format.description.contains(query);
+      return categoryMatch && queryMatch;
+    }).toList();
+  }
+
+  String? _formatCategory(String extension) {
+    final value = extension.toLowerCase();
+    const groups = {
+      'image': {
+        'jpg',
+        'jpeg',
+        'png',
+        'webp',
+        'gif',
+        'bmp',
+        'tif',
+        'tiff',
+        'avif',
+        'ico',
+        'svg',
+        'heic',
+      },
+      'video': {
+        'mp4',
+        'mov',
+        'mkv',
+        'webm',
+        'avi',
+        'wmv',
+        'flv',
+        'mpeg',
+        'mpg',
+        'ts',
+        '3gp',
+      },
+      'audio': {'mp3', 'wav', 'flac', 'm4a', 'aac', 'ogg', 'opus', 'wma'},
+      'document': {
+        'pdf',
+        'docx',
+        'doc',
+        'odt',
+        'rtf',
+        'txt',
+        'md',
+        'html',
+        'epub',
+      },
+      'data': {'json', 'yaml', 'yml', 'xml', 'csv', 'tsv', 'toml'},
+      'archive': {'zip', '7z', 'rar', 'tar', 'gz'},
+    };
+    final normalized = value.replaceFirst('.', '');
+    for (final entry in groups.entries) {
+      if (entry.value.contains(normalized)) return entry.key;
+    }
+    return null;
   }
 
   Future<void> _convert() async {
@@ -140,6 +221,16 @@ class _ConversionPageState extends State<ConversionPage> {
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
+                              if (_files.length == 1)
+                                TextButton.icon(
+                                  onPressed: () =>
+                                      showFilePreview(context, _files.first),
+                                  icon: const Icon(
+                                    Icons.visibility_outlined,
+                                    size: 17,
+                                  ),
+                                  label: const Text('预览原文件'),
+                                ),
                             ],
                           ],
                         ),
@@ -151,19 +242,44 @@ class _ConversionPageState extends State<ConversionPage> {
               const SizedBox(height: 16),
               if (_loading) const LinearProgressIndicator(),
               if (_files.isNotEmpty) ...[
+                TextField(
+                  controller: _formatSearch,
+                  onChanged: (_) => setState(() {}),
+                  decoration: const InputDecoration(
+                    labelText: '筛选目标格式',
+                    hintText: '输入 jpg、图片、pdf…',
+                    prefixIcon: Icon(Icons.search_rounded),
+                  ),
+                ),
+                const SizedBox(height: 10),
                 DropdownButtonFormField<String>(
-                  value: _target,
-                  decoration: const InputDecoration(labelText: '转换为'),
-                  items: _targets
+                  initialValue:
+                      _visibleTargets.any((format) => format.id == _target)
+                      ? _target
+                      : null,
+                  decoration: InputDecoration(
+                    labelText: '转换为（${_visibleTargets.length} 种可用格式）',
+                  ),
+                  items: _visibleTargets
                       .map(
                         (format) => DropdownMenuItem(
                           value: format.id,
-                          child: Text('${format.name} (.${format.id})'),
+                          child: Tooltip(
+                            message: format.description,
+                            child: Text('${format.name} (.${format.id})'),
+                          ),
                         ),
                       )
                       .toList(),
                   onChanged: (value) => setState(() => _target = value),
                 ),
+                if (_target != null) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    _selectedTargetDescription,
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _target == null ? null : _convert,
@@ -190,6 +306,14 @@ class _ConversionPageState extends State<ConversionPage> {
                                   ? '已完成'
                                   : '处理中'),
                         ),
+                        trailing: job.outputs.isEmpty
+                            ? null
+                            : IconButton(
+                                icon: const Icon(Icons.visibility_outlined),
+                                tooltip: '预览结果',
+                                onPressed: () =>
+                                    showFilePreview(context, job.outputs.first),
+                              ),
                       ),
                     ),
               ],
@@ -206,4 +330,11 @@ class _ConversionPageState extends State<ConversionPage> {
     ConversionState.running => Icons.sync_rounded,
     _ => Icons.schedule_rounded,
   };
+
+  String get _selectedTargetDescription {
+    for (final format in _visibleTargets) {
+      if (format.id == _target) return format.description;
+    }
+    return '';
+  }
 }

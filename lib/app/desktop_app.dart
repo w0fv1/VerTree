@@ -4,7 +4,9 @@ import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -37,6 +39,7 @@ import 'package:vertree/view/module/file_preview_dialog.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:vertree/view/page/monit_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
+import 'package:vertree/view/page/conversion_page.dart';
 import 'package:vertree/view/page/version_tree_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -907,6 +910,7 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> with WindowListener {
   Widget page = BrandPage();
+  bool _ctrlDragActive = false;
 
   @override
   void initState() {
@@ -932,9 +936,33 @@ class _MainPageState extends State<MainPage> with WindowListener {
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
             builder: (context, child) {
-              return RepaintBoundary(
-                key: appScreenshotBoundaryKey,
-                child: child ?? const SizedBox.shrink(),
+              return DropTarget(
+                onDragEntered: (_) {
+                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
+                  _ctrlDragActive =
+                      keys.contains(LogicalKeyboardKey.controlLeft) ||
+                      keys.contains(LogicalKeyboardKey.controlRight);
+                },
+                onDragExited: (_) => _ctrlDragActive = false,
+                onDragDone: (detail) {
+                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
+                  final controlHeld =
+                      _ctrlDragActive ||
+                      keys.contains(LogicalKeyboardKey.controlLeft) ||
+                      keys.contains(LogicalKeyboardKey.controlRight);
+                  _ctrlDragActive = false;
+                  if (!controlHeld) return;
+                  final files = detail.files
+                      .map((file) => file.path)
+                      .where((path) => path.isNotEmpty)
+                      .toList();
+                  if (files.isNotEmpty)
+                    goPage(ConversionPage(initialFiles: files));
+                },
+                child: RepaintBoundary(
+                  key: appScreenshotBoundaryKey,
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
             home: page,

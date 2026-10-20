@@ -8,6 +8,7 @@ class FileeRuntime implements ConversionRuntime {
   FileeRuntime({String? executable})
     : _executable = executable ?? _resolveExecutable();
   final String _executable;
+  Future<List<ConversionFormat>>? _formatsCache;
   static String _resolveExecutable() {
     final rid = Platform.isWindows
         ? 'win-x64'
@@ -46,6 +47,14 @@ class FileeRuntime implements ConversionRuntime {
 
   @override
   Future<List<ConversionFormat>> formats() async {
+    final cached = _formatsCache;
+    if (cached != null) return cached;
+    final future = _loadFormats();
+    _formatsCache = future;
+    return future;
+  }
+
+  Future<List<ConversionFormat>> _loadFormats() async {
     final result = await _run(['formats']);
     if (result.exitCode != 0) throw StateError('${result.stderr}'.trim());
     final formats = <ConversionFormat>[];
