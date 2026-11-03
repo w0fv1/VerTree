@@ -368,7 +368,7 @@ Future<void> runVertreeApp(
     apiService: apiService,
     additionalRoutes: automation.routes,
     accessToken: Platform.environment['VERTREE_LOCAL_API_TOKEN'],
-    forceEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
+    startEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
   );
   appHost = AppHost(
     [

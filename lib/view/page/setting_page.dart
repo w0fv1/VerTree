@@ -1,8 +1,10 @@
 import 'dart:async';
+
 import '../component/context_menu_choices.dart';
 import '../component/settings_row.dart';
 import '../../platform/windows_menu_model.dart';
 import '../../platform/windows_registry_bridge.dart';
+
 import 'package:vertree/foundation/app_events.dart';
 
 import 'package:flutter/material.dart';
@@ -82,13 +84,11 @@ class _SettingPageState extends State<SettingPage> {
   GnomeSupportInfo get _windowsWin11IdentityInfo => GnomeSupportInfo(
     status: GnomeSupportStatus.missingDependency,
     message: _desktop.appLocale.getText(LocaleKey.settingWin11IdentityRequired),
-    installCommand:
-        r'powershell -ExecutionPolicy Bypass -File windows\packaging\install_sparse_package.ps1 -Force',
+    installCommand: r'powershell -ExecutionPolicy Bypass -File windows\packaging\install_sparse_package.ps1 -Force',
     installCommandLabel: _desktop.appLocale.getText(
       LocaleKey.settingCopyRegisterCommand,
     ),
-    restartCommand:
-        r'powershell -ExecutionPolicy Bypass -File windows\packaging\refresh_win11_menu.ps1',
+    restartCommand: r'powershell -ExecutionPolicy Bypass -File windows\packaging\refresh_win11_menu.ps1',
     restartCommandLabel: _desktop.appLocale.getText(
       LocaleKey.settingCopyRefreshCommand,
     ),
@@ -243,10 +243,7 @@ class _SettingPageState extends State<SettingPage> {
       launchToTray = false;
       _desktop.configer.set<bool>('launch2Tray', false);
     }
-    localHttpApiEnabled = _desktop.configer.get<bool>(
-      'localHttpApiEnabled',
-      false,
-    );
+    localHttpApiEnabled = _desktop.localHttpApiServer.isRunning;
     _themeModeSetting = _desktop.configer.get<String>('themeMode', 'system');
     _syncMonitorControllers();
     if (!mounted) return;
@@ -627,9 +624,8 @@ class _SettingPageState extends State<SettingPage> {
     if (value == null) return;
     setState(() => isLoading = true);
 
-    _desktop.configer.set<bool>('localHttpApiEnabled', value);
     try {
-      await _desktop.localHttpApiServer.syncWithConfig();
+      await _desktop.localHttpApiServer.setEnabled(value);
     } catch (e) {
       _desktop.logger.error('Local HTTP API toggle failed: $e');
       showToast(
@@ -637,7 +633,6 @@ class _SettingPageState extends State<SettingPage> {
             .getText(LocaleKey.settingLocalHttpApiToggleFailed)
             .tr([e.toString()]),
       );
-      _desktop.configer.set<bool>('localHttpApiEnabled', !value);
     }
 
     await _loadPlatformState();
@@ -865,9 +860,8 @@ class _SettingPageState extends State<SettingPage> {
                   Expanded(
                     child: Text(
                       title,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                      style: Theme.of(context).textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                   ),
                   if (trailing != null) ...[trailing],
@@ -1359,9 +1353,9 @@ class _SettingPageState extends State<SettingPage> {
                                   size: 18,
                                   color: _desktop.localHttpApiServer.isRunning
                                       ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(
-                                          context,
-                                        ).colorScheme.onSurfaceVariant,
+                                      : Theme.of(context)
+                                            .colorScheme
+                                            .onSurfaceVariant,
                                 ),
                               ],
                             ),
@@ -1377,9 +1371,9 @@ class _SettingPageState extends State<SettingPage> {
                                       _desktop.localHttpApiServer.baseUrl ??
                                           'http://127.0.0.1:${_desktop.localHttpApiServer.port ?? LocalHttpApiServer.defaultPort}/api/v1',
                                       style: TextStyle(
-                                        color: Theme.of(
-                                          context,
-                                        ).colorScheme.primary,
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary,
                                         decoration: TextDecoration.underline,
                                       ),
                                     ),
@@ -1459,8 +1453,7 @@ class _SettingPageState extends State<SettingPage> {
                                   child: AppVersionDisplay(
                                     appVersion:
                                         _desktop.appVersionInfo.currentVersion,
-                                    defaultLink:
-                                        "https://github.com/w0fv1/vertree/releases",
+                                    defaultLink: "https://github.com/w0fv1/vertree/releases",
                                     checkNewVersion: () async {
                                       final Result<UpdateInfo, String>
                                       checkUpdateResult = await _desktop
