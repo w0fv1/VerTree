@@ -8,6 +8,7 @@ import 'package:tray_manager/tray_manager.dart' as lean_tray;
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/component/themed_assets.dart';
 import 'package:vertree/platform/platform_integration.dart';
+import 'package:vertree/platform/windows_shell_icon.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
 import 'package:window_manager/window_manager.dart';
@@ -42,6 +43,7 @@ class TrayManager with lean_tray.TrayListener {
   Timer? _refreshTimer;
   String? _iconPath;
   nativeapi.Image? _iconImage;
+  WindowsShellIcon? _shellIcon;
   nativeapi.TrayIcon? _trayIcon;
   nativeapi.Menu? _menu;
   List<nativeapi.MenuItem> _menuItems = [];
@@ -78,6 +80,15 @@ class TrayManager with lean_tray.TrayListener {
       _eventsBound = true;
     }
     _initialized = true;
+    if (Platform.isWindows) {
+      _shellIcon = WindowsShellIcon();
+      await _shellIcon!.initialize();
+      _shellIcon!.addListener(() {
+        _iconPath = _shellIcon!.value;
+        _iconImage = nativeapi.Image.fromAsset(_iconPath!);
+        unawaited(refreshTray());
+      });
+    }
     await initTray();
     _refreshTimer?.cancel();
     if (!Platform.isLinux) {
@@ -106,7 +117,7 @@ class TrayManager with lean_tray.TrayListener {
       return;
     }
     _iconPath = Platform.isWindows
-        ? 'assets/img/logo/logo.ico'
+        ? _shellIcon!.value
         : 'assets/img/logo/logo.png';
     if (Platform.isLinux) {
       await refreshTray();
@@ -468,6 +479,8 @@ class TrayManager with lean_tray.TrayListener {
 
   Future<void> hideForQuit() async {
     _initialized = false;
+    _shellIcon?.dispose();
+    _shellIcon = null;
     _refreshTimer?.cancel();
     _refreshQueued = false;
     _rebuildQueued = false;

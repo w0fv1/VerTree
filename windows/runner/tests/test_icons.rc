@@ -1,0 +1,4 @@
+#include "../resource.h"
+IDI_APP_ICON ICON "../../../assets/img/logo/logo.ico"
+IDI_APP_ICON_LIGHT ICON "../../../assets/img/logo/logo-light.ico"
+IDI_APP_ICON_DARK ICON "../../../assets/img/logo/logo-dark.ico"
