@@ -64,7 +64,10 @@ int main() {
         0, 0, 300, 300, nullptr, nullptr, instance, nullptr);
     Require(window != nullptr, "create window");
     std::vector<std::string> changes;
-    ShellIcons icons(window, instance, [&](const auto& asset) { changes.push_back(asset); });
+    std::vector<int> resources;
+    ShellIcons icons(window, instance, [&](const auto& asset) { changes.push_back(asset); },
+        [&](int resource) { resources.push_back(resource); });
+    Require(resources == std::vector<int>{IDI_APP_ICON_LIGHT}, "initial shortcut theme is published");
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "missing preference uses light shell");
     RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     registry.Set(L"AppsUseLightTheme", 1);
@@ -94,6 +97,7 @@ int main() {
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "system light beats app dark");
     RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     Require(changes.size() == 2, "light transition notifies tray");
+    Require(resources == std::vector<int>{IDI_APP_ICON_LIGHT, IDI_APP_ICON_DARK, IDI_APP_ICON_LIGHT}, "shortcut updates follow theme transitions, not DPI or duplicate events");
     DestroyWindow(window);
     UnregisterClassW(window_class.lpszClassName, instance);
     std::cout << "Shell theme, mixed themes, notifications and DPI resources passed\n";

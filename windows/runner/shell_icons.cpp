@@ -7,8 +7,10 @@
 #include <wrl/client.h>
 
 ShellIcons::ShellIcons(HWND window, HINSTANCE instance,
-    std::function<void(const std::string&)> on_changed)
-    : window_(window), instance_(instance), on_changed_(std::move(on_changed)) {
+    std::function<void(const std::string&)> on_changed,
+    std::function<void(int)> on_resource_changed)
+    : window_(window), instance_(instance), on_changed_(std::move(on_changed)),
+      on_resource_changed_(std::move(on_resource_changed)) {
   Refresh(GetDpiForWindow(window_));
 }
 
@@ -70,6 +72,7 @@ void ShellIcons::Refresh(UINT dpi) {
   }
   SendMessageW(window_, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(small_icon));
   SendMessageW(window_, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(large_icon));
+  if (on_resource_changed_ && (!large_ || dark_ != dark)) on_resource_changed_(resource_id);
   if (small_) DestroyIcon(small_);
   if (large_) DestroyIcon(large_);
   small_ = small_icon;

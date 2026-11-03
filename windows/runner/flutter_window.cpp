@@ -1,4 +1,5 @@
 #include "flutter_window.h"
+#include "utils.h"
 
 #include <optional>
 #include <flutter/standard_method_codec.h>
@@ -33,10 +34,14 @@ bool FlutterWindow::OnCreate() {
   shell_icons_ = std::make_unique<ShellIcons>(GetHandle(), GetModuleHandleW(nullptr),
       [this](const std::string& asset) {
         shell_icons_channel_->InvokeMethod("iconChanged", std::make_unique<flutter::EncodableValue>(asset));
+      }, [this](int resource) {
+        if (FAILED(shell_shortcuts_.Sync(resource))) OutputDebugStringW(L"Vertree shortcut synchronization failed\n");
       });
   shell_icons_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
     if (call.method_name() == "currentIcon") {
       result->Success(flutter::EncodableValue(shell_icons_->asset()));
+    } else if (call.method_name() == "appIdentity") {
+      result->Success(flutter::EncodableValue(Utf8FromUtf16(ShellShortcuts::kAppId)));
     } else {
       result->NotImplemented();
     }

@@ -8,6 +8,7 @@
 #include <wrl/client.h>
 
 #include "resource.h"
+#include "shell_shortcuts.h"
 
 namespace {
 
@@ -67,7 +68,7 @@ void SetTaskbarIdentity(HWND window) {
   // an upgrade. Set relaunch metadata before the ID, as required by the Shell.
   set_string(PKEY_AppUserModel_RelaunchCommand, L"\"" + path + L"\"");
   set_string(PKEY_AppUserModel_RelaunchDisplayNameResource, L"Vertree");
-  set_string(PKEY_AppUserModel_ID, L"dev.w0fv1.vertree.desktop");
+  set_string(PKEY_AppUserModel_ID, ShellShortcuts::kAppId);
 }
 
 void ClearTaskbarIdentity(HWND window) {

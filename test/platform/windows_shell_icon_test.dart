@@ -10,6 +10,14 @@ void main() {
 
   tearDown(() => messenger.setMockMethodCallHandler(channel, null));
 
+  test('notification identity comes from the native shell owner', () async {
+    messenger.setMockMethodCallHandler(channel, (call) async {
+      expect(call.method, 'appIdentity');
+      return 'test.native.identity';
+    });
+    expect(await WindowsShellIcon.appIdentity(), 'test.native.identity');
+  });
+
   test(
     'uses the native shell selection and updates only when it changes',
     () async {

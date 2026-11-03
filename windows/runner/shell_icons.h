@@ -5,7 +5,8 @@
 
 class ShellIcons {
  public:
-  ShellIcons(HWND window, HINSTANCE instance, std::function<void(const std::string&)> on_changed);
+  ShellIcons(HWND window, HINSTANCE instance, std::function<void(const std::string&)> on_changed,
+             std::function<void(int)> on_resource_changed = {});
   ~ShellIcons();
   ShellIcons(const ShellIcons&) = delete;
   ShellIcons& operator=(const ShellIcons&) = delete;
@@ -17,6 +18,7 @@ class ShellIcons {
   HWND window_;
   HINSTANCE instance_;
   std::function<void(const std::string&)> on_changed_;
+  std::function<void(int)> on_resource_changed_;
   bool dark_ = false;
   HICON small_ = nullptr;
   HICON large_ = nullptr;
