@@ -24,3 +24,5 @@ python tools/sync_logo_assets.py
 官网通过 Docusaurus `staticDirectories` 读取公共目录，`docs/build/logo.png` 和 `logo.ico` 是网站构建产物。首页使用带替代文字的真实示例截图。
 
 预览动作图标与品牌 Logo 分开，位于 `assets/img/icon/preview.*`，由 [`tools/build_preview_icon.py`](../tools/build_preview_icon.py) 生成，许可见同目录 `LICENSE-fluent-icons.txt`。
+
+界面动作图标的主题适配统一由 [`themed_assets.dart`](../lib/component/themed_assets.dart) 管理；分享图标回归见 [`share_action_icon_test.dart`](../test/component/share_action_icon_test.dart)。

@@ -50,6 +50,6 @@ Widget themedLogoImage({
   return image;
 }
 
-Widget shareActionImage({double size = 18, BoxFit fit = BoxFit.contain}) {
-  return Image.asset(kShareActionPng, width: size, height: size, fit: fit);
+Widget shareActionImage({double size = 18}) {
+  return ImageIcon(const AssetImage(kShareActionPng), size: size);
 }
