@@ -114,7 +114,7 @@ begin
   begin
     if Win11UninstallPackagingScriptExists() then
     begin
-      ExecAsOriginalUser(
+      Exec(
         'powershell.exe',
         '-NoProfile -ExecutionPolicy Bypass -File "' + ExpandConstant('{app}\win11_packaging\uninstall_sparse_package.ps1') + '"',
         '',
