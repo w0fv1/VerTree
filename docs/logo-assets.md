@@ -15,7 +15,7 @@ python tools/sync_logo_assets.py
 
 - 系统主题、窗口图标和 DPI 生命周期：[`ShellIcons`](../windows/runner/shell_icons.cpp)。
 - 托盘主题通知：[`WindowsShellIcon`](../lib/platform/windows_shell_icon.dart) 与 [`TrayManager`](../lib/component/tray_manager.dart)。
-- EXE、快捷方式和固定任务栏入口使用生成的通用 `logo.ico`；任务栏身份关联见 [`win32_window.cpp`](../windows/runner/win32_window.cpp)。
+- EXE 与安装器快捷方式使用生成的通用 `logo.ico`；运行窗口的任务栏图标元数据由 `ShellIcons` 指向当前主题的内嵌资源。任务栏身份关联见 [`win32_window.cpp`](../windows/runner/win32_window.cpp)。
 - 包资源的尺寸与深浅色变体见生成脚本；[`build_icon_resources.ps1`](../windows/build_icon_resources.ps1) 将它们编入 `resources.pri`。打包脚本自动执行，手动运行 Inno Setup 前需先执行。
 - 回归验证：[`资源生成测试`](../tools/tests/test_logo_assets.py)、[`原生主题与 DPI 测试`](../windows/runner/tests/shell_icons_test.cpp)、[`Flutter 通道测试`](../test/platform/windows_shell_icon_test.dart)。
 

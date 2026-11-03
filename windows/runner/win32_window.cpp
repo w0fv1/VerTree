@@ -53,7 +53,6 @@ void SetTaskbarIdentity(HWND window) {
     return;
   }
   const std::wstring path(executable, length);
-  const std::wstring directory = path.substr(0, path.find_last_of(L"\\/"));
   const auto set_string = [&properties](REFPROPERTYKEY key,
                                         const std::wstring& text) {
     PROPVARIANT value;
@@ -67,8 +66,6 @@ void SetTaskbarIdentity(HWND window) {
   // Explicit icon metadata avoids stale Shell/package icon associations after
   // an upgrade. Set relaunch metadata before the ID, as required by the Shell.
   set_string(PKEY_AppUserModel_RelaunchCommand, L"\"" + path + L"\"");
-  set_string(PKEY_AppUserModel_RelaunchIconResource,
-             directory + L"\\data\\flutter_assets\\assets\\img\\logo\\logo.ico,0");
   set_string(PKEY_AppUserModel_RelaunchDisplayNameResource, L"Vertree");
   set_string(PKEY_AppUserModel_ID, L"dev.w0fv1.vertree.desktop");
 }
@@ -195,9 +192,9 @@ bool Win32Window::Create(const std::wstring& title,
 
   UpdateTheme(window);
 
+  if (!OnCreate()) return false;
   SetTaskbarIdentity(window);
-
-  return OnCreate();
+  return true;
 }
 
 bool Win32Window::Show() {

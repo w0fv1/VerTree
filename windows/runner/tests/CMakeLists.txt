@@ -4,6 +4,6 @@ add_executable(vertree_shell_icon_tests shell_icons_test.cpp ../shell_icons.cpp 
 target_compile_features(vertree_shell_icon_tests PRIVATE cxx_std_17)
 target_compile_definitions(vertree_shell_icon_tests PRIVATE NOMINMAX UNICODE _UNICODE)
 target_compile_options(vertree_shell_icon_tests PRIVATE $<$<COMPILE_LANGUAGE:CXX>:/W4 /WX /utf-8>)
-target_link_libraries(vertree_shell_icon_tests PRIVATE advapi32 user32 gdi32)
+target_link_libraries(vertree_shell_icon_tests PRIVATE advapi32 user32 gdi32 propsys shell32 ole32 uuid)
 enable_testing()
 add_test(NAME shell_icons COMMAND vertree_shell_icon_tests)

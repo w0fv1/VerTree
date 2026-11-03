@@ -3,6 +3,10 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
+#include <propkey.h>
+#include <propvarutil.h>
+#include <shobjidl.h>
+#include <wrl/client.h>
 
 void Require(bool value, const char* message) {
   if (!value) throw std::runtime_error(message);
@@ -29,6 +33,19 @@ std::vector<BYTE> IconPixels(HICON icon, int size) {
   DeleteObject(info.hbmMask);
   Require(rows == size, "read icon pixels");
   return pixels;
+}
+
+void RequireTaskbarIcon(HWND window, int resource) {
+  Microsoft::WRL::ComPtr<IPropertyStore> properties;
+  Require(SUCCEEDED(SHGetPropertyStoreForWindow(window, IID_PPV_ARGS(&properties))), "read taskbar properties");
+  PROPVARIANT value{};
+  Require(SUCCEEDED(properties->GetValue(PKEY_AppUserModel_RelaunchIconResource, &value)), "read taskbar icon");
+  wchar_t executable[32768];
+  GetModuleFileNameW(nullptr, executable, 32768);
+  const auto expected = std::wstring(executable) + L",-" + std::to_wstring(resource);
+  const bool matches = value.vt == VT_LPWSTR && expected == value.pwszVal;
+  PropVariantClear(&value);
+  Require(matches, "taskbar relaunch icon must match the selected theme resource");
 }
 
 class RegistryFixture {
@@ -60,6 +77,7 @@ class RegistryFixture {
 
 int main() {
   try {
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
     RegistryFixture registry;
     const auto instance = GetModuleHandleW(nullptr);
     WNDCLASSW window_class{};
@@ -73,10 +91,12 @@ int main() {
     std::vector<std::string> changes;
     ShellIcons icons(window, instance, [&](const auto& asset) { changes.push_back(asset); });
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "missing preference uses light shell");
+    RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     registry.Set(L"AppsUseLightTheme", 1);
     registry.Set(L"SystemUsesLightTheme", 0);
     icons.HandleMessage(WM_SETTINGCHANGE, 0);
     Require(icons.asset() == "assets/img/logo/logo-dark.ico", "system dark beats app light");
+    RequireTaskbarIcon(window, IDI_APP_ICON_DARK);
     Require(changes.size() == 1, "one theme notification");
     icons.HandleMessage(WM_THEMECHANGED, 0);
     Require(changes.size() == 1, "unchanged theme does not notify");
@@ -97,6 +117,7 @@ int main() {
     registry.Set(L"SystemUsesLightTheme", 1);
     icons.HandleMessage(WM_SETTINGCHANGE, 0);
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "system light beats app dark");
+    RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     Require(changes.size() == 2, "light transition notifies tray");
     DestroyWindow(window);
     UnregisterClassW(window_class.lpszClassName, instance);
