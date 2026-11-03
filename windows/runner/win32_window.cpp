@@ -41,23 +41,6 @@ int Scale(int source, double scale_factor) {
   return static_cast<int>(source * scale_factor);
 }
 
-void SetWindowIcons(HWND window, UINT dpi) {
-  // Provide current icons for the title bar and window switcher at this DPI.
-  // LR_SHARED keeps these module resources valid for the process lifetime.
-  const HINSTANCE instance = GetModuleHandle(nullptr);
-  const auto set_icon = [window, instance, dpi](WPARAM kind, int metric) {
-    const int size = GetSystemMetricsForDpi(metric, dpi);
-    const HICON icon = static_cast<HICON>(LoadImage(
-        instance, MAKEINTRESOURCE(IDI_APP_ICON), IMAGE_ICON, size, size,
-        LR_SHARED));
-    if (icon) {
-      SendMessage(window, WM_SETICON, kind, reinterpret_cast<LPARAM>(icon));
-    }
-  };
-  set_icon(ICON_SMALL, SM_CXSMICON);
-  set_icon(ICON_BIG, SM_CXICON);
-}
-
 void SetTaskbarIdentity(HWND window) {
   Microsoft::WRL::ComPtr<IPropertyStore> properties;
   if (FAILED(SHGetPropertyStoreForWindow(window, IID_PPV_ARGS(&properties)))) {
@@ -212,7 +195,6 @@ bool Win32Window::Create(const std::wstring& title,
 
   UpdateTheme(window);
 
-  SetWindowIcons(window, dpi);
   SetTaskbarIdentity(window);
 
   return OnCreate();
@@ -258,7 +240,6 @@ Win32Window::MessageHandler(HWND hwnd,
       return 0;
 
     case WM_DPICHANGED: {
-      SetWindowIcons(hwnd, HIWORD(wparam));
       auto newRectSize = reinterpret_cast<RECT*>(lparam);
       LONG newWidth = newRectSize->right - newRectSize->left;
       LONG newHeight = newRectSize->bottom - newRectSize->top;

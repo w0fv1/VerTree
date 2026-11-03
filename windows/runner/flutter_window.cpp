@@ -1,6 +1,7 @@
 #include "flutter_window.h"
 
 #include <optional>
+#include <flutter/standard_method_codec.h>
 
 #include "flutter/generated_plugin_registrant.h"
 
@@ -26,6 +27,20 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   file_tools_picker_ = RegisterFileToolsPicker(flutter_controller_->engine()->messenger(), GetHandle());
+  shell_icons_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "vertree/shell-icons",
+      &flutter::StandardMethodCodec::GetInstance());
+  shell_icons_ = std::make_unique<ShellIcons>(GetHandle(), GetModuleHandleW(nullptr),
+      [this](const std::string& asset) {
+        shell_icons_channel_->InvokeMethod("iconChanged", std::make_unique<flutter::EncodableValue>(asset));
+      });
+  shell_icons_channel_->SetMethodCallHandler([this](const auto& call, auto result) {
+    if (call.method_name() == "currentIcon") {
+      result->Success(flutter::EncodableValue(shell_icons_->asset()));
+    } else {
+      result->NotImplemented();
+    }
+  });
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
 
@@ -34,6 +49,8 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  shell_icons_.reset();
+  shell_icons_channel_.reset();
   file_tools_picker_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -46,6 +63,7 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  if (shell_icons_) shell_icons_->HandleMessage(message, wparam);
 
   if (flutter_controller_) {
     std::optional<LRESULT> result =

@@ -8,6 +8,7 @@
 
 #include "win32_window.h"
 #include "file_tools_picker.h"
+#include "shell_icons.h"
 
 
 class FlutterWindow : public Win32Window {
@@ -27,6 +28,8 @@ class FlutterWindow : public Win32Window {
 
   flutter::DartProject project_;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> file_tools_picker_;
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> shell_icons_channel_;
+  std::unique_ptr<ShellIcons> shell_icons_;
 
 
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;

@@ -1,31 +1,26 @@
 # Logo 资源
 
-只维护两份公共源文件：
+唯一品牌源文件是 [`assets/img/logo/logo.png`](../assets/img/logo/logo.png)。界面、Linux、非 Windows 托盘和官网直接复用它；Windows ICO、包图标和 macOS AppIcon 由 [`tools/sync_logo_assets.py`](../tools/sync_logo_assets.py) 生成，不单独编辑。
 
-- `assets/img/logo/logo.png`：界面、Linux、非 Windows 托盘和官网。
-- `assets/img/logo/logo.ico`：Windows EXE、菜单、安装器、快捷方式、托盘和官网 favicon。
-
-官网通过 Docusaurus `staticDirectories` 直接读取公共目录，不再在 `docs/static` 维护副本。`docs/build/logo.png` 和 `logo.ico` 是网站构建产物。
-
-macOS AppIcon 需要多个尺寸，Windows 包身份需要 44、150 和 50 像素的 PNG。这些文件保留在平台要求的目录，但全部由公共 PNG 生成，不单独编辑。Dock 复用 AppIcon。
-
-Windows 任务栏还需要 `targetsize`、`altform-unplated` 和 `altform-lightunplated` 资源，否则系统可能为透明图标加上底板。这些同样由脚本生成，不是新的 Logo 源。Windows 打包脚本自动调用 `windows/build_icon_resources.ps1` 生成 `resources.pri`，让系统按尺寸和主题选择无底板资源。手动运行 Inno Setup 前也需执行该脚本。
-
-运行窗口通过 `System.AppUserModel.RelaunchIconResource` 指定公共 ICO，并使用 `dev.w0fv1.vertree.desktop` 作为任务栏应用标识；EXE/MSI 安装器创建的快捷方式使用同一个标识，避免升级后仍选取旧的图标关联。仅替换包图片或发送 `WM_SETICON` 不足以修复这种情况。
-
-修改公共 PNG 后，在仓库根目录执行：
+修改源图后，在仓库根目录执行并提交生成文件：
 
 ```bash
 python -m pip install Pillow
 python tools/sync_logo_assets.py
 ```
 
-将平台生成文件与源图一起提交，再重新构建相应平台。普通克隆与构建直接使用已提交的生成文件，无须安装 Pillow。Windows 的 ICO 引用直接指向公共文件，无须另行复制或生成。
+普通克隆与构建直接使用已提交的资源，无须安装 Pillow。现有源图是 256 × 256；更大尺寸不会增加原图细节，高清源图仍替换同一文件。
 
-现有源 PNG 是 256 × 256；生成 512 / 1024 版本仅满足平台资源尺寸要求，不会增加原图细节。后续更新高清源图时仍替换同一个文件即可。
+## Windows
+
+- 系统主题、窗口图标和 DPI 生命周期：[`ShellIcons`](../windows/runner/shell_icons.cpp)。
+- 托盘主题通知：[`WindowsShellIcon`](../lib/platform/windows_shell_icon.dart) 与 [`TrayManager`](../lib/component/tray_manager.dart)。
+- EXE、快捷方式和固定任务栏入口使用生成的通用 `logo.ico`；任务栏身份关联见 [`win32_window.cpp`](../windows/runner/win32_window.cpp)。
+- 包资源的尺寸与深浅色变体见生成脚本；[`build_icon_resources.ps1`](../windows/build_icon_resources.ps1) 将它们编入 `resources.pri`。打包脚本自动执行，手动运行 Inno Setup 前需先执行。
+- 回归验证：[`资源生成测试`](../tools/tests/test_logo_assets.py)、[`原生主题与 DPI 测试`](../windows/runner/tests/shell_icons_test.cpp)、[`Flutter 通道测试`](../test/platform/windows_shell_icon_test.dart)。
 
 ## 官网与动作图标
 
-官网继续从公共 Logo 目录取品牌资源，暗色主题只调整显示，不生成另一份品牌文件。首页使用带替代文字的真实示例截图；不能把模板社交图当作产品截图。
+官网通过 Docusaurus `staticDirectories` 读取公共目录，`docs/build/logo.png` 和 `logo.ico` 是网站构建产物。首页使用带替代文字的真实示例截图。
 
-预览动作图标与品牌 Logo 分开，位于 `assets/img/icon/preview.*`，由 `tools/build_preview_icon.py` 生成，许可见同目录 `LICENSE-fluent-icons.txt`。不要用新的动作图标替换应用品牌。
+预览动作图标与品牌 Logo 分开，位于 `assets/img/icon/preview.*`，由 [`tools/build_preview_icon.py`](../tools/build_preview_icon.py) 生成，许可见同目录 `LICENSE-fluent-icons.txt`。

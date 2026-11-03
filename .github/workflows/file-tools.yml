@@ -19,6 +19,17 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Logo asset contracts
+        run: |
+          python -m pip install Pillow
+          python -m unittest tools.tests.test_logo_assets
+      - name: Windows shell icon contracts
+        run: |
+          cmake -S windows/runner/tests -B build/shell_icon_tests -A x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          cmake --build build/shell_icon_tests --config Release --parallel 2
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          ctest --test-dir build/shell_icon_tests -C Release --output-on-failure
       - run: flutter pub get
       - run: dart run tools/check_architecture.dart
       - run: flutter analyze
