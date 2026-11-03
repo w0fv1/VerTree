@@ -35,9 +35,9 @@ constexpr MenuCommandDefinition kMenuCommands[] = {
   {L"monit", L"监控文件变动", L"Monitor file changes", L"ファイル変更を監視", IDI_VERTREE_MONITOR, "monitor"},
   {L"share", L"局域网分享下载", L"Share on LAN", L"LAN で共有", IDI_VERTREE_SHARE, "share"},
   {L"viewtree", L"查看文件版本树", L"View version tree", L"バージョンツリーを表示", IDI_VERTREE_VIEWTREE, "viewTree"},
-  {L"unlock", L"查看／解除文件占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_VIEWTREE, "fileUsage"},
-  {L"fast-delete", L"快速删除（永久）…", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_VIEWTREE, "fastDelete"},
-  {L"conversion", L"转换格式", L"Convert format", L"形式を変換", IDI_VERTREE_VIEWTREE, "conversion"},
+  {L"unlock", L"查看／解除文件占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_FILE_USAGE, "fileUsage"},
+  {L"fast-delete", L"快速删除（永久）…", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_FAST_DELETE, "fastDelete"},
+  {L"conversion", L"转换格式", L"Convert format", L"形式を変換", IDI_VERTREE_CONVERSION, "conversion"},
 };
 
 HINSTANCE g_instance = nullptr;
@@ -273,6 +273,14 @@ std::wstring BuildModuleIconSpec(int resource_id) {
     return GetSystemIconSpec();
   }
 
+  {
+    DWORD light = 1;
+    DWORD size = sizeof(light);
+    RegGetValueW(HKEY_CURRENT_USER,
+        L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+        L"AppsUseLightTheme", RRF_RT_REG_DWORD, nullptr, &light, &size);
+    if (light == 0) resource_id += VERTREE_DARK_ICON_OFFSET;
+  }
   return module + L",-" + std::to_wstring(resource_id);
 }
 

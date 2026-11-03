@@ -3,6 +3,7 @@
 #include "../vertree_context_menu.cpp"
 #include <iostream>
 #include <stdexcept>
+#include "../../test_support/theme_registry.h"
 
 void Require(bool condition, const char* message) {
   if (!condition) throw std::runtime_error(message);
@@ -21,6 +22,34 @@ int main() {
       Require(argv[1] == std::wstring(command.verb), "command verb");
       Require(argv[2] == path, "Unicode and spaced file path round trip");
       LocalFree(argv);
+    }
+
+    Require(GetIconResourceIdForVerb(L"unlock") != GetIconResourceIdForVerb(L"viewtree"), "file usage has its own icon");
+    Require(GetIconResourceIdForVerb(L"fast-delete") != GetIconResourceIdForVerb(L"viewtree"), "delete has its own icon");
+    Require(GetIconResourceIdForVerb(L"conversion") != GetIconResourceIdForVerb(L"viewtree"), "conversion has its own icon");
+
+    {
+      test_support::RegistryFixture registry;
+      for (DWORD light : {0UL, 1UL}) {
+        registry.Set(L"AppsUseLightTheme", light);
+        registry.Set(L"SystemUsesLightTheme", light == 0 ? 1 : 0);
+        const int root_icon = IDI_VERTREE_ROOT + (light == 0 ? VERTREE_DARK_ICON_OFFSET : 0);
+        const auto root_spec = BuildModuleIconSpec(IDI_VERTREE_ROOT);
+        Require(root_spec.substr(root_spec.find_last_of(L',') + 1) == L"-" + std::to_wstring(root_icon), "root logo follows Explorer theme");
+        HICON root_image = static_cast<HICON>(LoadImageW(GetModuleHandleW(nullptr), MAKEINTRESOURCEW(root_icon), IMAGE_ICON, 32, 32, 0));
+        Require(root_image != nullptr, "root logo theme resource exists");
+        DestroyIcon(root_image);
+        for (const auto& definition : kMenuCommands) {
+          const auto spec = BuildModuleIconSpec(definition.icon);
+          const int selected = definition.icon + (light == 0 ? VERTREE_DARK_ICON_OFFSET : 0);
+          Require(spec.substr(spec.find_last_of(L',') + 1) == L"-" + std::to_wstring(selected), "Explorer theme selects menu resource independent of taskbar theme");
+          HICON icon = nullptr;
+          const auto module = GetModuleHandleW(nullptr);
+          icon = static_cast<HICON>(LoadImageW(module, MAKEINTRESOURCEW(selected), IMAGE_ICON, 32, 32, 0));
+          Require(icon != nullptr, "selected menu icon exists in module");
+          DestroyIcon(icon);
+        }
+      }
     }
 
     CLSID clsid;

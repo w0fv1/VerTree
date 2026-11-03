@@ -1,15 +1,15 @@
 # Logo 资源
 
-唯一品牌源文件是 [`assets/img/logo/logo.png`](../assets/img/logo/logo.png)。界面、Linux、非 Windows 托盘和官网直接复用它；Windows ICO、包图标和 macOS AppIcon 由 [`tools/sync_logo_assets.py`](../tools/sync_logo_assets.py) 生成，不单独编辑。
+唯一品牌源文件是 [`assets/img/logo/logo.svg`](../assets/img/logo/logo.svg)。界面 PNG、Windows ICO、包图标和 macOS AppIcon 由 [`tools/sync_logo_assets.py`](../tools/sync_logo_assets.py) 生成，不单独编辑。
 
 修改源图后，在仓库根目录执行并提交生成文件：
 
 ```bash
-python -m pip install Pillow
+python -m pip install Pillow resvg-py==0.5.0
 python tools/sync_logo_assets.py
 ```
 
-普通克隆与构建直接使用已提交的资源，无须安装 Pillow。现有源图是 256 × 256；更大尺寸不会增加原图细节，高清源图仍替换同一文件。
+普通克隆与构建直接使用已提交的资源，无须安装生成依赖。所有尺寸从 SVG 渲染，浅色图案仅反转 RGB，透明度与轮廓保持一致。
 
 ## Windows
 
@@ -23,6 +23,9 @@ python tools/sync_logo_assets.py
 
 官网通过 Docusaurus `staticDirectories` 读取公共目录，`docs/build/logo.png` 和 `logo.ico` 是网站构建产物。首页使用带替代文字的真实示例截图。
 
-预览动作图标与品牌 Logo 分开，位于 `assets/img/icon/preview.*`，由 [`tools/build_preview_icon.py`](../tools/build_preview_icon.py) 生成，许可见同目录 `LICENSE-fluent-icons.txt`。
+动作图标的唯一映射是 [`actions.json`](../assets/img/icon/actions.json)，选用 Flutter Material 图标库。运行 `python tools/build_action_icons.py --flutter-sdk <Flutter SDK 路径>`，生成界面图标定义、原生菜单资源和托盘所需图片。许可见 `assets/img/icon/LICENSE-material-icons.txt`。生成文件不单独编辑。
 
-界面动作图标的主题适配统一由 [`themed_assets.dart`](../lib/component/themed_assets.dart) 管理；分享图标回归见 [`share_action_icon_test.dart`](../test/component/share_action_icon_test.dart)。
+- 界面定义：[`action_icons.dart`](../lib/component/action_icons.dart)。
+- Explorer 主题选择：[`vertree_context_menu.cpp`](../windows/context_menu/vertree_context_menu.cpp)。
+- 资源验证：[`test_action_icons.py`](../tools/tests/test_action_icons.py)。
+- Windows 验收使用 EXE 安装包，要求见 [`Agents.custome.md`](../Agents.custome.md)。

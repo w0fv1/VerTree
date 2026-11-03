@@ -1,38 +1,22 @@
 enum WindowsMenuAction {
-  preview('RegistryVerTreePreview', 'preview', 'icon/preview.ico'),
-  backup('RegistryVerTreeBackup', 'backup', 'icon/save.ico', '备份文件 VerTree'),
+  preview('RegistryVerTreePreview', 'preview'),
+  backup('RegistryVerTreeBackup', 'backup', '备份文件 VerTree'),
   expressBackup(
     'RegistryVerTreeExpressBackup',
     'express-backup',
-    'icon/express-save.ico',
     '快速备份文件 VerTree',
   ),
-  monitor(
-    'RegistryVerTreeMonitor',
-    'monit',
-    'icon/monit.ico',
-    '监控文件变动 VerTree',
-  ),
-  share('RegistryVerTreeShare', 'share', 'icon/share.ico'),
-  viewTree(
-    'RegistryVerTreeViewTree',
-    'viewtree',
-    'logo/logo.ico',
-    '查看文件版本树 VerTree',
-  ),
-  fileUsage('RegistryVerTreeFileUsage', 'unlock', 'logo/logo.ico'),
-  fastDelete('RegistryVerTreeFastDelete', 'fast-delete', 'logo/logo.ico'),
-  conversion('RegistryVerTreeConversion', 'conversion', 'logo/logo.ico');
+  monitor('RegistryVerTreeMonitor', 'monit', '监控文件变动 VerTree'),
+  share('RegistryVerTreeShare', 'share'),
+  viewTree('RegistryVerTreeViewTree', 'viewtree', '查看文件版本树 VerTree'),
+  fileUsage('RegistryVerTreeFileUsage', 'unlock'),
+  fastDelete('RegistryVerTreeFastDelete', 'fast-delete'),
+  conversion('RegistryVerTreeConversion', 'conversion');
 
-  const WindowsMenuAction(
-    this.keyName,
-    this.verb,
-    this.icon, [
-    this.legacyKeyName,
-  ]);
+  const WindowsMenuAction(this.keyName, this.verb, [this.legacyKeyName]);
   final String keyName;
   final String verb;
-  final String icon;
+  String get icon => 'icon/action-$name.ico';
   final String? legacyKeyName;
   bool get isFileTool => this == fileUsage || this == fastDelete;
   String? get explorerCommandClsid => switch (this) {

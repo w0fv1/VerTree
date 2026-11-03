@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:nativeapi/nativeapi.dart' as nativeapi;
 import 'package:tray_manager/tray_manager.dart' as lean_tray;
 import 'package:vertree/component/i18n_lang.dart';
-import 'package:vertree/component/themed_assets.dart';
+import 'package:vertree/component/action_icons.dart';
 import 'package:vertree/platform/platform_integration.dart';
 import 'package:vertree/platform/windows_shell_icon.dart';
 import 'package:vertree/view/page/brand_page.dart';
@@ -211,7 +211,7 @@ class TrayManager with lean_tray.TrayListener {
         key: 'backup',
         label: appLocale.getText(LocaleKey.trayBackup),
         toolTip: appLocale.getText(LocaleKey.trayBackupTooltip),
-        iconAsset: 'assets/img/icon/save.png',
+        iconAsset: AppActionIcon.backup.asset(),
         action: () => _pickFileAndRun(backup, bringToFront: true),
       ),
     );
@@ -220,7 +220,7 @@ class TrayManager with lean_tray.TrayListener {
         key: 'expressBackup',
         label: appLocale.getText(LocaleKey.trayExpressBackup),
         toolTip: appLocale.getText(LocaleKey.trayExpressBackupTooltip),
-        iconAsset: 'assets/img/icon/express-save.png',
+        iconAsset: AppActionIcon.expressBackup.asset(),
         action: () => _pickFileAndRun(expressBackup),
       ),
     );
@@ -229,7 +229,7 @@ class TrayManager with lean_tray.TrayListener {
         key: 'monit',
         label: appLocale.getText(LocaleKey.trayMonit),
         toolTip: appLocale.getText(LocaleKey.trayMonitTooltip),
-        iconAsset: 'assets/img/icon/monit.png',
+        iconAsset: AppActionIcon.monitor.asset(),
         action: () => _pickFileAndRun(monit),
       ),
     );
@@ -238,7 +238,9 @@ class TrayManager with lean_tray.TrayListener {
         key: 'share',
         label: appLocale.getText(LocaleKey.trayShare),
         toolTip: appLocale.getText(LocaleKey.trayShareTooltip),
-        iconAsset: Platform.isWindows ? kShareActionIco : kShareActionPng,
+        iconAsset: Platform.isWindows
+            ? AppActionIcon.share.asset(extension: 'ico')
+            : AppActionIcon.share.asset(),
         action: () => _pickFileAndRun(share),
       ),
     );
@@ -247,7 +249,7 @@ class TrayManager with lean_tray.TrayListener {
         key: 'viewtree',
         label: appLocale.getText(LocaleKey.trayViewTree),
         toolTip: appLocale.getText(LocaleKey.trayViewTreeTooltip),
-        iconAsset: 'assets/img/icon/save.png',
+        iconAsset: AppActionIcon.viewTree.asset(),
         action: () => _pickFileAndRun(viewtree),
       ),
     );
@@ -265,8 +267,8 @@ class TrayManager with lean_tray.TrayListener {
         label: appLocale.getText(LocaleKey.traySetting),
         toolTip: appLocale.getText(LocaleKey.traySettingTooltip),
         iconAsset: Platform.isWindows
-            ? 'assets/img/icon/setting.ico'
-            : 'assets/img/icon/setting.png',
+            ? AppActionIcon.settings.asset(extension: 'ico')
+            : AppActionIcon.settings.asset(),
         action: () => showMainWindow(page: SettingPage(), animate: false),
       ),
     );
@@ -276,8 +278,8 @@ class TrayManager with lean_tray.TrayListener {
         label: appLocale.getText(LocaleKey.trayExit),
         toolTip: appLocale.getText(LocaleKey.trayExitTooltip),
         iconAsset: Platform.isWindows
-            ? 'assets/img/icon/exit.ico'
-            : 'assets/img/icon/exit.png',
+            ? AppActionIcon.exit.asset(extension: 'ico')
+            : AppActionIcon.exit.asset(),
         action: quitApplication,
       ),
     );
@@ -344,35 +346,35 @@ class TrayManager with lean_tray.TrayListener {
           key: 'backup',
           label: appLocale.getText(LocaleKey.trayBackup),
           toolTip: appLocale.getText(LocaleKey.trayBackupTooltip),
-          iconAsset: 'assets/img/icon/save.png',
+          iconAsset: AppActionIcon.backup.asset(),
           action: () => _pickFileAndRun(backup, bringToFront: true),
         ),
         _buildLinuxMenuItem(
           key: 'expressBackup',
           label: appLocale.getText(LocaleKey.trayExpressBackup),
           toolTip: appLocale.getText(LocaleKey.trayExpressBackupTooltip),
-          iconAsset: 'assets/img/icon/express-save.png',
+          iconAsset: AppActionIcon.expressBackup.asset(),
           action: () => _pickFileAndRun(expressBackup),
         ),
         _buildLinuxMenuItem(
           key: 'monit',
           label: appLocale.getText(LocaleKey.trayMonit),
           toolTip: appLocale.getText(LocaleKey.trayMonitTooltip),
-          iconAsset: 'assets/img/icon/monit.png',
+          iconAsset: AppActionIcon.monitor.asset(),
           action: () => _pickFileAndRun(monit),
         ),
         _buildLinuxMenuItem(
           key: 'share',
           label: appLocale.getText(LocaleKey.trayShare),
           toolTip: appLocale.getText(LocaleKey.trayShareTooltip),
-          iconAsset: kShareActionPng,
+          iconAsset: AppActionIcon.share.asset(),
           action: () => _pickFileAndRun(share),
         ),
         _buildLinuxMenuItem(
           key: 'viewtree',
           label: appLocale.getText(LocaleKey.trayViewTree),
           toolTip: appLocale.getText(LocaleKey.trayViewTreeTooltip),
-          iconAsset: 'assets/img/icon/save.png',
+          iconAsset: AppActionIcon.viewTree.asset(),
           action: () => _pickFileAndRun(viewtree),
         ),
         _buildLinuxMenuItem(
@@ -385,14 +387,14 @@ class TrayManager with lean_tray.TrayListener {
           key: 'setting',
           label: appLocale.getText(LocaleKey.traySetting),
           toolTip: appLocale.getText(LocaleKey.traySettingTooltip),
-          iconAsset: 'assets/img/icon/setting.png',
+          iconAsset: AppActionIcon.settings.asset(),
           action: () => showMainWindow(page: SettingPage(), animate: false),
         ),
         _buildLinuxMenuItem(
           key: 'exit',
           label: appLocale.getText(LocaleKey.trayExit),
           toolTip: appLocale.getText(LocaleKey.trayExitTooltip),
-          iconAsset: 'assets/img/icon/exit.png',
+          iconAsset: AppActionIcon.exit.asset(),
           action: quitApplication,
         ),
       ],

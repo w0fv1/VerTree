@@ -1,11 +1,6 @@
 #include "resource.h"
+#include "action_icons.rc"
 
-IDI_VERTREE_ROOT ICON "..\\..\\assets\\img\\logo\\logo.ico"
-IDI_VERTREE_BACKUP ICON "..\\..\\assets\\img\\icon\\save.ico"
-IDI_VERTREE_EXPRESS_BACKUP ICON "..\\..\\assets\\img\\icon\\express-save.ico"
-IDI_VERTREE_MONITOR ICON "..\\..\\assets\\img\\icon\\monit.ico"
-IDI_VERTREE_SHARE ICON "..\\..\\assets\\img\\icon\\share.ico"
-IDI_VERTREE_VIEWTREE ICON "..\\..\\assets\\img\\logo\\logo.ico"
+IDI_VERTREE_ROOT ICON "../../assets/img/logo/logo.ico"
 
-
-IDI_VERTREE_PREVIEW ICON "..\\..\\assets\\img\\icon\\preview.ico"
+1101 ICON "../../assets/img/logo/logo-dark.ico"

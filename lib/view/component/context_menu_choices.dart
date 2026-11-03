@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../component/i18n_lang.dart';
-import '../../component/themed_assets.dart';
+import '../../component/action_icons.dart';
 import '../../platform/windows_menu_model.dart';
 import 'settings_row.dart';
 
@@ -69,15 +70,15 @@ class ContextMenuChoices extends StatelessWidget {
   };
 
   IconData _icon(WindowsMenuAction action) => switch (action) {
-    WindowsMenuAction.preview => Icons.visibility_outlined,
-    WindowsMenuAction.fileUsage => Icons.manage_search,
-    WindowsMenuAction.fastDelete => Icons.delete_forever_outlined,
-    WindowsMenuAction.conversion => Icons.transform_rounded,
-    WindowsMenuAction.backup => Icons.save_outlined,
-    WindowsMenuAction.expressBackup => Icons.flash_on_outlined,
-    WindowsMenuAction.monitor => Icons.monitor_heart_outlined,
-    WindowsMenuAction.share => Icons.share_outlined,
-    WindowsMenuAction.viewTree => Icons.account_tree_outlined,
+    WindowsMenuAction.preview => AppActionIcon.preview.data,
+    WindowsMenuAction.fileUsage => AppActionIcon.fileUsage.data,
+    WindowsMenuAction.fastDelete => AppActionIcon.fastDelete.data,
+    WindowsMenuAction.conversion => AppActionIcon.conversion.data,
+    WindowsMenuAction.backup => AppActionIcon.backup.data,
+    WindowsMenuAction.expressBackup => AppActionIcon.expressBackup.data,
+    WindowsMenuAction.monitor => AppActionIcon.monitor.data,
+    WindowsMenuAction.share => AppActionIcon.share.data,
+    WindowsMenuAction.viewTree => AppActionIcon.viewTree.data,
   };
 
   @override
@@ -88,9 +89,6 @@ class ContextMenuChoices extends StatelessWidget {
         SettingsSwitchTile(
           key: ValueKey('$group-action-${action.name}'),
           icon: _icon(action),
-          leading: action == WindowsMenuAction.share
-              ? shareActionImage(size: 20)
-              : null,
           title: _label(action),
           value: selected.contains(action),
           onChanged: enabled ? (value) => onChanged(action, value) : null,
