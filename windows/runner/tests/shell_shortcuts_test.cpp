@@ -40,11 +40,14 @@ int main() {
   try {
     const auto programs = root / L"Programs";
     const auto pinned = root / L"Pinned";
+    const auto desktop = root / L"Desktop";
     const auto executable = root / L"Vertree.exe";
-    ShellShortcuts shortcuts(executable, programs, pinned);
+    ShellShortcuts shortcuts(executable, programs, pinned, desktop);
     Require(SUCCEEDED(shortcuts.Sync(103)), "initial shortcut creation");
     Check(programs / L"Vertree.lnk", executable, 103);
     std::filesystem::create_directories(pinned);
+    std::filesystem::create_directories(desktop);
+    std::filesystem::copy_file(programs / L"Vertree.lnk", desktop / L"Vertree.lnk");
     std::filesystem::copy_file(programs / L"Vertree.lnk", pinned / L"User renamed.lnk");
     ShellShortcuts other(root / L"Other.exe", root / L"OtherPrograms", root / L"OtherPinned");
     Require(SUCCEEDED(other.Sync(101)), "unrelated fixture");
@@ -52,6 +55,7 @@ int main() {
     Require(SUCCEEDED(shortcuts.Sync(102)), "light theme update");
     Check(programs / L"Vertree.lnk", executable, 102);
     Check(pinned / L"User renamed.lnk", executable, 102);
+    Check(desktop / L"Vertree.lnk", executable, 102);
     Check(pinned / L"Other.lnk", root / L"Other.exe", 101);
     const auto stamp = std::filesystem::last_write_time(programs / L"Vertree.lnk");
     Require(SUCCEEDED(shortcuts.Sync(102)), "unchanged theme");

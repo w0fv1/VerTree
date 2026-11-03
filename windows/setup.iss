@@ -41,9 +41,13 @@ SetupLogging=yes
 Source: "..\build\windows\x64\runner\{#BuildMode}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs
 
 [Icons]
-Name: "{commonprograms}\Vertree"; Filename: "{app}\vertree.exe"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"; AppUserModelID: "dev.w0fv1.vertree.desktop"
+Name: "{userprograms}\Vertree"; Filename: "{app}\vertree.exe"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"; AppUserModelID: "dev.w0fv1.vertree.desktop"
 Name: "{commonprograms}\Uninstall Vertree"; Filename: "{uninstallexe}"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"
-Name: "{commondesktop}\Vertree"; Filename: "{app}\vertree.exe"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"; AppUserModelID: "dev.w0fv1.vertree.desktop"
+Name: "{userdesktop}\Vertree"; Filename: "{app}\vertree.exe"; IconFilename: "{app}\data\flutter_assets\assets\img\logo\logo.ico"; AppUserModelID: "dev.w0fv1.vertree.desktop"
+
+[InstallDelete]
+Type: files; Name: "{commonprograms}\Vertree.lnk"
+Type: files; Name: "{commondesktop}\Vertree.lnk"
 
 [Run]
 Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\win11_packaging\install_sparse_package.ps1"" -ExternalLocation ""{app}"" -AllowUnsigned -Force"; StatusMsg: "Registering Windows 11 context menu..."; Flags: runhidden waituntilterminated; Check: Win11PackagingScriptExists

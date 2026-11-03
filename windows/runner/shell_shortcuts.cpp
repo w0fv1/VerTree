@@ -20,11 +20,15 @@ ShellShortcuts::ShellShortcuts() {
     pinned_ = std::filesystem::path(folder) / L"Microsoft/Internet Explorer/Quick Launch/User Pinned/TaskBar";
     CoTaskMemFree(folder);
   }
+  if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_Desktop, 0, nullptr, &folder))) {
+    desktop_ = folder;
+    CoTaskMemFree(folder);
+  }
 }
 
 ShellShortcuts::ShellShortcuts(std::filesystem::path executable,
-    std::filesystem::path programs, std::filesystem::path pinned)
-    : executable_(std::move(executable)), programs_(std::move(programs)), pinned_(std::move(pinned)) {}
+    std::filesystem::path programs, std::filesystem::path pinned, std::filesystem::path desktop)
+    : executable_(std::move(executable)), programs_(std::move(programs)), pinned_(std::move(pinned)), desktop_(std::move(desktop)) {}
 
 HRESULT ShellShortcuts::Sync(int icon_resource) {
   if (executable_.empty() || programs_.empty()) return E_UNEXPECTED;
@@ -33,6 +37,9 @@ HRESULT ShellShortcuts::Sync(int icon_resource) {
   if (error) return HRESULT_FROM_WIN32(error.value());
   const auto primary = programs_ / L"Vertree.lnk";
   std::vector<std::filesystem::path> paths{primary};
+  if (!desktop_.empty() && std::filesystem::exists(desktop_ / L"Vertree.lnk", error)) {
+    paths.push_back(desktop_ / L"Vertree.lnk");
+  }
   if (!pinned_.empty() && std::filesystem::exists(pinned_, error)) {
     for (const auto& entry : std::filesystem::directory_iterator(pinned_, error)) {
       if (entry.path().extension() == L".lnk") paths.push_back(entry.path());
