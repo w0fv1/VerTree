@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import '../domain/conversion_models.dart';
 import '../ports/conversion_runtime.dart';
 
@@ -14,7 +15,9 @@ class ConversionQueue {
     final job = ConversionJob(sources: sources, target: target);
     history.insert(0, job);
     _jobs.add(job);
-    while (_busy) await Future<void>.delayed(const Duration(milliseconds: 30));
+    while (_busy) {
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+    }
     _busy = true;
     try {
       final result = await runtime.convert(

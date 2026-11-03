@@ -73,12 +73,10 @@ class AppAnnouncementService {
     required this.writeDismissedAnnouncementUuids,
     Future<http.Response> Function(Uri uri)? httpGet,
     DateTime Function()? now,
-    void Function(String message)? onLogInfo,
-    void Function(String message)? onLogError,
+    this._onLogInfo,
+    this._onLogError,
   }) : _httpGet = httpGet ?? http.get,
-       _now = now ?? DateTime.now,
-       _onLogInfo = onLogInfo,
-       _onLogError = onLogError;
+       _now = now ?? DateTime.now;
 
   static const String dismissedAnnouncementUuidsKey =
       'dismissedAnnouncementUuids';
@@ -97,9 +95,8 @@ class AppAnnouncementService {
   Future<AppAnnouncement?> fetchActiveAnnouncement() async {
     try {
       _logInfo('Fetching announcement from $announcementUrl');
-      final response = await _httpGet(
-        Uri.parse(announcementUrl),
-      ).timeout(const Duration(seconds: 4));
+      final response = await _httpGet(Uri.parse(announcementUrl))
+          .timeout(const Duration(seconds: 4));
       if (response.statusCode != 200) {
         _logInfo(
           'Announcement request skipped with HTTP ${response.statusCode}',

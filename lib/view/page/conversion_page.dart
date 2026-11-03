@@ -1,11 +1,11 @@
 import 'dart:async';
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as p;
-import 'package:vertree/modules/conversion/application/conversion_queue.dart';
-import 'package:vertree/modules/conversion/domain/conversion_models.dart';
-import 'package:vertree/modules/conversion/infrastructure/filee_runtime.dart';
+import 'package:vertree/modules/conversion/conversion.dart';
+import 'package:vertree/adapters/ui/desktop_scope.dart';
 import 'package:vertree/view/component/app_bar.dart';
 import 'package:vertree/view/component/app_page_background.dart';
 import 'package:vertree/view/module/file_preview_dialog.dart';
@@ -30,7 +30,7 @@ class _ConversionPageState extends State<ConversionPage> {
   @override
   void initState() {
     super.initState();
-    _queue = ConversionQueue(FileeRuntime());
+    _queue = DesktopScope.read(context).createConversionQueue();
     if (widget.initialFiles.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) => _setFiles(widget.initialFiles),
@@ -50,14 +50,15 @@ class _ConversionPageState extends State<ConversionPage> {
   }
 
   Future<void> _selectFiles() async {
-    final result = await FilePicker.platform.pickFiles(
+    final result = await FilePicker.pickFiles(
       allowMultiple: true,
       type: FileType.any,
     );
-    if (result != null)
+    if (result != null) {
       await _setFiles(
         result.files.map((file) => file.path).whereType<String>(),
       );
+    }
   }
 
   Future<void> _setFiles(Iterable<String> files) async {
@@ -73,17 +74,19 @@ class _ConversionPageState extends State<ConversionPage> {
     });
     try {
       final targets = await _queue.runtime.targetsFor(values.first);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _targets = targets;
           _target = targets.isEmpty ? null : targets.first.id;
         });
+      }
     } catch (_) {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _targets = const [];
           _target = null;
         });
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
