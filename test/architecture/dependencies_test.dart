@@ -1,7 +1,23 @@
+import 'dart:io';
+
 import 'package:test/test.dart';
+
 import '../../tools/check_architecture.dart';
 
 void main() {
+  test('conversion uses pure models and a public presentation contract', () {
+    final sources = <String, String>{
+      for (final file in Directory(
+        'lib/modules/conversion',
+      ).listSync(recursive: true).whereType<File>())
+        if (file.path.endsWith('.dart'))
+          file.path.replaceAll('\\', '/'): file.readAsStringSync(),
+      'lib/view/page/conversion_page.dart': File(
+        'lib/view/page/conversion_page.dart',
+      ).readAsStringSync(),
+    };
+    expect(violations(sources), isEmpty);
+  });
   test('business, foundation and HTTP cannot import UI adapters', () {
     final found = violations({
       'lib/modules/versions/application/create.dart':
@@ -22,8 +38,7 @@ void main() {
   });
   test('checks conditional imports and exports, not only direct imports', () {
     final found = violations({
-      'lib/modules/versions/domain/model.dart':
-          "import 'dart:math' if (dart.library.io) 'dart:io';\nexport '../../../main.dart';",
+      'lib/modules/versions/domain/model.dart': "import 'dart:math' if (dart.library.io) 'dart:io';\nexport '../../../main.dart';",
     });
     expect(found.any((edge) => edge.contains('dart:io')), isTrue);
     expect(

@@ -30,6 +30,14 @@ if [[ -z "$APP_PATH" ]]; then
   exit 1
 fi
 
+RUNTIME="osx-$ARCH_NAME"
+if [[ ! -x "$ROOT_DIR/vendor/filee/$RUNTIME/filee-cli" ]]; then
+  echo "Bundled Filee runtime is missing. Run tools/build_filee_runtime.ps1 $RUNTIME before packaging." >&2
+  exit 1
+fi
+mkdir -p "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME"
+cp -a "$ROOT_DIR/vendor/filee/$RUNTIME/." "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME/"
+
 mkdir -p "$DIST_DIR"
 ARTIFACT_PREFIX="vertree-macos-$ARCH_NAME-$VERSION"
 ZIP_PATH="$DIST_DIR/$ARTIFACT_PREFIX.zip"

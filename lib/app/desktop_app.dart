@@ -4,7 +4,9 @@ import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
+import 'package:desktop_drop/desktop_drop.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -12,6 +14,8 @@ import 'package:toastification/toastification.dart';
 import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/modules/monitoring/monitoring.dart';
+import 'package:vertree/modules/conversion/conversion.dart';
+import 'package:vertree/modules/conversion/infrastructure/filee_runtime.dart';
 import 'package:vertree/api/local_http_api_server.dart';
 import 'package:vertree/api/extended_automation_api.dart';
 import 'package:vertree/component/app_logger.dart';
@@ -37,6 +41,7 @@ import 'package:vertree/view/module/file_preview_dialog.dart';
 import 'package:vertree/view/page/brand_page.dart';
 import 'package:vertree/view/page/monit_page.dart';
 import 'package:vertree/view/page/setting_page.dart';
+import 'package:vertree/view/page/conversion_page.dart';
 import 'package:vertree/view/page/version_tree_page.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -266,6 +271,7 @@ Future<void> runVertreeApp(
     onShare: share,
     onViewTree: viewtree,
     onPreview: previewFile,
+    onConversion: convertFile,
     onFileTools: openFileTools,
     onNotify: showWindowsNotification,
     onLogInfo: logger.info,
@@ -527,6 +533,7 @@ Future<void> runVertreeApp(
           fileTools: fileTools,
           openFileTools: openFileTools,
           openPreviewSession: openCoordinatedPreviewSession,
+          createConversionQueue: () => ConversionQueue(FileeRuntime()),
         ),
         child: const MainPage(),
       ),
@@ -542,6 +549,14 @@ Future<void> runVertreeApp(
     await appHost.stop();
     exit(1);
   }
+}
+
+Future<void> convertFile(String path) async {
+  await _waitForUiReady();
+  await showMainWindow(
+    page: ConversionPage(key: UniqueKey(), initialFiles: [path]),
+    animate: false,
+  );
 }
 
 Future<void> _ensureWindowVisible() async {
@@ -888,7 +903,7 @@ Future<Result<Map<String, dynamic>, String>> captureCurrentAppScreenshot({
 
 Future<void> _pickFileAndRunAction(String action) async {
   await _ensureWindowVisible();
-  final result = await FilePicker.platform.pickFiles();
+  final result = await FilePicker.pickFiles();
   final path = result?.files.single.path;
   if (path == null || path.isEmpty) return;
   processArgs(['--menu', action, path]);
@@ -907,6 +922,25 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> with WindowListener {
   Widget page = BrandPage();
+  bool _ctrlDragActive = false;
+  bool _ctrlHeld = false;
+
+  bool _handleGlobalKeyEvent(KeyEvent event) {
+    if (event.logicalKey != LogicalKeyboardKey.controlLeft &&
+        event.logicalKey != LogicalKeyboardKey.controlRight) {
+      return false;
+    }
+    if (event is KeyDownEvent) {
+      _ctrlHeld = true;
+    } else if (event is KeyUpEvent) {
+      _ctrlHeld = HardwareKeyboard.instance.logicalKeysPressed.any(
+        (key) =>
+            key == LogicalKeyboardKey.controlLeft ||
+            key == LogicalKeyboardKey.controlRight,
+      );
+    }
+    return false;
+  }
 
   @override
   void initState() {
@@ -917,6 +951,14 @@ class _MainPageState extends State<MainPage> with WindowListener {
       _appUiReadyCompleter.complete();
     }
     windowManager.addListener(this);
+    HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
+  }
+
+  @override
+  void dispose() {
+    HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
+    windowManager.removeListener(this);
+    super.dispose();
   }
 
   @override
@@ -932,9 +974,36 @@ class _MainPageState extends State<MainPage> with WindowListener {
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
             builder: (context, child) {
-              return RepaintBoundary(
-                key: appScreenshotBoundaryKey,
-                child: child ?? const SizedBox.shrink(),
+              return DropTarget(
+                onDragEntered: (_) {
+                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
+                  _ctrlDragActive =
+                      _ctrlHeld ||
+                      keys.contains(LogicalKeyboardKey.controlLeft) ||
+                      keys.contains(LogicalKeyboardKey.controlRight);
+                },
+                onDragExited: (_) => _ctrlDragActive = false,
+                onDragDone: (detail) {
+                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
+                  final controlHeld =
+                      _ctrlDragActive ||
+                      _ctrlHeld ||
+                      keys.contains(LogicalKeyboardKey.controlLeft) ||
+                      keys.contains(LogicalKeyboardKey.controlRight);
+                  _ctrlDragActive = false;
+                  if (!controlHeld) return;
+                  final files = detail.files
+                      .map((file) => file.path)
+                      .where((path) => path.isNotEmpty)
+                      .toList();
+                  if (files.isNotEmpty) {
+                    goPage(ConversionPage(initialFiles: files));
+                  }
+                },
+                child: RepaintBoundary(
+                  key: appScreenshotBoundaryKey,
+                  child: child ?? const SizedBox.shrink(),
+                ),
               );
             },
             home: page,

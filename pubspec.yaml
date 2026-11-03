@@ -5,30 +5,32 @@ publish_to: 'none'
 version: 3.0.0
 
 environment:
-  sdk: '>=3.10.0 <4.0.0'
+  sdk: '>=3.13.0 <4.0.0'
+  flutter: '3.47.9'
 dependencies:
-  code_assets: ^1.0.0
-  hooks: ^1.0.2
-  native_toolchain_c: ^0.17.6
+  code_assets: ^2.1.0
+  hooks: ^2.2.0
+  native_toolchain_c: ^0.19.5
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ^2.0.0
   uuid: ^4.5.1
   bitsdojo_window: ^0.1.6
   flutter_background_service: ^5.1.0
-  nativeapi: ^0.1.0
-  tray_manager: ^0.5.2
+  nativeapi: ^0.1.4
+  tray_manager: ^0.5.3
   win32_registry: ^2.1.0
-  window_manager: ^0.5.1
-  superuser: ^3.0.0+1
+  window_manager: ^0.5.2
+  superuser: ^4.1.3
   ffi: ^2.1.4
   win32: ^5.11.0
   windows_single_instance: ^1.0.1
   path_provider: ^2.1.5
-  loading_indicator: ^3.1.1
+  loading_indicator: ^4.0.2
   local_notifier: ^0.1.6
   launch_at_startup: ^0.5.1
-  file_picker: ^10.3.10
+  file_picker: ^11.0.3
+  desktop_drop: ^0.8.4
   url_launcher: ^6.3.1
   toastification: ^3.0.1
   intl: ^0.20.2
@@ -43,7 +45,7 @@ dependencies:
   diff_match_patch: ^0.4.1
 
 dev_dependencies:
-  analyzer: ^10.0.1
+  analyzer: ^13.3.0
   flutter_test:
     sdk: flutter
   test: ^1.26.3
@@ -57,3 +59,5 @@ flutter:
     - assets/img/icon/
     - assets/office_viewer/
     - assets/office_viewer/assets/
+
+

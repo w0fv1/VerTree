@@ -17,6 +17,7 @@ void main() {
     errors = [];
     handler = AppCommandHandler(
       onPreview: previews.add,
+      onConversion: otherActions.add,
       onBackup: otherActions.add,
       onExpressBackup: otherActions.add,
       onMonit: otherActions.add,

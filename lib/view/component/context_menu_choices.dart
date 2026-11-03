@@ -21,6 +21,7 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.preview,
     WindowsMenuAction.fileUsage,
     WindowsMenuAction.fastDelete,
+    WindowsMenuAction.conversion,
     WindowsMenuAction.backup,
     WindowsMenuAction.expressBackup,
     WindowsMenuAction.monitor,
@@ -60,12 +61,18 @@ class ContextMenuChoices extends StatelessWidget {
       Lang.ja => '高速削除（完全削除）…',
       _ => '快速删除（永久）…',
     },
+    WindowsMenuAction.conversion => switch (locale.lang) {
+      Lang.en => 'Convert format',
+      Lang.ja => '形式を変換',
+      _ => '转换格式',
+    },
   };
 
   IconData _icon(WindowsMenuAction action) => switch (action) {
     WindowsMenuAction.preview => Icons.visibility_outlined,
     WindowsMenuAction.fileUsage => Icons.manage_search,
     WindowsMenuAction.fastDelete => Icons.delete_forever_outlined,
+    WindowsMenuAction.conversion => Icons.transform_rounded,
     WindowsMenuAction.backup => Icons.save_outlined,
     WindowsMenuAction.expressBackup => Icons.flash_on_outlined,
     WindowsMenuAction.monitor => Icons.monitor_heart_outlined,

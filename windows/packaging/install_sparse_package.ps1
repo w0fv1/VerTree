@@ -102,6 +102,18 @@ if ($existing) {
   }
 }
 
+$allowUnsignedRequested = $AllowUnsigned -or $env:VERTREE_ALLOW_UNSIGNED_MSIX -eq "1"
+if ($allowUnsignedRequested) {
+  # The bundled development package is intentionally unsigned. Windows still
+  # rejects an unsigned MSIX with -ExternalLocation (0x80073D2C), even when
+  # -AllowUnsigned is supplied, so register the loose manifest instead.
+  $manifest = Update-StagedSparsePackage
+  Write-Host "Register loose sparse manifest with ExternalLocation: $ExternalLocation"
+  Write-Host "Manifest staging path: $manifest"
+  Add-AppxPackage -Register $manifest -ExternalLocation $ExternalLocation -ForceUpdateFromAnyVersion -ForceApplicationShutdown
+  exit 0
+}
+
 $identityPackage = Resolve-IdentityPackagePath
 if (-not [string]::IsNullOrWhiteSpace($identityPackage)) {
   Write-Host "Register sparse identity package with ExternalLocation: $ExternalLocation"
@@ -112,9 +124,6 @@ if (-not [string]::IsNullOrWhiteSpace($identityPackage)) {
     "-ForceUpdateFromAnyVersion",
     "-ForceApplicationShutdown"
   )
-  if ($AllowUnsigned -or $env:VERTREE_ALLOW_UNSIGNED_MSIX -eq "1") {
-    $args += "-AllowUnsigned"
-  }
   Add-AppxPackage @args
   exit 0
 }

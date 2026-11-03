@@ -7,6 +7,7 @@
     "jsx": "react-jsx",
     "skipLibCheck": true,
     "noEmit": true,
+    "allowImportingTsExtensions": true,
     "types": ["vite/client", "node"],
     "paths": {
       "react": ["./node_modules/@types/react"],

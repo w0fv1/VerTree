@@ -52,7 +52,7 @@ int main() {
       command->Release();
       ++total;
     }
-    Require(total == 8 && count == 0, "eight menu actions and clean end");
+    Require(total == 9 && count == 0, "nine menu actions and clean end");
     Require(SUCCEEDED(commands->Reset()), "enumerator reset");
     Require(commands->Next(1, &command, &count) == S_OK, "enumerator reopen");
     command->Release();
@@ -60,7 +60,7 @@ int main() {
     root->Release();
     Require(DllCanUnloadNow() == S_OK, "COM objects released");
     CoUninitialize();
-    std::cout << "PASS: eight shell actions, preview first, argument round trips, COM lifecycle\n";
+    std::cout << "PASS: nine shell actions, preview first, argument round trips, COM lifecycle\n";
     return 0;
   } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';

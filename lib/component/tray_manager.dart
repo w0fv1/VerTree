@@ -399,7 +399,7 @@ class TrayManager with lean_tray.TrayListener {
     if (bringToFront) {
       await _ensureWindowVisible();
     }
-    final result = await FilePicker.platform.pickFiles();
+    final result = await FilePicker.pickFiles();
     final filePath = result?.files.single.path;
     if (filePath == null || filePath.isEmpty) {
       return;

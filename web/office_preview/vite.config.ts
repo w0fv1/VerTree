@@ -1,7 +1,7 @@
 import { createServer } from 'vite'
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { previewCapabilitiesPlugin } from '../../vendor/office-viewer/office-viewer-app/scripts/previewCapabilitiesPlugin'
+import { previewCapabilitiesPlugin } from '../../vendor/office-viewer/office-viewer-app/scripts/previewCapabilitiesPlugin.ts'
 import { readFileSync } from 'node:fs'
 
 const dependencies = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')).dependencies

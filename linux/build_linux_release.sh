@@ -25,6 +25,12 @@ rm -rf "$STAGE_DIR"
 mkdir -p "$STAGE_DIR" "$DIST_DIR"
 
 cp -a "$RELEASE_BUNDLE_DIR" "$STAGE_DIR/bundle"
+if [[ ! -x "$ROOT_DIR/vendor/filee/linux-x64/filee-cli" ]]; then
+  echo "Bundled Filee runtime is missing. Run tools/build_filee_runtime.sh linux-x64 before packaging." >&2
+  exit 1
+fi
+mkdir -p "$STAGE_DIR/bundle/vendor/filee/linux-x64"
+cp -a "$ROOT_DIR/vendor/filee/linux-x64/." "$STAGE_DIR/bundle/vendor/filee/linux-x64/"
 cp "$ROOT_DIR/linux/packaging/vertree.desktop" "$STAGE_DIR/dev.w0fv1.vertree.desktop"
 cp "$ROOT_DIR/linux/packaging/vertree.metainfo.xml" "$STAGE_DIR/dev.w0fv1.vertree.metainfo.xml"
 cp "$ROOT_DIR/linux/packaging/vertree_nautilus.py" "$STAGE_DIR/vertree_nautilus.py"

@@ -5,17 +5,21 @@ class HomeActions extends StatelessWidget {
   const HomeActions({
     super.key,
     required this.monitorLabel,
+    this.conversionLabel,
     required this.settingsLabel,
     required this.exitLabel,
     required this.onMonitor,
+    this.onConversion,
     required this.onSettings,
     required this.onExit,
   });
 
   final String monitorLabel;
+  final String? conversionLabel;
   final String settingsLabel;
   final String exitLabel;
   final VoidCallback onMonitor;
+  final VoidCallback? onConversion;
   final VoidCallback onSettings;
   final VoidCallback onExit;
 
@@ -26,6 +30,14 @@ class HomeActions extends StatelessWidget {
     spacing: 12,
     runSpacing: 12,
     children: [
+      if (conversionLabel != null && onConversion != null)
+        _navigationButton(
+          context,
+          name: 'conversion',
+          label: conversionLabel!,
+          icon: Icons.transform_rounded,
+          onPressed: onConversion!,
+        ),
       _navigationButton(
         context,
         name: 'monitor',

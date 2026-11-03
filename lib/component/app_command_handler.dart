@@ -16,6 +16,7 @@ class AppCommandHandler {
     required this.onShare,
     required this.onViewTree,
     required this.onPreview,
+    required this.onConversion,
     required this.onNotify,
     required this.onLogInfo,
     required this.onLogError,
@@ -29,6 +30,7 @@ class AppCommandHandler {
   final FileActionCallback onShare;
   final FileActionCallback onViewTree;
   final FileActionCallback onPreview;
+  final FileActionCallback onConversion;
   final UserNotificationCallback onNotify;
   final void Function(String message) onLogInfo;
   final void Function(String message) onLogError;
@@ -97,6 +99,9 @@ class AppCommandHandler {
           break;
         case AppCliAction.viewtree:
           await onViewTree(path);
+          break;
+        case AppCliAction.conversion:
+          await onConversion(path);
           break;
       }
     } catch (e) {

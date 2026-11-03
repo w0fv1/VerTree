@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../api/local_http_api_server.dart';
 import '../../component/app_logger.dart';
 import '../../component/app_version_info.dart';
@@ -6,6 +7,7 @@ import '../../component/configer.dart';
 import '../../component/brand_slogans.dart';
 import '../../component/i18n_lang.dart';
 import '../../modules/monitoring/monitoring.dart';
+import '../../modules/conversion/conversion.dart';
 import '../../modules/versions/versions.dart';
 import '../../foundation/app_events.dart';
 import '../../modules/preview/preview.dart';
@@ -45,8 +47,10 @@ class DesktopDependencies {
     required this.fileTools,
     required this.openFileTools,
     required this.openPreviewSession,
+    required this.createConversionQueue,
   });
   final FileToolsController fileTools;
+  final ConversionQueue Function() createConversionQueue;
   final Future<void> Function(List<String> paths, String action) openFileTools;
   final Future<FilePreviewSession> Function(String path) openPreviewSession;
   final AppLogger logger;
