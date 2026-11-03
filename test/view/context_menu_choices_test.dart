@@ -28,9 +28,8 @@ Future<void> showChoices(
     MaterialApp(
       theme: ThemeData(useMaterial3: true),
       builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(
-          context,
-        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        data: MediaQuery.of(context)
+            .copyWith(textScaler: TextScaler.linear(textScale)),
         child: child!,
       ),
       home: Scaffold(
@@ -88,7 +87,7 @@ void main() {
     await showChoices(tester);
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(find.byType(Checkbox), findsNothing);
-    expect(find.byType(Switch), findsNWidgets(16));
+    expect(find.byType(Switch), findsNWidgets(18));
     for (final action in ContextMenuChoices.legacyOrder) {
       final modern = tester.widget<SettingsSwitchTile>(row('win11', action));
       final legacy = tester.widget<SettingsSwitchTile>(row('legacy', action));
@@ -114,7 +113,7 @@ void main() {
     expect(
       tester
           .widgetList<SettingsSwitchTile>(find.byType(SettingsSwitchTile))
-          .take(8)
+          .take(9)
           .map((widget) => widget.key),
       ContextMenuChoices.legacyOrder.map(
         (action) => ValueKey('win11-action-${action.name}'),
@@ -222,31 +221,56 @@ void main() {
     });
   }
 
-  testWidgets('non-Windows action filter retains the existing five actions', (
-    tester,
-  ) async {
-    final locale = AppLocale()..lang = Lang.zhCn;
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Scaffold(
-          body: ContextMenuChoices(
-            group: 'legacy',
-            selected: const {},
-            locale: locale,
-            onChanged: (_, _) {},
-            actions: ContextMenuChoices.legacyOrder.where(
-              (action) =>
-                  action != WindowsMenuAction.preview && !action.isFileTool,
+  testWidgets(
+    'non-Windows action filter includes conversion and excludes Windows tools',
+    (tester) async {
+      final locale = AppLocale()..lang = Lang.zhCn;
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ContextMenuChoices(
+              group: 'legacy',
+              selected: const {},
+              locale: locale,
+              onChanged: (_, _) {},
+              actions: ContextMenuChoices.legacyOrder.where(
+                (action) =>
+                    action != WindowsMenuAction.preview && !action.isFileTool,
+              ),
             ),
           ),
         ),
-      ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.byType(Switch), findsNWidgets(6));
+      expect(row('legacy', WindowsMenuAction.conversion), findsOneWidget);
+      expect(row('legacy', WindowsMenuAction.fastDelete), findsNothing);
+      expect(row('legacy', WindowsMenuAction.fileUsage), findsNothing);
+      expect(row('legacy', WindowsMenuAction.preview), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('conversion selection is independent in each menu', (
+    tester,
+  ) async {
+    final changes = <String>[];
+    await showChoices(
+      tester,
+      onChange: (group, action, value) {
+        changes.add('$group:${action.name}:$value');
+      },
+    );
+    final modern = row('win11', WindowsMenuAction.conversion);
+    final legacy = row('legacy', WindowsMenuAction.conversion);
+    expect(tester.widget<SettingsSwitchTile>(modern).title, '转换格式');
+    await tester.ensureVisible(modern);
+    await tester.tap(
+      find.descendant(of: modern, matching: find.byType(Switch)),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(Switch), findsNWidgets(5));
-    expect(row('legacy', WindowsMenuAction.fastDelete), findsNothing);
-    expect(row('legacy', WindowsMenuAction.fileUsage), findsNothing);
-    expect(row('legacy', WindowsMenuAction.preview), findsNothing);
-    expect(tester.takeException(), isNull);
+    expect(changes, ['win11:conversion:true']);
+    expect(tester.widget<SettingsSwitchTile>(modern).value, isTrue);
+    expect(tester.widget<SettingsSwitchTile>(legacy).value, isFalse);
   });
 }

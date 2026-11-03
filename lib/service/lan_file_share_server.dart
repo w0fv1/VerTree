@@ -1,6 +1,8 @@
 import 'dart:async';
+
 import '../foundation/app_events.dart';
 import '../file_access/file_access.dart';
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
@@ -17,12 +19,10 @@ class LanFileShareServer {
     this.sharePageBaseUrl = defaultSharePageBaseUrl,
     Future<List<String>> Function()? addressResolver,
     Future<String?> Function()? wifiNameResolver,
-    void Function(String message)? onLogInfo,
-    void Function(String message)? onLogError,
+    this._onLogInfo,
+    this._onLogError,
   }) : _addressResolver = addressResolver ?? _discoverLanIpv4Addresses,
-       _wifiNameResolver = wifiNameResolver ?? _discoverWifiName,
-       _onLogInfo = onLogInfo,
-       _onLogError = onLogError;
+       _wifiNameResolver = wifiNameResolver ?? _discoverWifiName;
 
   static const int defaultPort = 31424;
   static const int maxPortSearchSpan = 100;

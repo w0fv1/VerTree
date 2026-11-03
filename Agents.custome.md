@@ -8,7 +8,7 @@
 
 ## Control Surface
 
-- Dev controller script: [dev_control_server.py](/dev_control_server.py)
+- Dev controller script: [dev_server.py](/dev_server.py)
 - Default controller URL: `http://127.0.0.1:32500`
 - Controller endpoints:
   - `GET /status`

@@ -16,19 +16,19 @@
     "audit:browser": "node scripts/audit_browser.cjs"
   },
   "dependencies": {
-    "@docusaurus/core": "3.10.0",
-    "@docusaurus/preset-classic": "3.10.0",
-    "@mdx-js/react": "^3.0.0",
-    "clsx": "^2.0.0",
-    "prism-react-renderer": "^2.3.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "@docusaurus/core": "3.10.2",
+    "@docusaurus/preset-classic": "3.10.2",
+    "@mdx-js/react": "^3.1.1",
+    "clsx": "^2.1.1",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
-    "@axe-core/playwright": "4.13.0",
-    "@docusaurus/module-type-aliases": "3.10.0",
-    "@docusaurus/types": "3.10.0",
-    "playwright": "1.63.0"
+    "@axe-core/playwright": "4.14.0",
+    "@docusaurus/module-type-aliases": "3.10.2",
+    "@docusaurus/types": "3.10.2",
+    "playwright": "1.64.1"
   },
   "browserslist": {
     "production": [

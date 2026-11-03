@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 
@@ -92,9 +93,7 @@ class _MonitPageState extends State<MonitPage> {
   }
 
   Future<void> _addNewTask() async {
-    FilePickerResult? result = await FilePicker.platform.pickFiles(
-      type: FileType.any,
-    );
+    FilePickerResult? result = await FilePicker.pickFiles(type: FileType.any);
 
     if (result != null && result.files.single.path != null) {
       String selectedFilePath = result.files.single.path!;
@@ -135,7 +134,7 @@ class _MonitPageState extends State<MonitPage> {
   }
 
   Future<void> _shareFile() async {
-    final result = await FilePicker.platform.pickFiles(type: FileType.any);
+    final result = await FilePicker.pickFiles(type: FileType.any);
     final selectedFilePath = result?.files.single.path;
     if (selectedFilePath == null || selectedFilePath.isEmpty) {
       return;

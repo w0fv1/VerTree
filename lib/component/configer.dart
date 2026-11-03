@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:path_provider/path_provider.dart';
 import 'package:vertree/modules/settings/settings.dart';
 
@@ -8,11 +9,8 @@ import 'package:vertree/modules/settings/settings.dart';
 /// configuration is read. Reads are side-effect free; writes are queued and
 /// staged beside the destination before replacement.
 class Configer {
-  Configer({
-    Future<Directory> Function()? directoryResolver,
-    void Function(String)? onLogError,
-  }) : _directoryResolver = directoryResolver ?? getApplicationSupportDirectory,
-       _onLogError = onLogError;
+  Configer({Future<Directory> Function()? directoryResolver, this._onLogError})
+    : _directoryResolver = directoryResolver ?? getApplicationSupportDirectory;
   final Future<Directory> Function() _directoryResolver;
   final void Function(String)? _onLogError;
   late String configFilePath;

@@ -1,6 +1,6 @@
 # 官网与文档维护
 
-`docs/` 是官网源码，不是另一份应用配置。Docusaurus 3.10.0 + React，中文站点部署到 `https://vertree.w0fv1.dev/`。应用使用 Flutter，两者分别构建。
+`docs/` 是官网源码，不是另一份应用配置。Docusaurus + React（依赖版本见 `package.json`），中文站点部署到 `https://vertree.w0fv1.dev/`。应用使用 Flutter，两者分别构建。
 
 ## 本地开发与生产预览
 

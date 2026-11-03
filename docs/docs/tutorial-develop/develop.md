@@ -12,7 +12,7 @@ Vertree 是 Flutter 桌面应用。文件预览复用独立仓库 Office-Viewer 
 
 | 环境 | 要求 |
 | --- | --- |
-| 通用 | Git、Python 3、Node.js 24、Flutter stable（Dart 满足 `>=3.10.0 <4.0.0`） |
+| 通用 | Git、Python 3、Node.js 24、Flutter 与 Dart 版本以根目录 `pubspec.yaml` 的 `environment` 为准；CI 从同一文件读取 Flutter 版本 |
 | Windows | Flutter 支持的 Visual Studio 桌面 C++ 工具链、Windows SDK、CMake、PATH 中的 NuGet CLI；运行预览需要 WebView2 Runtime |
 | Windows 打包 | Inno Setup、WiX Toolset；MSIX 使用 Windows SDK 的 MakeAppx / SignTool |
 | macOS | Xcode、CocoaPods |

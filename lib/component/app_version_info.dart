@@ -21,15 +21,11 @@ class AppVersionInfo {
     required this.currentVersion,
     required this.releaseApiUrl,
     Future<http.Response> Function(Uri uri)? httpGet,
-    String Function(String key, String defaultValue)? readConfigString,
-    void Function(String key, String value)? writeConfigString,
-    void Function(String message)? onLogInfo,
-    void Function(String message)? onLogError,
-  }) : _httpGet = httpGet ?? http.get,
-       _readConfigString = readConfigString,
-       _writeConfigString = writeConfigString,
-       _onLogInfo = onLogInfo,
-       _onLogError = onLogError;
+    this._readConfigString,
+    this._writeConfigString,
+    this._onLogInfo,
+    this._onLogError,
+  }) : _httpGet = httpGet ?? http.get;
 
   factory AppVersionInfo.fromPackageVersion({
     required String packageVersion,
@@ -80,9 +76,8 @@ class AppVersionInfo {
   }
 
   static int compareVersions(String version1, String version2) {
-    return _VersionIdentifier.parse(
-      version1,
-    ).compareTo(_VersionIdentifier.parse(version2));
+    return _VersionIdentifier.parse(version1)
+        .compareTo(_VersionIdentifier.parse(version2));
   }
 
   Future<Result<List<Map<String, dynamic>>, String>> _fetchReleaseFeed() async {

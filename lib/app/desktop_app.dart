@@ -14,6 +14,8 @@ import 'package:toastification/toastification.dart';
 import 'package:vertree/component/app_launch_args.dart';
 import 'package:vertree/component/i18n_lang.dart';
 import 'package:vertree/modules/monitoring/monitoring.dart';
+import 'package:vertree/modules/conversion/conversion.dart';
+import 'package:vertree/modules/conversion/infrastructure/filee_runtime.dart';
 import 'package:vertree/api/local_http_api_server.dart';
 import 'package:vertree/api/extended_automation_api.dart';
 import 'package:vertree/component/app_logger.dart';
@@ -531,6 +533,7 @@ Future<void> runVertreeApp(
           fileTools: fileTools,
           openFileTools: openFileTools,
           openPreviewSession: openCoordinatedPreviewSession,
+          createConversionQueue: () => ConversionQueue(FileeRuntime()),
         ),
         child: const MainPage(),
       ),
@@ -900,7 +903,7 @@ Future<Result<Map<String, dynamic>, String>> captureCurrentAppScreenshot({
 
 Future<void> _pickFileAndRunAction(String action) async {
   await _ensureWindowVisible();
-  final result = await FilePicker.platform.pickFiles();
+  final result = await FilePicker.pickFiles();
   final path = result?.files.single.path;
   if (path == null || path.isEmpty) return;
   processArgs(['--menu', action, path]);
@@ -993,8 +996,9 @@ class _MainPageState extends State<MainPage> with WindowListener {
                       .map((file) => file.path)
                       .where((path) => path.isNotEmpty)
                       .toList();
-                  if (files.isNotEmpty)
+                  if (files.isNotEmpty) {
                     goPage(ConversionPage(initialFiles: files));
+                  }
                 },
                 child: RepaintBoundary(
                   key: appScreenshotBoundaryKey,
