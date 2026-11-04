@@ -42,12 +42,12 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.fileUsage => switch (locale.lang) {
       Lang.en => 'Inspect / release file usage',
       Lang.ja => 'ファイルの使用状況を確認',
-      _ => '查看／解除文件占用',
+      _ => '解除占用',
     },
     WindowsMenuAction.fastDelete => switch (locale.lang) {
       Lang.en => 'Fast delete (permanent)…',
       Lang.ja => '高速削除（完全削除）…',
-      _ => '快速删除（永久）…',
+      _ => '删除',
     },
     WindowsMenuAction.conversion => switch (locale.lang) {
       Lang.en => 'Convert format',
