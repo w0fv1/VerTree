@@ -714,7 +714,7 @@ class AppLocale {
 
   static const Map<LocaleKey, String> _zhCn = {
     LocaleKey.registryPreviewKeyName: '预览文件 · Vertree',
-    LocaleKey.settingAddPreviewMenu: '预览文件',
+    LocaleKey.settingAddPreviewMenu: '预览',
     LocaleKey.settingMenuUpdateFailed: '右键菜单更新失败，未能完整应用更改。',
     LocaleKey.appTitle: "Vertree维树",
     LocaleKey.registryBackupKeyName: "备份文件 VerTree",
@@ -823,11 +823,11 @@ class AppLocale {
     LocaleKey.settingContextMenuToggle: "右键菜单选项",
     LocaleKey.settingContextMenuLegacySuffix: "（旧版）",
     LocaleKey.settingLegacyMenuCollapseToggle: "将旧版右键菜单收起到 Vertree 二级菜单",
-    LocaleKey.settingAddBackupMenu: "将“备份该文件”增加到右键菜单",
+    LocaleKey.settingAddBackupMenu: '备份',
     LocaleKey.settingAddExpressBackupMenu: "将“快速备份该文件”增加到右键菜单",
-    LocaleKey.settingAddMonitorMenu: "将“监控该文件”增加到右键菜单",
-    LocaleKey.settingAddShareMenu: "将“局域网分享下载”增加到右键菜单",
-    LocaleKey.settingAddViewtreeMenu: "将“浏览该文件版本树”增加到右键菜单",
+    LocaleKey.settingAddMonitorMenu: '监控',
+    LocaleKey.settingAddShareMenu: '局域网分享',
+    LocaleKey.settingAddViewtreeMenu: '版本树',
     LocaleKey.settingLinuxContextMenuToggle: "启用 GNOME Files 右键菜单",
     LocaleKey.settingLinuxContextMenuToggleInstallHint:
         "启用 GNOME Files 右键菜单（需先安装 nautilus-python）",
