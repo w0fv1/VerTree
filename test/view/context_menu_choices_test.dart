@@ -89,7 +89,7 @@ void main() {
     expect(find.byType(Checkbox), findsNothing);
     expect(find.byType(Switch), findsNWidgets(16));
     expect(find.text('快速查看文件内容'), findsNWidgets(2));
-    expect(find.text('快速删除文件或文件夹，执行前需确认'), findsNWidgets(2));
+    expect(find.text('快速删除文件或文件夹'), findsNWidgets(2));
     for (final action in ContextMenuChoices.legacyOrder) {
       final modern = tester.widget<SettingsSwitchTile>(row('win11', action));
       final legacy = tester.widget<SettingsSwitchTile>(row('legacy', action));
