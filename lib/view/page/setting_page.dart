@@ -1134,6 +1134,29 @@ class _SettingPageState extends State<SettingPage> {
                             LocaleKey.settingIntegrationsGroup,
                           ),
                           children: [
+                            if (PlatformIntegration.supportsAutoStart)
+                              _buildSwitchTile(
+                                icon: Icons.power_settings_new_rounded,
+                                title: _desktop.appLocale.getText(
+                                  LocaleKey.settingEnableAutostart,
+                                ),
+                                value: autoStart,
+                                onChanged: _toggleAutoStart,
+                              ),
+                            if (PlatformIntegration.supportsAutoStart)
+                              _buildSwitchTile(
+                                icon: Icons.move_to_inbox_outlined,
+                                title: _launchToTrayAvailable
+                                    ? _launchBehaviorTitle
+                                    : _desktop.appLocale.getText(
+                                        LocaleKey
+                                            .settingLaunchToTrayUnsupported,
+                                      ),
+                                value: launchToTray,
+                                onChanged: _launchToTrayAvailable
+                                    ? _toggleLaunchToTray
+                                    : null,
+                              ),
                             if (PlatformIntegration.isWindows)
                               _buildSubsectionCard(
                                 icon: Icons.apps_rounded,
@@ -1231,29 +1254,6 @@ class _SettingPageState extends State<SettingPage> {
                                     ),
                                   ),
                                 ],
-                              ),
-                            if (PlatformIntegration.supportsAutoStart)
-                              _buildSwitchTile(
-                                icon: Icons.move_to_inbox_outlined,
-                                title: _launchToTrayAvailable
-                                    ? _launchBehaviorTitle
-                                    : _desktop.appLocale.getText(
-                                        LocaleKey
-                                            .settingLaunchToTrayUnsupported,
-                                      ),
-                                value: launchToTray,
-                                onChanged: _launchToTrayAvailable
-                                    ? _toggleLaunchToTray
-                                    : null,
-                              ),
-                            if (PlatformIntegration.supportsAutoStart)
-                              _buildSwitchTile(
-                                icon: Icons.power_settings_new_rounded,
-                                title: _desktop.appLocale.getText(
-                                  LocaleKey.settingEnableAutostart,
-                                ),
-                                value: autoStart,
-                                onChanged: _toggleAutoStart,
                               ),
                           ],
                         ),

@@ -833,8 +833,8 @@ class AppLocale {
         "启用 GNOME Files 右键菜单（需先安装 nautilus-python）",
 
     LocaleKey.settingMonitGroup: "监控文件设置",
-    LocaleKey.settingMonitRate: "备份文件时间间隔（单位分钟）",
-    LocaleKey.settingMonitMaxSize: "备份文件最多数量（会滚动删除旧文件）",
+    LocaleKey.settingMonitRate: "备份时间间隔（分钟）",
+    LocaleKey.settingMonitMaxSize: "备份最大数量（将删除旧文件）",
     LocaleKey.settingHttpApiGroup: "本机 HTTP API",
     LocaleKey.settingEnableLocalHttpApi: "启用仅本机可访问的 HTTP API",
     LocaleKey.settingHttpApiStatus: "API 状态：%a",
@@ -847,7 +847,7 @@ class AppLocale {
     LocaleKey.settingLaunchMinimized: "启动后最小化",
     LocaleKey.settingLaunchToTrayUnsupported: "启动后最小化到托盘（需先启用托盘支持）",
     LocaleKey.settingLaunchToTraySetupHint: "当前 GNOME 会话尚未启用托盘支持，请先按提示完成配置。",
-    LocaleKey.settingEnableAutostart: "开机自启 Vertree（推荐）",
+    LocaleKey.settingEnableAutostart: "开机自启",
     LocaleKey.settingOpenConfig: "打开 settings.json",
     LocaleKey.settingOpenLogs: "打开日志文件夹",
 
