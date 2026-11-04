@@ -18,17 +18,7 @@ class ContextMenuChoices extends StatelessWidget {
     this.actions = legacyOrder,
   });
 
-  static const legacyOrder = [
-    WindowsMenuAction.preview,
-    WindowsMenuAction.fileUsage,
-    WindowsMenuAction.fastDelete,
-    WindowsMenuAction.conversion,
-    WindowsMenuAction.backup,
-    WindowsMenuAction.expressBackup,
-    WindowsMenuAction.monitor,
-    WindowsMenuAction.share,
-    WindowsMenuAction.viewTree,
-  ];
+  static const legacyOrder = WindowsMenuAction.values;
 
   final String group;
   final Set<WindowsMenuAction> selected;
@@ -42,9 +32,6 @@ class ContextMenuChoices extends StatelessWidget {
       LocaleKey.settingAddPreviewMenu,
     ),
     WindowsMenuAction.backup => locale.getText(LocaleKey.settingAddBackupMenu),
-    WindowsMenuAction.expressBackup => locale.getText(
-      LocaleKey.settingAddExpressBackupMenu,
-    ),
     WindowsMenuAction.monitor => locale.getText(
       LocaleKey.settingAddMonitorMenu,
     ),
@@ -75,7 +62,6 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.fastDelete => AppActionIcon.fastDelete.data,
     WindowsMenuAction.conversion => AppActionIcon.conversion.data,
     WindowsMenuAction.backup => AppActionIcon.backup.data,
-    WindowsMenuAction.expressBackup => AppActionIcon.expressBackup.data,
     WindowsMenuAction.monitor => AppActionIcon.monitor.data,
     WindowsMenuAction.share => AppActionIcon.share.data,
     WindowsMenuAction.viewTree => AppActionIcon.viewTree.data,

@@ -45,7 +45,6 @@ class _SettingPageState extends State<SettingPage> {
   bool conversionMenu = false;
   bool previewFile = false;
   bool backupFile = false;
-  bool expressBackupFile = false;
   bool monitorFile = false;
   bool shareFile = false;
   bool viewTreeFile = false;
@@ -134,7 +133,6 @@ class _SettingPageState extends State<SettingPage> {
       legacyMenuEnabled =
           previewFile ||
           backupFile ||
-          expressBackupFile ||
           monitorFile ||
           shareFile ||
           viewTreeFile ||
@@ -203,8 +201,6 @@ class _SettingPageState extends State<SettingPage> {
           PlatformIntegration.isWindows &&
           await PlatformIntegration.checkPreviewKeyExists();
       backupFile = await PlatformIntegration.checkBackupKeyExists();
-      expressBackupFile =
-          await PlatformIntegration.checkExpressBackupKeyExists();
       monitorFile = await PlatformIntegration.checkMonitorKeyExists();
       shareFile = await PlatformIntegration.checkShareKeyExists();
       viewTreeFile = await PlatformIntegration.checkViewTreeKeyExists();
@@ -215,7 +211,6 @@ class _SettingPageState extends State<SettingPage> {
       legacyMenuEnabled =
           previewFile ||
           backupFile ||
-          expressBackupFile ||
           monitorFile ||
           shareFile ||
           viewTreeFile ||
@@ -382,7 +377,6 @@ class _SettingPageState extends State<SettingPage> {
     if (fastDeleteMenu) WindowsMenuAction.fastDelete,
     if (conversionMenu) WindowsMenuAction.conversion,
     if (backupFile) WindowsMenuAction.backup,
-    if (expressBackupFile) WindowsMenuAction.expressBackup,
     if (monitorFile) WindowsMenuAction.monitor,
     if (shareFile) WindowsMenuAction.share,
     if (viewTreeFile) WindowsMenuAction.viewTree,
@@ -396,7 +390,6 @@ class _SettingPageState extends State<SettingPage> {
         WindowsMenuAction.fastDelete => _toggleFileToolMenu(action, value),
         WindowsMenuAction.conversion => _toggleConversionMenu(value),
         WindowsMenuAction.backup => _toggleBackupFile(value),
-        WindowsMenuAction.expressBackup => _toggleExpressBackupFile(value),
         WindowsMenuAction.monitor => _toggleMonitorFile(value),
         WindowsMenuAction.share => _toggleShareFile(value),
         WindowsMenuAction.viewTree => _toggleViewTreeFile(value),
@@ -638,21 +631,6 @@ class _SettingPageState extends State<SettingPage> {
     await _loadPlatformState();
     if (!mounted) return;
     setState(() => isLoading = false);
-  }
-
-  Future<void> _toggleExpressBackupFile(bool? value) async {
-    await _applyContextMenuToggle(
-      value: value,
-      enableAction: PlatformIntegration.addExpressBackupContextMenu,
-      disableAction: PlatformIntegration.removeExpressBackupContextMenu,
-      enableNotification: _desktop.appLocale.getText(
-        LocaleKey.settingNotifyAddExpress,
-      ),
-      disableNotification: _desktop.appLocale.getText(
-        LocaleKey.settingNotifyRemoveExpress,
-      ),
-      updateState: (nextValue) => expressBackupFile = nextValue,
-    );
   }
 
   void _updateLanguage(Lang lang) {

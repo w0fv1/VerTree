@@ -100,9 +100,6 @@ class VerTreeRegistryService {
     WindowsMenuAction.backup => appLocale.getText(
       LocaleKey.registryBackupKeyName,
     ),
-    WindowsMenuAction.expressBackup => appLocale.getText(
-      LocaleKey.registryExpressBackupKeyName,
-    ),
     WindowsMenuAction.monitor => appLocale.getText(
       LocaleKey.registryMonitorKeyName,
     ),

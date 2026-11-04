@@ -27,6 +27,27 @@ class FakeRegistry {
 }
 
 void main() {
+  test('collapsed layout removes obsolete quick backup entries', () {
+    final registry = FakeRegistry();
+    final oldKey =
+        '${WindowsMenuPlan.rootKey}\\shell\\RegistryVerTreeExpressBackup';
+    registry.keys[oldKey] = null;
+    registry.apply(WindowsMenuAction.values.toSet(), collapsed: true);
+    expect(registry.keys.containsKey(oldKey), isFalse);
+  });
+  test('menu order has one immediate backup action', () {
+    expect(WindowsMenuAction.values.map((action) => action.name), [
+      'preview',
+      'viewTree',
+      'backup',
+      'monitor',
+      'share',
+      'conversion',
+      'fileUsage',
+      'fastDelete',
+    ]);
+    expect(WindowsMenuAction.backup.verb, 'express-backup');
+  });
   test('modern menu defaults and explicit empty selection are distinct', () {
     expect(
       Windows11MenuPreferences.fromConfig({}).actions,

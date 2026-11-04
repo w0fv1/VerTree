@@ -35,8 +35,6 @@ class BrandPage extends StatefulWidget {
 class _BrandPageState extends State<BrandPage> with WindowListener {
   late final DesktopDependencies _desktop;
 
-  static const String _expressMenuPromptedKey =
-      'expressBackupContextMenuPrompted';
   Timer? _setupTimer;
   AppAnnouncement? _pendingAnnouncement;
   bool _announcementLoaded = false;
@@ -254,67 +252,7 @@ class _BrandPageState extends State<BrandPage> with WindowListener {
 
     bool isSetupDone = _desktop.configer.get<bool>('isSetupDone', false);
     final shouldForceInitialSetupDialog = widget.forceShowInitialSetupDialog;
-    if (isSetupDone && !shouldForceInitialSetupDialog) {
-      if (PlatformIntegration.isWindows) {
-        final alreadyPrompted = _desktop.configer.get<bool>(
-          _expressMenuPromptedKey,
-          false,
-        );
-        final expressExists =
-            await PlatformIntegration.checkExpressBackupKeyExists();
-        if (!mounted) return;
-        if (!alreadyPrompted &&
-            !expressExists &&
-            !_desktop.configer.get<bool>(_expressMenuPromptedKey, false)) {
-          _desktop.configer.set<bool>(_expressMenuPromptedKey, true);
-
-          await _desktop.configer.flush();
-          await Future.delayed(const Duration(milliseconds: 300), () async {
-            if (!mounted) return;
-            final consent = await showDialog<bool>(
-              context: context,
-              builder: (dialogContext) {
-                return AlertDialog(
-                  title: Text(
-                    _desktop.appLocale.getText(
-                      LocaleKey.brandExpressMenuPromptTitle,
-                    ),
-                  ),
-                  content: Text(
-                    _desktop.appLocale.getText(
-                      LocaleKey.brandExpressMenuPromptContent,
-                    ),
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(false),
-                      child: Text(
-                        _desktop.appLocale.getText(
-                          LocaleKey.brandExpressMenuPromptLater,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.of(dialogContext).pop(true),
-                      child: Text(
-                        _desktop.appLocale.getText(
-                          LocaleKey.brandExpressMenuPromptEnable,
-                        ),
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-
-            if (consent == true) {
-              await PlatformIntegration.addExpressBackupContextMenu();
-            }
-          });
-        }
-      }
-      return;
-    }
+    if (isSetupDone && !shouldForceInitialSetupDialog) return;
 
     await _desktop.initialSetupService.run(
       force: shouldForceInitialSetupDialog,

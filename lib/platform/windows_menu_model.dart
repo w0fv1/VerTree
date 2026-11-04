@@ -1,17 +1,12 @@
 enum WindowsMenuAction {
   preview('RegistryVerTreePreview', 'preview'),
-  backup('RegistryVerTreeBackup', 'backup', '备份文件 VerTree'),
-  expressBackup(
-    'RegistryVerTreeExpressBackup',
-    'express-backup',
-    '快速备份文件 VerTree',
-  ),
+  viewTree('RegistryVerTreeViewTree', 'viewtree', '查看文件版本树 VerTree'),
+  backup('RegistryVerTreeBackup', 'express-backup', '备份文件 VerTree'),
   monitor('RegistryVerTreeMonitor', 'monit', '监控文件变动 VerTree'),
   share('RegistryVerTreeShare', 'share'),
-  viewTree('RegistryVerTreeViewTree', 'viewtree', '查看文件版本树 VerTree'),
+  conversion('RegistryVerTreeConversion', 'conversion'),
   fileUsage('RegistryVerTreeFileUsage', 'unlock'),
-  fastDelete('RegistryVerTreeFastDelete', 'fast-delete'),
-  conversion('RegistryVerTreeConversion', 'conversion');
+  fastDelete('RegistryVerTreeFastDelete', 'fast-delete');
 
   const WindowsMenuAction(this.keyName, this.verb, [this.legacyKeyName]);
   final String keyName;
@@ -36,10 +31,11 @@ class WindowsMenuEntry {
 /// A declarative plan shared by setup, item toggles, layout changes and refresh.
 class WindowsMenuPlan {
   static const rootKey = 'RegistryVerTreeLegacyRoot';
-  static List<String> get obsoleteKeys => WindowsMenuAction.values
-      .map((action) => action.legacyKeyName)
-      .nonNulls
-      .toList();
+  static List<String> get obsoleteKeys => [
+    'RegistryVerTreeExpressBackup',
+    '快速备份文件 VerTree',
+    ...WindowsMenuAction.values.map((action) => action.legacyKeyName).nonNulls,
+  ];
   static List<String> get topLevelKeys => [
     rootKey,
     ...WindowsMenuAction.values.map((a) => a.keyName),
@@ -58,6 +54,7 @@ class WindowsMenuPlan {
     ];
     final desired = entries.map((entry) => entry.key).toSet();
     removals = [
+      for (final key in obsoleteKeys) '$rootKey\\shell\\$key',
       for (final key in topLevelKeys)
         if (!desired.contains(key)) key,
       if (collapsed && selected.isNotEmpty)
