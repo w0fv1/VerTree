@@ -124,7 +124,14 @@ class SettingsSwitchTile extends StatelessWidget {
     icon: icon,
     leading: leading,
     title: Text(title),
-    supportingText: description == null ? null : Text(description!),
+    supportingText: description == null
+        ? null
+        : Text(
+            description!,
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize! - 3,
+            ),
+          ),
     trailing: Switch(value: value, onChanged: onChanged),
     onTap: onChanged == null ? null : () => onChanged!(!value),
   );
