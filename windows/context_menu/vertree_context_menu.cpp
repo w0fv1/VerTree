@@ -35,8 +35,8 @@ constexpr MenuCommandDefinition kMenuCommands[] = {
   {L"monit", L"监控文件变动", L"Monitor file changes", L"ファイル変更を監視", IDI_VERTREE_MONITOR, "monitor"},
   {L"share", L"局域网分享下载", L"Share on LAN", L"LAN で共有", IDI_VERTREE_SHARE, "share"},
   {L"conversion", L"转换格式", L"Convert format", L"形式を変換", IDI_VERTREE_CONVERSION, "conversion"},
-  {L"unlock", L"查看／解除文件占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_FILE_USAGE, "fileUsage"},
-  {L"fast-delete", L"快速删除（永久）…", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_FAST_DELETE, "fastDelete"},
+  {L"unlock", L"解除占用", L"Inspect / release file usage", L"ファイルの使用状況を確認", IDI_VERTREE_FILE_USAGE, "fileUsage"},
+  {L"fast-delete", L"删除", L"Fast delete (permanent)…", L"高速削除（完全削除）…", IDI_VERTREE_FAST_DELETE, "fastDelete"},
 };
 
 HINSTANCE g_instance = nullptr;

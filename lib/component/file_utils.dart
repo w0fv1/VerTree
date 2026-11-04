@@ -1,8 +1,26 @@
 import 'dart:io';
+
 import 'package:path/path.dart' as p;
+
 import 'dart:developer' as developer;
 
 class FileUtils {
+  static Future<void> revealFile(String path) async {
+    final file = File(path).absolute;
+    if (!await file.exists()) throw FileSystemException('文件不存在', file.path);
+    final result = Platform.isWindows
+        ? await Process.run('explorer.exe', [
+            '/select,',
+            p.normalize(file.path),
+          ])
+        : Platform.isMacOS
+        ? await Process.run('open', ['-R', file.path])
+        : await Process.run('xdg-open', [file.parent.path]);
+    if (!Platform.isWindows && result.exitCode != 0) {
+      throw FileSystemException('${result.stderr}'.trim(), file.path);
+    }
+  }
+
   static String appDirPath() {
     final exePath = Platform.resolvedExecutable;
     final exeDir = File(exePath).parent.path;

@@ -37,9 +37,8 @@ class SettingsRow extends StatelessWidget {
         if (supportingText != null) ...[
           const SizedBox(height: 4),
           DefaultTextStyle(
-            style: Theme.of(
-              context,
-            ).textTheme.bodyMedium!.copyWith(color: scheme.onSurfaceVariant),
+            style: Theme.of(context).textTheme.bodyMedium!
+                .copyWith(color: scheme.onSurfaceVariant),
             child: supportingText,
           ),
         ],
@@ -108,6 +107,7 @@ class SettingsSwitchTile extends StatelessWidget {
     this.icon,
     this.leading,
     required this.title,
+    this.description,
     required this.value,
     required this.onChanged,
   }) : assert(icon != null || leading != null);
@@ -115,6 +115,7 @@ class SettingsSwitchTile extends StatelessWidget {
   final IconData? icon;
   final Widget? leading;
   final String title;
+  final String? description;
   final bool value;
   final ValueChanged<bool>? onChanged;
 
@@ -123,6 +124,14 @@ class SettingsSwitchTile extends StatelessWidget {
     icon: icon,
     leading: leading,
     title: Text(title),
+    supportingText: description == null
+        ? null
+        : Text(
+            description!,
+            style: TextStyle(
+              fontSize: Theme.of(context).textTheme.bodyMedium!.fontSize! - 3,
+            ),
+          ),
     trailing: Switch(value: value, onChanged: onChanged),
     onTap: onChanged == null ? null : () => onChanged!(!value),
   );

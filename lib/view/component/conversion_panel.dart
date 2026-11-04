@@ -7,6 +7,8 @@ import 'package:path/path.dart' as p;
 import 'package:vertree/modules/conversion/conversion.dart';
 
 import 'conversion_format_picker.dart';
+import 'file_details.dart';
+import 'file_result_tile.dart';
 
 class ConversionPanel extends StatefulWidget {
   const ConversionPanel({
@@ -30,6 +32,7 @@ class _ConversionPanelState extends State<ConversionPanel> {
   bool _loading = false;
   bool _dragging = false;
   String? _error;
+  ConversionFormat? _target;
   @override
   void initState() {
     super.initState();
@@ -64,6 +67,7 @@ class _ConversionPanelState extends State<ConversionPanel> {
     if (!mounted || _busy || files.isEmpty) return;
     setState(() {
       _files = files;
+      _target = null;
       _error = null;
       _busy = true;
       _loading = true;
@@ -93,7 +97,7 @@ class _ConversionPanelState extends State<ConversionPanel> {
         builder: (_) => ConversionFormatPicker(formats: targets),
       );
       if (!mounted || target == null) return;
-      await _queue.enqueue(files, target.id);
+      setState(() => _target = target);
     } catch (error) {
       if (mounted) setState(() => _error = '转换失败：$error');
     } finally {
@@ -106,6 +110,17 @@ class _ConversionPanelState extends State<ConversionPanel> {
     }
   }
 
+  Future<void> _convert() async {
+    final target = _target;
+    if (_busy || target == null || _files.isEmpty) return;
+    setState(() => _busy = true);
+    try {
+      await _queue.enqueue(_files, target.id);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) => DropTarget(
     onDragEntered: (_) => setState(() => _dragging = true),
@@ -115,29 +130,95 @@ class _ConversionPanelState extends State<ConversionPanel> {
     child: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        InkWell(
-          onTap: _busy ? null : _selectFiles,
-          borderRadius: BorderRadius.circular(20),
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              color: _dragging
-                  ? Theme.of(context).colorScheme.primaryContainer
-                  : Theme.of(context).colorScheme.surfaceContainerHighest,
-            ),
-            child: Column(
-              children: [
-                const Icon(Icons.transform_outlined, size: 36),
-                const SizedBox(height: 10),
-                Text(
-                  _files.isEmpty
-                      ? '拖放文件到这里，或点击选择'
-                      : _files.map(p.basename).join('、'),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
+        Tooltip(
+          message: '选择文件',
+          child: InkWell(
+            mouseCursor: _busy
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
+            onTap: _busy ? null : _selectFiles,
+            borderRadius: BorderRadius.circular(20),
+            child: Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                color: _dragging
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Theme.of(context).colorScheme.surfaceContainerHighest,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (_files.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Column(
+                        children: [
+                          Icon(Icons.upload_file_outlined, size: 36),
+                          SizedBox(height: 10),
+                          Text('拖放文件到这里，或点击选择'),
+                        ],
+                      ),
+                    ),
+                  for (final file in _files)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Align(
+                            alignment: Alignment.topRight,
+                            child: FileDetails(
+                              path: file,
+                              textAlign: TextAlign.right,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Column(
+                            children: [
+                              const Icon(
+                                Icons.insert_drive_file_outlined,
+                                size: 36,
+                              ),
+                              const SizedBox(height: 10),
+                              Text(
+                                p.basename(file),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: '预览源文件',
+                                  icon: const Icon(Icons.visibility_outlined),
+                                  onPressed: () => widget.onPreview(file),
+                                ),
+                                if (file == _files.last)
+                                  IconButton(
+                                    tooltip: '清空选择',
+                                    icon: const Icon(Icons.clear_all),
+                                    onPressed: _busy
+                                        ? null
+                                        : () => setState(() {
+                                            _files = const [];
+                                            _target = null;
+                                            _error = null;
+                                          }),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),
@@ -154,44 +235,42 @@ class _ConversionPanelState extends State<ConversionPanel> {
             ),
           ),
         if (_files.isNotEmpty)
-          Wrap(
-            spacing: 8,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
             children: [
-              FilledButton.icon(
+              if (_target != null) Text(_target!.id.toUpperCase()),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: '选择格式',
                 onPressed: _busy ? null : () => _chooseFormat(_files),
-                icon: const Icon(Icons.transform_outlined),
-                label: const Text('选择格式'),
+                icon: const Icon(Icons.tune),
               ),
-              if (_files.length == 1)
-                TextButton.icon(
-                  onPressed: () => widget.onPreview(_files.first),
-                  icon: const Icon(Icons.visibility_outlined),
-                  label: const Text('预览原文件'),
-                ),
+              const SizedBox(width: 8),
+              IconButton.filled(
+                tooltip: '转换',
+                onPressed: _busy || _target == null ? null : _convert,
+                icon: const Icon(Icons.transform_outlined),
+              ),
             ],
           ),
-        for (final job in _queue.history)
-          ListTile(
-            leading: Icon(switch (job.state) {
-              ConversionState.completed => Icons.check_circle_outline,
-              ConversionState.failed => Icons.error_outline,
-              _ => Icons.sync,
-            }),
-            title: Text(
-              '${job.sources.length} 个文件 → ${job.target.toUpperCase()}',
+        for (final job in _queue.history) ...[
+          for (final output in job.outputs)
+            FileResultTile(
+              key: ValueKey(output),
+              path: output,
+              onPreview: widget.onPreview,
             ),
-            subtitle: Text(
-              job.error ??
-                  (job.state == ConversionState.completed ? '已完成' : '处理中'),
+          if (job.state != ConversionState.completed)
+            ListTile(
+              leading: Icon(
+                job.state == ConversionState.failed
+                    ? Icons.error_outline
+                    : Icons.sync,
+              ),
+              title: Text(job.sources.map(p.basename).join('、')),
+              subtitle: Text(job.error ?? '处理中'),
             ),
-            trailing: job.outputs.isEmpty
-                ? null
-                : IconButton(
-                    tooltip: '预览结果',
-                    icon: const Icon(Icons.visibility_outlined),
-                    onPressed: () => widget.onPreview(job.outputs.first),
-                  ),
-          ),
+        ],
       ],
     ),
   );

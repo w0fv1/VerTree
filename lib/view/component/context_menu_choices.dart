@@ -42,12 +42,12 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.fileUsage => switch (locale.lang) {
       Lang.en => 'Inspect / release file usage',
       Lang.ja => 'ファイルの使用状況を確認',
-      _ => '查看／解除文件占用',
+      _ => '解除占用',
     },
     WindowsMenuAction.fastDelete => switch (locale.lang) {
       Lang.en => 'Fast delete (permanent)…',
       Lang.ja => '高速削除（完全削除）…',
-      _ => '快速删除（永久）…',
+      _ => '删除',
     },
     WindowsMenuAction.conversion => switch (locale.lang) {
       Lang.en => 'Convert format',
@@ -67,6 +67,18 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.viewTree => AppActionIcon.viewTree.data,
   };
 
+  String _description(WindowsMenuAction action) =>
+      locale.getText(switch (action) {
+        WindowsMenuAction.preview => LocaleKey.menuPreviewDescription,
+        WindowsMenuAction.viewTree => LocaleKey.menuViewTreeDescription,
+        WindowsMenuAction.backup => LocaleKey.menuBackupDescription,
+        WindowsMenuAction.monitor => LocaleKey.menuMonitorDescription,
+        WindowsMenuAction.share => LocaleKey.menuShareDescription,
+        WindowsMenuAction.conversion => LocaleKey.menuConversionDescription,
+        WindowsMenuAction.fileUsage => LocaleKey.menuFileUsageDescription,
+        WindowsMenuAction.fastDelete => LocaleKey.menuDeleteDescription,
+      });
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,6 +88,7 @@ class ContextMenuChoices extends StatelessWidget {
           key: ValueKey('$group-action-${action.name}'),
           icon: _icon(action),
           title: _label(action),
+          description: _description(action),
           value: selected.contains(action),
           onChanged: enabled ? (value) => onChanged(action, value) : null,
         ),

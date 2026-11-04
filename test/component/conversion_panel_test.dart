@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vertree/modules/conversion/conversion.dart';
 import 'package:vertree/view/component/conversion_panel.dart';
@@ -24,7 +26,58 @@ class Runtime implements ConversionRuntime {
 }
 
 void main() {
-  testWidgets('selecting an available format immediately runs the real queue', (
+  testWidgets(
+    'selecting a format waits for conversion and shows output filename',
+    (tester) async {
+      final runtime = Runtime();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ConversionPanel(
+              createQueue: () => ConversionQueue(runtime),
+              initialFiles: const ['sample.png'],
+              onPreview: (_) {},
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('选择目标格式'), findsOneWidget);
+      expect(runtime.jobs, isEmpty);
+      await tester.tap(find.text('WEBP'));
+      await tester.pumpAndSettle();
+      expect(runtime.jobs, isEmpty);
+      expect(find.byTooltip('选择文件'), findsOneWidget);
+      final card = tester.getRect(find.byTooltip('选择文件'));
+      expect(
+        tester.getCenter(find.text('sample.png')).dx,
+        closeTo(card.center.dx, 1),
+      );
+      final pointer = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+        pointer: 1,
+      );
+      await pointer.addPointer(
+        location: tester.getCenter(find.text('sample.png')),
+      );
+      await tester.pump();
+      expect(
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+        SystemMouseCursors.click,
+      );
+      await pointer.removePointer();
+      await tester.tap(find.byTooltip('转换'));
+      await tester.pumpAndSettle();
+      expect(runtime.jobs.single.target, 'webp');
+      expect(runtime.jobs.single.sources, ['sample.png']);
+      expect(find.text('result.webp'), findsOneWidget);
+      expect(find.byTooltip('复制文件'), findsOneWidget);
+      expect(find.byTooltip('在文件资源管理器中打开'), findsOneWidget);
+      expect(find.text('开始转换'), findsNothing);
+    },
+  );
+
+  testWidgets('clear removes source and selected format without conversion', (
     tester,
   ) async {
     final runtime = Runtime();
@@ -40,14 +93,13 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('选择目标格式'), findsOneWidget);
-    expect(runtime.jobs, isEmpty);
     await tester.tap(find.text('WEBP'));
     await tester.pumpAndSettle();
-    expect(runtime.jobs.single.target, 'webp');
-    expect(runtime.jobs.single.sources, ['sample.png']);
-    expect(find.text('已完成'), findsOneWidget);
-    expect(find.text('开始转换'), findsNothing);
+    await tester.tap(find.byTooltip('清空选择'));
+    await tester.pumpAndSettle();
+    expect(find.text('sample.png'), findsNothing);
+    expect(find.text('WEBP'), findsNothing);
+    expect(runtime.jobs, isEmpty);
   });
 
   testWidgets(

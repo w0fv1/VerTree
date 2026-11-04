@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   bitsdojo_window_linux
   desktop_drop
   local_notifier
+  pasteboard
   screen_retriever_linux
   tray_manager
   url_launcher_linux
