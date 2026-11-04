@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:path/path.dart' as p;
+
 import '../domain/conversion_models.dart';
 import '../ports/conversion_runtime.dart';
+import 'filee_format_output.dart';
 
 class FileeRuntime implements ConversionRuntime {
   FileeRuntime({String? executable})
@@ -57,39 +60,15 @@ class FileeRuntime implements ConversionRuntime {
   Future<List<ConversionFormat>> _loadFormats() async {
     final result = await _run(['formats']);
     if (result.exitCode != 0) throw StateError('${result.stderr}'.trim());
-    final formats = <ConversionFormat>[];
-    final linePattern = RegExp(
-      r'^\s{2}([a-z0-9][a-z0-9_-]*)\s{2,}(.+?)\s{2,}((?:\.\S+\s*)+)$',
-    );
-    for (final line in const LineSplitter().convert('${result.stdout}')) {
-      final match = linePattern.firstMatch(line);
-      if (match == null || line.contains('(read only)')) continue;
-      final id = match.group(1)!;
-      final name = match.group(2)!.trim();
-      final extensions = RegExp(r'\.([a-z0-9]+)', caseSensitive: false)
-          .allMatches(match.group(3)!)
-          .map((match) => match.group(1)!.toLowerCase())
-          .toList();
-      formats.add(ConversionFormat(id: id, name: name, extensions: extensions));
-    }
-    return formats;
+    return FileeFormatOutput.formats('${result.stdout}');
   }
 
   @override
   Future<List<ConversionFormat>> targetsFor(String source) async {
-    final ext = p.extension(source).replaceFirst('.', '');
+    final ext = p.extension(source).replaceFirst('.', '').toLowerCase();
     final result = await _run(['formats', ext]);
     if (result.exitCode != 0) return const [];
-    final text = '${result.stdout}';
-    final section = text.contains('converts to:')
-        ? text.split('converts to:').last
-        : '';
-    final ids = RegExp(
-      r'\b[a-z][a-z0-9_-]*\b',
-    ).allMatches(section).map((m) => m.group(0)!).toSet();
-    return (await formats())
-        .where((format) => ids.contains(format.id) && format.id != ext)
-        .toList();
+    return FileeFormatOutput.targets('${result.stdout}', await formats(), ext);
   }
 
   @override

@@ -593,7 +593,7 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
               context,
               icon: const Icon(Icons.manage_search, size: 18),
               label: _desktop.appLocale.lang == Lang.zhCn
-                  ? '查看／解除文件占用'
+                  ? '解除占用'
                   : 'Inspect / release file usage',
             ),
           ),
@@ -604,7 +604,7 @@ class _FileNodeState extends CanvasComponentState<FileLeaf> {
               context,
               icon: const Icon(Icons.delete_forever_outlined, size: 18),
               label: _desktop.appLocale.lang == Lang.zhCn
-                  ? '快速删除（永久）…'
+                  ? '删除'
                   : 'Fast delete (permanent)…',
             ),
           ),

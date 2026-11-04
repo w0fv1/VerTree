@@ -80,12 +80,12 @@ class VerTreeRegistryService {
 
   String _title(WindowsMenuAction action) => switch (action) {
     WindowsMenuAction.fileUsage => switch (appLocale.lang) {
-      Lang.zhCn || Lang.other => '查看／解除文件占用',
+      Lang.zhCn || Lang.other => '解除占用',
       Lang.en => 'Inspect / release file usage',
       Lang.ja => 'ファイルの使用状況を確認',
     },
     WindowsMenuAction.fastDelete => switch (appLocale.lang) {
-      Lang.zhCn || Lang.other => '快速删除（永久）…',
+      Lang.zhCn || Lang.other => '删除',
       Lang.en => 'Fast delete (permanent)…',
       Lang.ja => '高速削除（完全削除）…',
     },
@@ -99,9 +99,6 @@ class VerTreeRegistryService {
     ),
     WindowsMenuAction.backup => appLocale.getText(
       LocaleKey.registryBackupKeyName,
-    ),
-    WindowsMenuAction.expressBackup => appLocale.getText(
-      LocaleKey.registryExpressBackupKeyName,
     ),
     WindowsMenuAction.monitor => appLocale.getText(
       LocaleKey.registryMonitorKeyName,

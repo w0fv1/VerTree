@@ -1,0 +1,68 @@
+[
+  {
+    "name": "preview",
+    "material": "visibility_outlined",
+    "resourceId": 107,
+    "symbol": "PREVIEW"
+  },
+  {
+    "name": "backup",
+    "material": "save_outlined",
+    "resourceId": 102,
+    "symbol": "BACKUP"
+  },
+  {
+    "name": "expressBackup",
+    "material": "bolt_outlined",
+    "resourceId": 103,
+    "symbol": "EXPRESS_BACKUP"
+  },
+  {
+    "name": "monitor",
+    "material": "monitor_heart_outlined",
+    "resourceId": 104,
+    "symbol": "MONITOR"
+  },
+  {
+    "name": "share",
+    "material": "share_outlined",
+    "resourceId": 105,
+    "symbol": "SHARE"
+  },
+  {
+    "name": "viewTree",
+    "material": "account_tree_outlined",
+    "resourceId": 106,
+    "symbol": "VIEWTREE"
+  },
+  {
+    "name": "fileUsage",
+    "material": "lock_open_outlined",
+    "resourceId": 108,
+    "symbol": "FILE_USAGE"
+  },
+  {
+    "name": "fastDelete",
+    "material": "delete_forever_outlined",
+    "resourceId": 109,
+    "symbol": "FAST_DELETE"
+  },
+  {
+    "name": "conversion",
+    "material": "transform_outlined",
+    "resourceId": 110,
+    "symbol": "CONVERSION"
+  },
+  {
+    "name": "settings",
+    "material": "settings_outlined",
+    "resourceId": 111,
+    "symbol": "SETTINGS"
+  },
+  {
+    "name": "exit",
+    "material": "logout_outlined",
+    "resourceId": 112,
+    "symbol": "EXIT"
+  }
+]

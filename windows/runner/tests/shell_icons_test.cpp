@@ -3,6 +3,11 @@
 #include <stdexcept>
 #include <iostream>
 #include <vector>
+#include "../../test_support/theme_registry.h"
+#include <propkey.h>
+#include <propvarutil.h>
+#include <shobjidl.h>
+#include <wrl/client.h>
 
 void Require(bool value, const char* message) {
   if (!value) throw std::runtime_error(message);
@@ -31,36 +36,24 @@ std::vector<BYTE> IconPixels(HICON icon, int size) {
   return pixels;
 }
 
-class RegistryFixture {
- public:
-  RegistryFixture() {
-    path_ = L"Software\\VertreeIconTests\\" + std::to_wstring(GetCurrentProcessId());
-    Require(RegOpenCurrentUser(KEY_ALL_ACCESS, &user_) == ERROR_SUCCESS, "open user registry");
-    Require(RegCreateKeyExW(user_, path_.c_str(), 0, nullptr, 0, KEY_ALL_ACCESS,
-        nullptr, &root_, nullptr) == ERROR_SUCCESS, "create isolated registry");
-    Require(RegCreateKeyExW(root_, L"Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
-        0, nullptr, 0, KEY_ALL_ACCESS, nullptr, &preferences_, nullptr) == ERROR_SUCCESS, "create preferences");
-    Require(RegOverridePredefKey(HKEY_CURRENT_USER, root_) == ERROR_SUCCESS, "override registry in this process");
-  }
-  ~RegistryFixture() {
-    RegOverridePredefKey(HKEY_CURRENT_USER, nullptr);
-    RegCloseKey(preferences_);
-    RegCloseKey(root_);
-    RegDeleteTreeW(user_, path_.c_str());
-    RegCloseKey(user_);
-  }
-  void Set(const wchar_t* name, DWORD value) {
-    Require(RegSetValueExW(preferences_, name, 0, REG_DWORD,
-        reinterpret_cast<const BYTE*>(&value), sizeof(value)) == ERROR_SUCCESS, "set theme");
-  }
- private:
-  HKEY user_ = nullptr, root_ = nullptr, preferences_ = nullptr;
-  std::wstring path_;
-};
+void RequireTaskbarIcon(HWND window, int resource) {
+  Microsoft::WRL::ComPtr<IPropertyStore> properties;
+  Require(SUCCEEDED(SHGetPropertyStoreForWindow(window, IID_PPV_ARGS(&properties))), "read taskbar properties");
+  PROPVARIANT value{};
+  Require(SUCCEEDED(properties->GetValue(PKEY_AppUserModel_RelaunchIconResource, &value)), "read taskbar icon");
+  wchar_t executable[32768];
+  GetModuleFileNameW(nullptr, executable, 32768);
+  const auto expected = std::wstring(executable) + L",-" + std::to_wstring(resource);
+  const bool matches = value.vt == VT_LPWSTR && expected == value.pwszVal;
+  PropVariantClear(&value);
+  Require(matches, "taskbar relaunch icon must match the selected theme resource");
+}
+
 
 int main() {
   try {
-    RegistryFixture registry;
+    CoInitializeEx(nullptr, COINIT_APARTMENTTHREADED);
+    test_support::RegistryFixture registry;
     const auto instance = GetModuleHandleW(nullptr);
     WNDCLASSW window_class{};
     window_class.lpfnWndProc = DefWindowProcW;
@@ -71,12 +64,17 @@ int main() {
         0, 0, 300, 300, nullptr, nullptr, instance, nullptr);
     Require(window != nullptr, "create window");
     std::vector<std::string> changes;
-    ShellIcons icons(window, instance, [&](const auto& asset) { changes.push_back(asset); });
+    std::vector<int> resources;
+    ShellIcons icons(window, instance, [&](const auto& asset) { changes.push_back(asset); },
+        [&](int resource) { resources.push_back(resource); });
+    Require(resources == std::vector<int>{IDI_APP_ICON_LIGHT}, "initial shortcut theme is published");
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "missing preference uses light shell");
+    RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     registry.Set(L"AppsUseLightTheme", 1);
     registry.Set(L"SystemUsesLightTheme", 0);
     icons.HandleMessage(WM_SETTINGCHANGE, 0);
     Require(icons.asset() == "assets/img/logo/logo-dark.ico", "system dark beats app light");
+    RequireTaskbarIcon(window, IDI_APP_ICON_DARK);
     Require(changes.size() == 1, "one theme notification");
     icons.HandleMessage(WM_THEMECHANGED, 0);
     Require(changes.size() == 1, "unchanged theme does not notify");
@@ -97,7 +95,9 @@ int main() {
     registry.Set(L"SystemUsesLightTheme", 1);
     icons.HandleMessage(WM_SETTINGCHANGE, 0);
     Require(icons.asset() == "assets/img/logo/logo-light.ico", "system light beats app dark");
+    RequireTaskbarIcon(window, IDI_APP_ICON_LIGHT);
     Require(changes.size() == 2, "light transition notifies tray");
+    Require(resources == std::vector<int>{IDI_APP_ICON_LIGHT, IDI_APP_ICON_DARK, IDI_APP_ICON_LIGHT}, "shortcut updates follow theme transitions, not DPI or duplicate events");
     DestroyWindow(window);
     UnregisterClassW(window_class.lpszClassName, instance);
     std::cout << "Shell theme, mixed themes, notifications and DPI resources passed\n";

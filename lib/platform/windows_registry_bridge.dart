@@ -71,13 +71,6 @@ class WindowsRegistryBridge {
   static Future<bool> removeBackupContextMenu() =>
       setActionEnabled(WindowsMenuAction.backup, false);
 
-  static Future<bool> checkExpressBackupKeyExists() =>
-      isActionEnabled(WindowsMenuAction.expressBackup);
-  static Future<bool> addExpressBackupContextMenu() =>
-      setActionEnabled(WindowsMenuAction.expressBackup, true);
-  static Future<bool> removeExpressBackupContextMenu() =>
-      setActionEnabled(WindowsMenuAction.expressBackup, false);
-
   static Future<bool> checkMonitorKeyExists() =>
       isActionEnabled(WindowsMenuAction.monitor);
   static Future<bool> addMonitorContextMenu() =>

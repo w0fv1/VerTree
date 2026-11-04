@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+
 import '../../component/i18n_lang.dart';
-import '../../component/themed_assets.dart';
+import '../../component/action_icons.dart';
 import '../../platform/windows_menu_model.dart';
 import 'settings_row.dart';
 
@@ -17,17 +18,7 @@ class ContextMenuChoices extends StatelessWidget {
     this.actions = legacyOrder,
   });
 
-  static const legacyOrder = [
-    WindowsMenuAction.preview,
-    WindowsMenuAction.fileUsage,
-    WindowsMenuAction.fastDelete,
-    WindowsMenuAction.conversion,
-    WindowsMenuAction.backup,
-    WindowsMenuAction.expressBackup,
-    WindowsMenuAction.monitor,
-    WindowsMenuAction.share,
-    WindowsMenuAction.viewTree,
-  ];
+  static const legacyOrder = WindowsMenuAction.values;
 
   final String group;
   final Set<WindowsMenuAction> selected;
@@ -41,9 +32,6 @@ class ContextMenuChoices extends StatelessWidget {
       LocaleKey.settingAddPreviewMenu,
     ),
     WindowsMenuAction.backup => locale.getText(LocaleKey.settingAddBackupMenu),
-    WindowsMenuAction.expressBackup => locale.getText(
-      LocaleKey.settingAddExpressBackupMenu,
-    ),
     WindowsMenuAction.monitor => locale.getText(
       LocaleKey.settingAddMonitorMenu,
     ),
@@ -54,12 +42,12 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.fileUsage => switch (locale.lang) {
       Lang.en => 'Inspect / release file usage',
       Lang.ja => 'ファイルの使用状況を確認',
-      _ => '查看／解除文件占用',
+      _ => '解除占用',
     },
     WindowsMenuAction.fastDelete => switch (locale.lang) {
       Lang.en => 'Fast delete (permanent)…',
       Lang.ja => '高速削除（完全削除）…',
-      _ => '快速删除（永久）…',
+      _ => '删除',
     },
     WindowsMenuAction.conversion => switch (locale.lang) {
       Lang.en => 'Convert format',
@@ -69,16 +57,27 @@ class ContextMenuChoices extends StatelessWidget {
   };
 
   IconData _icon(WindowsMenuAction action) => switch (action) {
-    WindowsMenuAction.preview => Icons.visibility_outlined,
-    WindowsMenuAction.fileUsage => Icons.manage_search,
-    WindowsMenuAction.fastDelete => Icons.delete_forever_outlined,
-    WindowsMenuAction.conversion => Icons.transform_rounded,
-    WindowsMenuAction.backup => Icons.save_outlined,
-    WindowsMenuAction.expressBackup => Icons.flash_on_outlined,
-    WindowsMenuAction.monitor => Icons.monitor_heart_outlined,
-    WindowsMenuAction.share => Icons.share_outlined,
-    WindowsMenuAction.viewTree => Icons.account_tree_outlined,
+    WindowsMenuAction.preview => AppActionIcon.preview.data,
+    WindowsMenuAction.fileUsage => AppActionIcon.fileUsage.data,
+    WindowsMenuAction.fastDelete => AppActionIcon.fastDelete.data,
+    WindowsMenuAction.conversion => AppActionIcon.conversion.data,
+    WindowsMenuAction.backup => AppActionIcon.backup.data,
+    WindowsMenuAction.monitor => AppActionIcon.monitor.data,
+    WindowsMenuAction.share => AppActionIcon.share.data,
+    WindowsMenuAction.viewTree => AppActionIcon.viewTree.data,
   };
+
+  String _description(WindowsMenuAction action) =>
+      locale.getText(switch (action) {
+        WindowsMenuAction.preview => LocaleKey.menuPreviewDescription,
+        WindowsMenuAction.viewTree => LocaleKey.menuViewTreeDescription,
+        WindowsMenuAction.backup => LocaleKey.menuBackupDescription,
+        WindowsMenuAction.monitor => LocaleKey.menuMonitorDescription,
+        WindowsMenuAction.share => LocaleKey.menuShareDescription,
+        WindowsMenuAction.conversion => LocaleKey.menuConversionDescription,
+        WindowsMenuAction.fileUsage => LocaleKey.menuFileUsageDescription,
+        WindowsMenuAction.fastDelete => LocaleKey.menuDeleteDescription,
+      });
 
   @override
   Widget build(BuildContext context) => Column(
@@ -88,10 +87,8 @@ class ContextMenuChoices extends StatelessWidget {
         SettingsSwitchTile(
           key: ValueKey('$group-action-${action.name}'),
           icon: _icon(action),
-          leading: action == WindowsMenuAction.share
-              ? shareActionImage(size: 20)
-              : null,
           title: _label(action),
+          description: _description(action),
           value: selected.contains(action),
           onChanged: enabled ? (value) => onChanged(action, value) : null,
         ),

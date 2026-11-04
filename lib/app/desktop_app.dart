@@ -4,9 +4,8 @@ import 'dart:ui' as ui;
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/rendering.dart';
-import 'package:desktop_drop/desktop_drop.dart';
+import 'package:vertree/view/component/conversion_drop_target.dart';
 import 'package:path/path.dart' as p;
 import 'package:package_info_plus/package_info_plus.dart';
 
@@ -368,7 +367,7 @@ Future<void> runVertreeApp(
     apiService: apiService,
     additionalRoutes: automation.routes,
     accessToken: Platform.environment['VERTREE_LOCAL_API_TOKEN'],
-    forceEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
+    startEnabled: Platform.environment['VERTREE_LOCAL_API_ENABLED'] == '1',
   );
   appHost = AppHost(
     [
@@ -922,26 +921,6 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> with WindowListener {
   Widget page = BrandPage();
-  bool _ctrlDragActive = false;
-  bool _ctrlHeld = false;
-
-  bool _handleGlobalKeyEvent(KeyEvent event) {
-    if (event.logicalKey != LogicalKeyboardKey.controlLeft &&
-        event.logicalKey != LogicalKeyboardKey.controlRight) {
-      return false;
-    }
-    if (event is KeyDownEvent) {
-      _ctrlHeld = true;
-    } else if (event is KeyUpEvent) {
-      _ctrlHeld = HardwareKeyboard.instance.logicalKeysPressed.any(
-        (key) =>
-            key == LogicalKeyboardKey.controlLeft ||
-            key == LogicalKeyboardKey.controlRight,
-      );
-    }
-    return false;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -951,12 +930,10 @@ class _MainPageState extends State<MainPage> with WindowListener {
       _appUiReadyCompleter.complete();
     }
     windowManager.addListener(this);
-    HardwareKeyboard.instance.addHandler(_handleGlobalKeyEvent);
   }
 
   @override
   void dispose() {
-    HardwareKeyboard.instance.removeHandler(_handleGlobalKeyEvent);
     windowManager.removeListener(this);
     super.dispose();
   }
@@ -974,32 +951,9 @@ class _MainPageState extends State<MainPage> with WindowListener {
             theme: buildLightTheme(),
             darkTheme: buildDarkTheme(),
             builder: (context, child) {
-              return DropTarget(
-                onDragEntered: (_) {
-                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
-                  _ctrlDragActive =
-                      _ctrlHeld ||
-                      keys.contains(LogicalKeyboardKey.controlLeft) ||
-                      keys.contains(LogicalKeyboardKey.controlRight);
-                },
-                onDragExited: (_) => _ctrlDragActive = false,
-                onDragDone: (detail) {
-                  final keys = HardwareKeyboard.instance.logicalKeysPressed;
-                  final controlHeld =
-                      _ctrlDragActive ||
-                      _ctrlHeld ||
-                      keys.contains(LogicalKeyboardKey.controlLeft) ||
-                      keys.contains(LogicalKeyboardKey.controlRight);
-                  _ctrlDragActive = false;
-                  if (!controlHeld) return;
-                  final files = detail.files
-                      .map((file) => file.path)
-                      .where((path) => path.isNotEmpty)
-                      .toList();
-                  if (files.isNotEmpty) {
-                    goPage(ConversionPage(initialFiles: files));
-                  }
-                },
+              return ConversionDropTarget(
+                onConvert: (files) =>
+                    goPage(ConversionPage(key: UniqueKey(), initialFiles: files)),
                 child: RepaintBoundary(
                   key: appScreenshotBoundaryKey,
                   child: child ?? const SizedBox.shrink(),

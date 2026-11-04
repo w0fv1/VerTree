@@ -46,3 +46,7 @@
 
 - The dev controller reliably controls only the `flutter run` process it started itself.
 - It should not be assumed to safely take over an unrelated terminal session started by a user.
+
+## Windows Acceptance
+
+- Deliver Windows acceptance builds through the EXE installer. Verify the installed application and Explorer context menus; do not substitute a portable or build-directory launch.

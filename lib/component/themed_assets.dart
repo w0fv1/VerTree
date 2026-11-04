@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
+import 'action_icons.dart';
+
 const String kLogoDefault = 'assets/img/logo/logo.png';
-const String kShareActionPng = 'assets/img/icon/share.png';
-const String kShareActionIco = 'assets/img/icon/share.ico';
 
 const List<double> _invertColorMatrix = <double>[
   -1,
@@ -50,6 +50,6 @@ Widget themedLogoImage({
   return image;
 }
 
-Widget shareActionImage({double size = 18, BoxFit fit = BoxFit.contain}) {
-  return Image.asset(kShareActionPng, width: size, height: size, fit: fit);
+Widget shareActionImage({double size = 18}) {
+  return Icon(AppActionIcon.share.data, size: size);
 }

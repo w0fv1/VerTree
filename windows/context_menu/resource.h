@@ -1,10 +1,4 @@
 #pragma once
+#include "action_icons.h"
 
 #define IDI_VERTREE_ROOT 101
-#define IDI_VERTREE_BACKUP 102
-#define IDI_VERTREE_EXPRESS_BACKUP 103
-#define IDI_VERTREE_MONITOR 104
-#define IDI_VERTREE_SHARE 105
-#define IDI_VERTREE_VIEWTREE 106
-#define IDI_VERTREE_PREVIEW 107
-

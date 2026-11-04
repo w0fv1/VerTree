@@ -5,6 +5,8 @@ class WindowsShellIcon extends ValueNotifier<String> {
   WindowsShellIcon() : super('assets/img/logo/logo.ico');
 
   static const _channel = MethodChannel('vertree/shell-icons');
+  static Future<String> appIdentity() async =>
+      (await _channel.invokeMethod<String>('appIdentity'))!;
 
   Future<void> initialize() async {
     _channel.setMethodCallHandler((call) async {

@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:io';
+import 'package:vertree/platform/windows_shell_icon.dart';
 
 import 'package:flutter/material.dart';
 import 'package:local_notifier/local_notifier.dart';
@@ -8,8 +10,10 @@ import 'dart:developer' as developer;
 
 Future<void> initLocalNotifier() async {
   await localNotifier.setup(
-    appName: 'Vertree',
-    shortcutPolicy: ShortcutPolicy.requireCreate,
+    appName: Platform.isWindows ? await WindowsShellIcon.appIdentity() : 'Vertree',
+    shortcutPolicy: Platform.isWindows
+        ? ShortcutPolicy.ignore
+        : ShortcutPolicy.requireCreate,
   );
 }
 

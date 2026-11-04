@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:vertree/api/local_http_api_contract.dart';
+
 import 'api_protocol.dart';
+
 import 'package:vertree/api/local_http_api_documentation.dart';
 import 'package:vertree/api/local_http_api_security.dart';
 import 'package:vertree/service/lan_file_share_server.dart';
@@ -15,7 +17,7 @@ class LocalHttpApiServer {
   LocalHttpApiServer({
     required this.apiService,
     String? accessToken,
-    this.forceEnabled = false,
+    this._startEnabled = false,
     List<LocalHttpApiRoute> additionalRoutes = const [],
     void Function(String message)? onLogInfo,
     void Function(String message)? onLogError,
@@ -31,7 +33,7 @@ class LocalHttpApiServer {
   static const int maxPortSearchSpan = 200;
 
   final LocalHttpApiService apiService;
-  final bool forceEnabled;
+  bool _startEnabled;
   final List<LocalHttpApiRoute> _routes;
   final LocalHttpApiSecurity _security;
   final void Function(String message) _onLogInfo;
@@ -50,13 +52,24 @@ class LocalHttpApiServer {
 
   Future<void> syncWithConfig() async {
     final enabled =
-        forceEnabled ||
+        _startEnabled ||
         apiService.configer.get<bool>('localHttpApiEnabled', false);
     if (enabled) {
       await start();
     } else {
       await stop();
     }
+    _startEnabled = false;
+  }
+
+  Future<void> setEnabled(bool enabled) async {
+    if (enabled) {
+      await start();
+    } else {
+      await stop();
+    }
+    _startEnabled = false;
+    apiService.configer.set<bool>('localHttpApiEnabled', enabled);
   }
 
   Future<void> start() async {
@@ -210,8 +223,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/',
         summary: 'Read the generated API index',
-        description:
-            'Returns links to the OpenAPI document, the docs page, and all registered endpoints.',
+        description: 'Returns links to the OpenAPI document, the docs page, and all registered endpoints.',
         tags: const ['meta'],
         requiresAuthentication: false,
         handler: _handleApiIndex,
@@ -230,8 +242,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/docs',
         summary: 'Open the interactive documentation page',
-        description:
-            'Returns a Redoc-based HTML page powered by the generated OpenAPI document.',
+        description: 'Returns a Redoc-based HTML page powered by the generated OpenAPI document.',
         tags: const ['meta'],
         includeInOpenApi: false,
         responseContentType: 'text/html',
@@ -252,8 +263,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/health',
         summary: 'Read runtime health information',
-        description:
-            'Returns runtime status, config values, and the current local HTTP API address.',
+        description: 'Returns runtime status, config values, and the current local HTTP API address.',
         tags: const ['system'],
         handler: _handleHealth,
       ),
@@ -261,8 +271,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/app/quit',
         summary: 'Quit the current Vertree app process',
-        description:
-            'Returns a success response first, then asynchronously shuts down the current desktop app process.',
+        description: 'Returns a success response first, then asynchronously shuts down the current desktop app process.',
         tags: const ['system', 'automation'],
         handler: _handleQuitApp,
       ),
@@ -270,8 +279,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/ui/navigation',
         summary: 'Switch to a specific app page',
-        description:
-            'Shows the main window if needed and navigates the desktop app to a supported page.',
+        description: 'Shows the main window if needed and navigates the desktop app to a supported page.',
         tags: const ['ui', 'automation'],
         requestBody: const LocalHttpApiRequestBody(
           description: 'The target page and optional navigation parameters.',
@@ -287,8 +295,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'path',
               type: 'string',
-              description:
-                  'Required when page is version-tree. Use an absolute file path.',
+              description: 'Required when page is version-tree. Use an absolute file path.',
               required: false,
               example: r'D:\project\storyboard.0.1.txt',
             ),
@@ -303,16 +310,14 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'ensureWindowVisible',
               type: 'boolean',
-              description:
-                  'Whether the API should surface the main window before navigation.',
+              description: 'Whether the API should surface the main window before navigation.',
               required: false,
               example: true,
             ),
             LocalHttpApiField(
               name: 'windowMode',
               type: 'string',
-              description:
-                  'Optional window mode applied after navigation: restore, maximize, fullscreen.',
+              description: 'Optional window mode applied after navigation: restore, maximize, fullscreen.',
               required: false,
               example: 'fullscreen',
             ),
@@ -335,8 +340,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'showInitialSetupDialog',
               type: 'boolean',
-              description:
-                  'When page is brand, forces the initialization setup dialog to open.',
+              description: 'When page is brand, forces the initialization setup dialog to open.',
               required: false,
               example: true,
             ),
@@ -351,8 +355,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'fitFileTreeToViewport',
               type: 'boolean',
-              description:
-                  'Whether the version-tree canvas should auto-fit into the current viewport after loading.',
+              description: 'Whether the version-tree canvas should auto-fit into the current viewport after loading.',
               required: false,
               example: true,
             ),
@@ -364,8 +367,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/ui/window-state',
         summary: 'Adjust the current app window state',
-        description:
-            'Shows the current app window and updates its mode to restore, maximize, or fullscreen.',
+        description: 'Shows the current app window and updates its mode to restore, maximize, or fullscreen.',
         tags: const ['ui', 'automation'],
         requestBody: const LocalHttpApiRequestBody(
           description: 'Window state and optional restore size.',
@@ -394,8 +396,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'focus',
               type: 'boolean',
-              description:
-                  'Whether the app window should be focused after the state change.',
+              description: 'Whether the app window should be focused after the state change.',
               required: false,
               example: true,
             ),
@@ -407,8 +408,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/ui/theme-mode',
         summary: 'Set the current app theme mode',
-        description:
-            'Updates the desktop app theme mode to system, light, or dark and returns the current UI state.',
+        description: 'Updates the desktop app theme mode to system, light, or dark and returns the current UI state.',
         tags: const ['ui', 'automation'],
         requestBody: const LocalHttpApiRequestBody(
           description: 'Theme mode settings.',
@@ -428,8 +428,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/ui/file-tree/viewport',
         summary: 'Adjust the version-tree canvas viewport',
-        description:
-            'Fits the version-tree canvas to the viewport or applies an explicit scale.',
+        description: 'Fits the version-tree canvas to the viewport or applies an explicit scale.',
         tags: const ['ui', 'automation'],
         requestBody: const LocalHttpApiRequestBody(
           description: 'File tree viewport options.',
@@ -445,8 +444,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'fitToViewport',
               type: 'boolean',
-              description:
-                  'Whether the canvas should be auto-fitted to the current viewport.',
+              description: 'Whether the canvas should be auto-fitted to the current viewport.',
               required: false,
               example: true,
             ),
@@ -458,8 +456,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/ui/screenshot',
         summary: 'Capture the current app UI as a PNG image',
-        description:
-            'Captures the rendered desktop app window and writes a PNG file to the requested path.',
+        description: 'Captures the rendered desktop app window and writes a PNG file to the requested path.',
         tags: const ['ui', 'automation'],
         requestBody: const LocalHttpApiRequestBody(
           description: 'The PNG output path and optional rendering parameters.',
@@ -474,24 +471,21 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'pixelRatio',
               type: 'number',
-              description:
-                  'Flutter image pixel ratio used for rendering the screenshot.',
+              description: 'Flutter image pixel ratio used for rendering the screenshot.',
               required: false,
               example: 1.75,
             ),
             LocalHttpApiField(
               name: 'waitMilliseconds',
               type: 'integer',
-              description:
-                  'Extra time to wait before capturing the frame, useful for async page loading.',
+              description: 'Extra time to wait before capturing the frame, useful for async page loading.',
               required: false,
               example: 900,
             ),
             LocalHttpApiField(
               name: 'ensureWindowVisible',
               type: 'boolean',
-              description:
-                  'Whether the API should surface the main window before capturing.',
+              description: 'Whether the API should surface the main window before capturing.',
               required: false,
               example: true,
             ),
@@ -503,8 +497,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/monitor-tasks',
         summary: 'List monitor tasks',
-        description:
-            'Returns all file monitoring tasks with backup folder and runtime details.',
+        description: 'Returns all file monitoring tasks with backup folder and runtime details.',
         tags: const ['monitoring'],
         handler: _handleMonitorTaskList,
       ),
@@ -595,8 +588,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/versions',
         summary: 'Create one manual version',
-        description:
-            'Runs a backup for the given file path and returns detailed result data.',
+        description: 'Runs a backup for the given file path and returns detailed result data.',
         tags: const ['backup'],
         successStatusCode: HttpStatus.created,
         requestBody: const LocalHttpApiRequestBody(
@@ -624,8 +616,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/snapshots',
         summary: 'List automatic snapshots for one file',
-        description:
-            'Lists committed manifest-owned snapshots for the monitored source file.',
+        description: 'Lists committed manifest-owned snapshots for the monitored source file.',
         tags: const ['backup'],
         queryParameters: const [
           LocalHttpApiField(
@@ -642,8 +633,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/versions',
         summary: 'List version-managed files',
-        description:
-            'Lists all version-tree sibling files that belong to the same logical document.',
+        description: 'Lists all version-tree sibling files that belong to the same logical document.',
         tags: const ['version-tree'],
         queryParameters: const [
           LocalHttpApiField(
@@ -660,8 +650,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/file-shares',
         summary: 'List active LAN file shares',
-        description:
-            'Lists temporary LAN file shares created by the current desktop app instance.',
+        description: 'Lists temporary LAN file shares created by the current desktop app instance.',
         tags: const ['sharing'],
         handler: _handleListFileShares,
       ),
@@ -669,8 +658,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/file-shares',
         summary: 'Create one LAN file share',
-        description:
-            'Creates a temporary LAN download share for a specific file version and returns the GitHub Pages landing URL plus direct LAN candidates.',
+        description: 'Creates a temporary LAN download share for a specific file version and returns the GitHub Pages landing URL plus direct LAN candidates.',
         tags: const ['sharing', 'automation'],
         successStatusCode: HttpStatus.created,
         requestBody: const LocalHttpApiRequestBody(
@@ -732,8 +720,7 @@ class LocalHttpApiServer {
         method: 'GET',
         pathTemplate: '/version-trees',
         summary: 'Build a version tree',
-        description:
-            'Builds the version tree for the given file and returns the nested structure.',
+        description: 'Builds the version tree for the given file and returns the nested structure.',
         tags: const ['version-tree'],
         queryParameters: const [
           LocalHttpApiField(
@@ -767,8 +754,7 @@ class LocalHttpApiServer {
         method: 'POST',
         pathTemplate: '/monitor-tasks/{id}/verification-writes',
         summary: 'Write to a monitored file and verify backup creation',
-        description:
-            'Appends text to the monitored file, waits briefly, and reports whether a new monitor backup was created.',
+        description: 'Appends text to the monitored file, waits briefly, and reports whether a new monitor backup was created.',
         tags: const ['monitoring', 'testing'],
         pathParameters: const [
           LocalHttpApiField(
@@ -792,8 +778,7 @@ class LocalHttpApiServer {
             LocalHttpApiField(
               name: 'waitMilliseconds',
               type: 'integer',
-              description:
-                  'How long to wait after the write before reading backup results.',
+              description: 'How long to wait after the write before reading backup results.',
               required: false,
               example: 1800,
             ),

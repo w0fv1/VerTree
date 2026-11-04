@@ -68,18 +68,6 @@ class PlatformIntegration {
   static Future<bool> setLegacyMenuLayout(bool collapsed) =>
       WindowsRegistryBridge.setLegacyMenuLayout(collapsed);
 
-  static Future<bool> checkExpressBackupKeyExists() async {
-    if (isWindows) {
-      return WindowsRegistryBridge.checkExpressBackupKeyExists();
-    }
-    if (isLinux) {
-      return LinuxGnomeIntegration.hasAction(
-        LinuxGnomeIntegration.actionExpressBackup,
-      );
-    }
-    return false;
-  }
-
   static Future<bool> checkMonitorKeyExists() async {
     if (isWindows) {
       return WindowsRegistryBridge.checkMonitorKeyExists();
@@ -133,30 +121,6 @@ class PlatformIntegration {
     if (isLinux) {
       return LinuxGnomeIntegration.removeAction(
         LinuxGnomeIntegration.actionBackup,
-      );
-    }
-    return false;
-  }
-
-  static Future<bool> addExpressBackupContextMenu() async {
-    if (isWindows) {
-      return WindowsRegistryBridge.addExpressBackupContextMenu();
-    }
-    if (isLinux) {
-      return LinuxGnomeIntegration.addAction(
-        LinuxGnomeIntegration.actionExpressBackup,
-      );
-    }
-    return false;
-  }
-
-  static Future<bool> removeExpressBackupContextMenu() async {
-    if (isWindows) {
-      return WindowsRegistryBridge.removeExpressBackupContextMenu();
-    }
-    if (isLinux) {
-      return LinuxGnomeIntegration.removeAction(
-        LinuxGnomeIntegration.actionExpressBackup,
       );
     }
     return false;
