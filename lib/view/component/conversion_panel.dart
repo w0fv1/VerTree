@@ -133,6 +133,9 @@ class _ConversionPanelState extends State<ConversionPanel> {
         Tooltip(
           message: '选择文件',
           child: InkWell(
+            mouseCursor: _busy
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
             onTap: _busy ? null : _selectFiles,
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -171,19 +174,18 @@ class _ConversionPanelState extends State<ConversionPanel> {
                             ),
                           ),
                           const SizedBox(height: 12),
-                          Row(
+                          Column(
                             children: [
                               const Icon(
                                 Icons.insert_drive_file_outlined,
-                                size: 32,
+                                size: 36,
                               ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  p.basename(file),
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
+                              const SizedBox(height: 10),
+                              Text(
+                                p.basename(file),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ],
                           ),

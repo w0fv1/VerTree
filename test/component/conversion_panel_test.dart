@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vertree/modules/conversion/conversion.dart';
 import 'package:vertree/view/component/conversion_panel.dart';
@@ -46,6 +48,24 @@ void main() {
       await tester.pumpAndSettle();
       expect(runtime.jobs, isEmpty);
       expect(find.byTooltip('选择文件'), findsOneWidget);
+      final card = tester.getRect(find.byTooltip('选择文件'));
+      expect(
+        tester.getCenter(find.text('sample.png')).dx,
+        closeTo(card.center.dx, 1),
+      );
+      final pointer = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+        pointer: 1,
+      );
+      await pointer.addPointer(
+        location: tester.getCenter(find.text('sample.png')),
+      );
+      await tester.pump();
+      expect(
+        RendererBinding.instance.mouseTracker.debugDeviceActiveCursor(1),
+        SystemMouseCursors.click,
+      );
+      await pointer.removePointer();
       await tester.tap(find.byTooltip('转换'));
       await tester.pumpAndSettle();
       expect(runtime.jobs.single.target, 'webp');
