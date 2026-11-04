@@ -87,11 +87,15 @@ void main() {
     await showChoices(tester);
     expect(find.byType(CheckboxListTile), findsNothing);
     expect(find.byType(Checkbox), findsNothing);
-    expect(find.byType(Switch), findsNWidgets(18));
+    expect(find.byType(Switch), findsNWidgets(16));
+    expect(find.text('快速查看文件内容'), findsNWidgets(2));
+    expect(find.text('快速删除文件或文件夹，执行前需确认'), findsNWidgets(2));
     for (final action in ContextMenuChoices.legacyOrder) {
       final modern = tester.widget<SettingsSwitchTile>(row('win11', action));
       final legacy = tester.widget<SettingsSwitchTile>(row('legacy', action));
       expect(modern.title, legacy.title);
+      expect(modern.description, isNotEmpty);
+      expect(modern.description, legacy.description);
       expect(modern.icon, legacy.icon);
       expect(modern.leading.runtimeType, legacy.leading.runtimeType);
       expect(
@@ -108,12 +112,12 @@ void main() {
       tester
           .widget<SettingsSwitchTile>(row('win11', WindowsMenuAction.backup))
           .title,
-      '将“备份该文件”增加到右键菜单',
+      '备份',
     );
     expect(
       tester
           .widgetList<SettingsSwitchTile>(find.byType(SettingsSwitchTile))
-          .take(9)
+          .take(8)
           .map((widget) => widget.key),
       ContextMenuChoices.legacyOrder.map(
         (action) => ValueKey('win11-action-${action.name}'),
@@ -134,7 +138,7 @@ void main() {
     );
     final modernBackup = row('win11', WindowsMenuAction.backup);
     await tester.tap(
-      find.descendant(of: modernBackup, matching: find.byType(Text)),
+      find.descendant(of: modernBackup, matching: find.text('立即保存当前文件的版本副本')),
     );
     await tester.pumpAndSettle();
     expect(changes, ['win11:backup:true']);
@@ -242,7 +246,7 @@ void main() {
         ),
       );
       await tester.pumpAndSettle();
-      expect(find.byType(Switch), findsNWidgets(6));
+      expect(find.byType(Switch), findsNWidgets(5));
       expect(row('legacy', WindowsMenuAction.conversion), findsOneWidget);
       expect(row('legacy', WindowsMenuAction.fastDelete), findsNothing);
       expect(row('legacy', WindowsMenuAction.fileUsage), findsNothing);

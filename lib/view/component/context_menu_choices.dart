@@ -67,6 +67,18 @@ class ContextMenuChoices extends StatelessWidget {
     WindowsMenuAction.viewTree => AppActionIcon.viewTree.data,
   };
 
+  String _description(WindowsMenuAction action) =>
+      locale.getText(switch (action) {
+        WindowsMenuAction.preview => LocaleKey.menuPreviewDescription,
+        WindowsMenuAction.viewTree => LocaleKey.menuViewTreeDescription,
+        WindowsMenuAction.backup => LocaleKey.menuBackupDescription,
+        WindowsMenuAction.monitor => LocaleKey.menuMonitorDescription,
+        WindowsMenuAction.share => LocaleKey.menuShareDescription,
+        WindowsMenuAction.conversion => LocaleKey.menuConversionDescription,
+        WindowsMenuAction.fileUsage => LocaleKey.menuFileUsageDescription,
+        WindowsMenuAction.fastDelete => LocaleKey.menuDeleteDescription,
+      });
+
   @override
   Widget build(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -76,6 +88,7 @@ class ContextMenuChoices extends StatelessWidget {
           key: ValueKey('$group-action-${action.name}'),
           icon: _icon(action),
           title: _label(action),
+          description: _description(action),
           value: selected.contains(action),
           onChanged: enabled ? (value) => onChanged(action, value) : null,
         ),
