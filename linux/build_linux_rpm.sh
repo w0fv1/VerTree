@@ -33,8 +33,6 @@ SOURCE_ROOT="$BUILD_DIR/vertree-$RPM_VERSION"
 SOURCE_TARBALL="$SOURCES_DIR/vertree-$RPM_VERSION.tar.gz"
 
 export PATH="$HOME/.local/flutter/bin:$PATH"
-export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
 
 if [[ "${SKIP_FLUTTER_BUILD:-0}" != "1" ]]; then
   env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u all_proxy -u ALL_PROXY \

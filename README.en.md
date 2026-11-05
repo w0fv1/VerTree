@@ -18,7 +18,7 @@ Full copies consume disk space. Local history is not a substitute for an indepen
 
 ## Release status
 
-**V3.0.0** adds Windows fast permanent deletion and File Locksmith-style usage inspection, per-action settings for both Explorer menu styles, single-file preferences and a revised homepage, website and documentation. Deletion requires confirmation and may terminate eligible blocking applications. Usage inspection is a separate, non-deleting feature. See the [release notes](https://github.com/w0fv1/VerTree/releases/tag/V3.0.0).
+**V4.0.0** adds bundled file conversion with source and result cards, reorganizes Windows context menus and settings, adapts desktop icons to the system theme, and fixes API toggle and uninstall behavior. See the [release notes](https://github.com/w0fv1/VerTree/releases/tag/V4.0.0).
 
 Deletion and file-usage inspection are separate pages, reached through file context menus. Confirming deletion also authorizes removal of read-only attributes and termination of eligible blocking processes; unsaved work may be lost. System protections are not bypassed. See the [deletion guide](docs/docs/tutorial-usage/fast-delete.md) and [file-usage guide](docs/docs/tutorial-usage/file-locks.md).
 
@@ -26,7 +26,7 @@ Upgrades from before 2.0 require monitoring to be configured again. Current pref
 
 ## Install and try one file
 
-On Windows x64, choose the EXE installer. On macOS, match the architecture supplied by the release; the 3.0.0 release supplies arm64 builds. On Linux x64, choose DEB, RPM or the complete portable archive. Keep all bundled DLLs and data files when using portable distributions.
+On Windows x64, choose the EXE installer. On macOS, match the architecture supplied by the release; the 4.0.0 release supplies arm64 builds. On Linux x64, choose DEB, RPM or the complete portable archive. Keep all bundled DLLs and data files when using portable distributions.
 
 Windows previews require WebView2 Runtime; macOS uses WKWebView; Linux opens a local browser. End users do not need Flutter, Node.js, Python or the standalone Office-Viewer application. See [platform and installation details](docs/docs/tutorial-usage/install.md).
 

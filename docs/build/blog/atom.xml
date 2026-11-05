@@ -2,11 +2,20 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
     <id>https://vertree.w0fv1.dev/blog</id>
     <title>Vertree 维树 Blog</title>
-    <updated>2026-09-27T00:00:00.000Z</updated>
+    <updated>2026-11-05T00:00:00.000Z</updated>
     <generator>https://github.com/jpmonette/feed</generator>
     <link rel="alternate" href="https://vertree.w0fv1.dev/blog"/>
     <subtitle>Vertree 维树 Blog</subtitle>
     <icon>https://vertree.w0fv1.dev/logo.ico</icon>
+    <entry>
+        <title type="html"><![CDATA[Vertree 4.0.0：格式转换与桌面体验更新]]></title>
+        <id>https://vertree.w0fv1.dev/blog/4-0-0-conversion</id>
+        <link href="https://vertree.w0fv1.dev/blog/4-0-0-conversion"/>
+        <updated>2026-11-05T00:00:00.000Z</updated>
+        <summary type="html"><![CDATA[内置文件格式转换、文件卡片，以及 Windows 菜单、主题图标与设置改进。]]></summary>
+        <content type="html"><![CDATA[<p>4.0.0 将文件格式转换纳入日常文件操作，更新 Windows 菜单、主题图标和设置。</p>
+<p>完整功能、安装包与平台边界见 <a href="https://github.com/w0fv1/VerTree/releases/tag/V4.0.0" target="_blank" rel="noopener noreferrer" class="">4.0.0 发布说明</a>。安装步骤见<a class="" href="https://vertree.w0fv1.dev/docs/tutorial-usage/install">安装与升级</a>，附件见<a class="" href="https://vertree.w0fv1.dev/download">下载页</a>。</p>]]></content>
+    </entry>
     <entry>
         <title type="html"><![CDATA[Vertree 3.0.0：文件工具、首页与文档更新]]></title>
         <id>https://vertree.w0fv1.dev/blog/3-0-0-file-tools</id>

@@ -17,8 +17,6 @@ if [[ "$ARCH_RAW" == "arm64" || "$ARCH_RAW" == "aarch64" ]]; then
   ARCH_NAME="arm64"
 fi
 
-export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
 
 if [[ "${SKIP_FLUTTER_BUILD:-0}" != "1" ]]; then
   flutter build macos --target lib/main.dart --release
@@ -37,6 +35,9 @@ if [[ ! -x "$ROOT_DIR/vendor/filee/$RUNTIME/filee-cli" ]]; then
 fi
 mkdir -p "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME"
 cp -a "$ROOT_DIR/vendor/filee/$RUNTIME/." "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME/"
+
+codesign --force --sign - --preserve-metadata=entitlements "$APP_PATH"
+codesign --verify --deep --strict "$APP_PATH"
 
 mkdir -p "$DIST_DIR"
 ARTIFACT_PREFIX="vertree-macos-$ARCH_NAME-$VERSION"

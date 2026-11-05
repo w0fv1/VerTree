@@ -80,6 +80,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Checkout pinned Filee source
+        run: git submodule update --init vendor/filee-source
+
+      - name: Setup .NET for bundled Filee
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and verify bundled Filee
+        shell: pwsh
+        run: |
+          ./tools/build_filee_runtime.ps1 win-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_filee_runtime.py --runtime win-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Setup Node.js for Office Viewer
         uses: actions/setup-node@v4
         with:
@@ -233,6 +249,22 @@ jobs:
             desktop-file-utils \
             appstream
 
+      - name: Checkout pinned Filee source
+        run: git submodule update --init vendor/filee-source
+
+      - name: Setup .NET for bundled Filee
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and verify bundled Filee
+        shell: pwsh
+        run: |
+          ./tools/build_filee_runtime.ps1 linux-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_filee_runtime.py --runtime linux-x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
       - name: Setup Node.js for Office Viewer
         uses: actions/setup-node@v4
         with:
@@ -274,6 +306,18 @@ jobs:
         run: |
           SKIP_FLUTTER_BUILD=1 linux/build_linux_rpm.sh
 
+      - name: Verify packaged conversion runtime
+        shell: bash
+        run: |
+          version="${{ needs.meta.outputs.version }}"
+          tar -tzf "build/dist/vertree-linux-x64-$version.tar.gz" > /tmp/vertree-tar-files.txt
+          dpkg-deb --contents "build/dist/vertree-linux-x64-$version.deb" > /tmp/vertree-deb-files.txt
+          rpm -qlp "build/dist/vertree-linux-x64-$version.rpm" > /tmp/vertree-rpm-files.txt
+          for manifest in /tmp/vertree-{tar,deb,rpm}-files.txt; do
+            grep 'vendor/filee/linux-x64/filee-cli$' "$manifest"
+            grep 'vendor/filee/linux-x64/LICENSE-Filee.txt$' "$manifest"
+          done
+
       - name: Upload Linux archive artifact
         uses: actions/upload-artifact@v6
         with:
@@ -299,6 +343,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
+      - name: Checkout pinned Filee source
+        run: git submodule update --init vendor/filee-source
+
+      - name: Setup .NET for bundled Filee
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and verify bundled Filee
+        shell: pwsh
+        run: |
+          ./tools/build_filee_runtime.ps1 osx-arm64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python tools/test_filee_runtime.py --runtime osx-arm64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Setup Node.js for Office Viewer
         uses: actions/setup-node@v4

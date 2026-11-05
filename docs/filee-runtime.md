@@ -1,11 +1,9 @@
 # Filee runtime packaging
 
-The conversion page executes the Filee CLI beside the app. Build one self-contained runtime for each release target before packaging:
+The conversion runtime is built from the pinned `vendor/filee-source` submodule. Initialize it with `git submodule update --init vendor/filee-source` and install the .NET SDK required by its `global.json`.
 
-- Windows: `pwsh tools/build_filee_runtime.ps1 win-x64`
-- macOS Intel: `pwsh tools/build_filee_runtime.ps1 osx-x64`
-- macOS Apple Silicon: `pwsh tools/build_filee_runtime.ps1 osx-arm64`
-- Linux x64: `./tools/build_filee_runtime.sh linux-x64`
-- Linux ARM64: `./tools/build_filee_runtime.sh linux-arm64`
+Build with `pwsh tools/build_filee_runtime.ps1 <runtime>` or `bash tools/build_filee_runtime.sh <runtime>`. The scripts default to the pinned source and place self-contained output and its license under `vendor/filee/<runtime>`.
 
-The resulting files live under `vendor/filee/<runtime>` and must be included beside the installed Vertree executable. The runtime is self-contained, so users do not install or configure .NET, FFmpeg, ImageMagick, or other conversion engines.
+Release targets and real conversion checks are defined in [the release workflow](../.github/workflows/release.yml). [The runtime smoke test](../tools/test_filee_runtime.py) verifies format discovery, PNG-to-WebP output and source preservation before packaging.
+
+The bundled CLI and managed/native package dependencies do not require a user-installed .NET runtime. Optional external engines are not bundled by these scripts; their formats depend on engine availability. Format support is resolved by the runtime, not a separate documented list.
