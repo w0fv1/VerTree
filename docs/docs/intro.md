@@ -34,7 +34,7 @@ Windows 3.0.0还提供两个独立功能：[快速删除](tutorial-usage/fast-de
 
 ## 文档与下载版本
 
-这套文档对应 **3.0.0**。Windows 文件工具、两套右键菜单逐项设置与新版首页均随此版本提供。旧版界面可能不同，请先在[下载页](/download)核对安装包与[发布说明](https://github.com/w0fv1/VerTree/releases/tag/V3.0.0)。Windows 专有功能不会因此在 macOS 或 Linux 上出现。
+这套文档对应 **4.0.0**。本版提供内置格式转换、文件卡片，以及 Windows 菜单、主题图标与设置改进。旧版界面可能不同，请先在[下载页](/download)核对安装包与[发布说明](https://github.com/w0fv1/VerTree/releases/tag/V4.0.0)。Windows 专有功能不会因此在 macOS 或 Linux 上出现。
 
 ## 平台差异
 

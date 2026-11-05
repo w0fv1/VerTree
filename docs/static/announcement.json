@@ -1,6 +1,6 @@
 {
-  "uuid": "vertree-3.0.0-20260927",
-  "content": "Vertree 3.0.0 已发布：Windows 快速删除与解除占用、两套菜单逐项设置，以及新版首页、官网和使用文档。快速删除不进回收站，并可能结束占用程序，确认前请保存工作。2.x 有效设置与监控任务保留。",
-  "expiresAt": "2026-10-27T23:59:59+08:00",
-  "link": "https://github.com/w0fv1/VerTree/releases/tag/V3.0.0"
+  "uuid": "vertree-4.0.0-20261105",
+  "content": "Vertree 4.0.0：内置文件格式转换，更新文件卡片、Windows 右键菜单、深浅色图标与设置，修复 API 开关和卸载问题。",
+  "expiresAt": "2026-12-05T23:59:59+08:00",
+  "link": "https://github.com/w0fv1/VerTree/releases/tag/V4.0.0"
 }
