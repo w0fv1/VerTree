@@ -1,3 +1,6 @@
 [submodule "vendor/office-viewer"]
 	path = vendor/office-viewer
 	url = https://github.com/w0fv1/Office-Viewer.git
+[submodule "vendor/filee-source"]
+	path = vendor/filee-source
+	url = https://github.com/KnifeLemon/Filee.git
