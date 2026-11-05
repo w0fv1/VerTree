@@ -36,6 +36,9 @@ fi
 mkdir -p "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME"
 cp -a "$ROOT_DIR/vendor/filee/$RUNTIME/." "$APP_PATH/Contents/Resources/vendor/filee/$RUNTIME/"
 
+codesign --force --sign - --preserve-metadata=entitlements "$APP_PATH"
+codesign --verify --deep --strict "$APP_PATH"
+
 mkdir -p "$DIST_DIR"
 ARTIFACT_PREFIX="vertree-macos-$ARCH_NAME-$VERSION"
 ZIP_PATH="$DIST_DIR/$ARTIFACT_PREFIX.zip"
