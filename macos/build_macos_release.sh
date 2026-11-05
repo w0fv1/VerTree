@@ -17,8 +17,6 @@ if [[ "$ARCH_RAW" == "arm64" || "$ARCH_RAW" == "aarch64" ]]; then
   ARCH_NAME="arm64"
 fi
 
-export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
 
 if [[ "${SKIP_FLUTTER_BUILD:-0}" != "1" ]]; then
   flutter build macos --target lib/main.dart --release

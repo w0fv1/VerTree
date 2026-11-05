@@ -13,8 +13,6 @@ if [[ -z "$VERSION" ]]; then
   exit 1
 fi
 
-export FLUTTER_STORAGE_BASE_URL="${FLUTTER_STORAGE_BASE_URL:-https://storage.flutter-io.cn}"
-export PUB_HOSTED_URL="${PUB_HOSTED_URL:-https://pub.flutter-io.cn}"
 
 if [[ "${SKIP_FLUTTER_BUILD:-0}" != "1" ]]; then
   env -u http_proxy -u https_proxy -u HTTP_PROXY -u HTTPS_PROXY -u all_proxy -u ALL_PROXY \
